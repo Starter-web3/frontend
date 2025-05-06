@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { sampleTokens, Token } from '@/src/app/listings/page' // Adjust import path based on your file structure
 
 export default function TokenDetailPage({ params }: { params: { id: string } }) {
@@ -59,17 +60,28 @@ export default function TokenDetailPage({ params }: { params: { id: string } }) 
 
         {/* Token Hero Section */}
         <div className="relative rounded-xl overflow-hidden mb-8">
-          <div className="h-64 md:h-80 bg-gray-700">
-            <img 
+          <div className="h-64 md:h-80 bg-gray-700 relative">
+            <Image 
               src={token.backgroundUrl}
               alt={token.name}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 1200px"
+              priority
             />
           </div>
           
           <div className="absolute -bottom-12 left-8">
             <div className="bg-gray-700 p-2 rounded-xl border-4 border-gray-800">
-              <img src={token.logoUrl} alt={token.name} className="w-20 h-20 rounded-lg bg-white" />
+              <div className="relative w-20 h-20 rounded-lg bg-white overflow-hidden">
+                <Image 
+                  src={token.logoUrl} 
+                  alt={token.name} 
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                />
+              </div>
             </div>
           </div>
         </div>
