@@ -34,8 +34,8 @@ const DashboardSidebar = () => {
         <div className='p-4 flex flex-col h-full'>
           <div className='flex items-center mb-8'>
             <div className='text-xl font-bold flex items-center'>
-              <span className='text-[hsl(var(--primary-from))] mr-1'>Propty</span>
-              <span className='text-[hsl(var(--foreground))]'>Chain</span>
+              <span className='text-[hsl(var(--primary-from))] mr-1'>Strata</span>
+              <span className='text-[hsl(var(--foreground))]'>Forge</span>
             </div>
           </div>
 
@@ -138,7 +138,7 @@ const DashboardSidebar = () => {
               active={currentPath === '/dashboard/deposit'}
             />
             <SidebarLink
-              href='/wallet'
+              href='/dashboard/airdrop-listing'
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
