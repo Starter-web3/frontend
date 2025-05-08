@@ -9,13 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowRight, Upload, Coins } from "lucide-react";
-import DashBoardLayout from "../DashboardLayout";
+import { ArrowLeft, Coins } from "lucide-react";
+import DashBoardLayout from "../../DashboardLayout";
 // import WalletConnect from "@/components/WalletConnect";
-import MerkleDistributorABI from "../../../lib/contracts/MerkleDistributor.json";
-import { createMerkleTree, Recipient } from "../../../lib/merkle";
+import MerkleDistributorABI from "../../../../lib/contracts/MerkleDistributor.json";
+import { createMerkleTree, Recipient } from "../../../../lib/merkle";
 
-export default function Home() {
+export default function ClaimPage() {
   const { address, isConnected } = useAccount();
   const [distributorAddress, setDistributorAddress] = useState(
     process.env.NEXT_PUBLIC_DISTRIBUTOR_ADDRESS || ""
@@ -33,6 +33,10 @@ export default function Home() {
       setError("Please connect your wallet!");
       return;
     }
+    if (!distributorAddress) {
+      setError("Please enter a valid distributor address!");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -45,28 +49,60 @@ export default function Home() {
       // Load recipients from local storage
       const files: { recipients: Recipient[] }[] = JSON.parse(localStorage.getItem("recipientFiles") || "[]");
       const allRecipients = files.flatMap((file) => file.recipients);
-      const { proofs } = createMerkleTree(allRecipients);
+
+      if (allRecipients.length === 0) {
+        throw new Error("No recipient data found. Please upload a CSV file first.");
+      }
+
+      const { proofs, merkleRoot } = createMerkleTree(allRecipients);
       const proof = proofs[address.toLowerCase()];
 
+      console.log("Debugging Claim:");
+      console.log("Caller Address:", address);
+      console.log("Distributor Address:", distributorAddress);
+      console.log("Merkle Root:", merkleRoot);
+      console.log("Proof:", proof);
+
       if (!proof) {
-        throw new Error("Your address is not whitelisted.");
+        throw new Error("Your address is not whitelisted for this airdrop.");
       }
 
       const contract = new ethers.Contract(distributorAddress, MerkleDistributorABI, signer);
+
+      // Check contract state (optional, if contract has public getters)
+      try {
+        const isClaimed = await contract.isClaimed(address);
+        if (isClaimed) {
+          throw new Error("This address has already claimed the airdrop.");
+        }
+      } catch (err) {
+        console.warn("Could not check claim status; proceeding with claim attempt.");
+      }
+
+      // Estimate gas first to catch errors
+    try {
+        const gasEstimate = await contract.claim.estimateGas(proof);
+        console.log("Gas estimate:", gasEstimate);
+      } catch (estimateError) {
+        console.error("Gas estimate failed:", estimateError);
+        throw new Error("Claim verification failed. Check distributor address and proof.");
+      }
+      
       const tx = await contract.claim(proof);
       await tx.wait();
 
       setSuccess("Airdrop claimed successfully!");
     } catch (err: any) {
-      setError(`Error: ${err.message}`);
+      console.error("Claim Error:", err);
+      setError(`Error: ${err.message || "Transaction failed. Check the distributor address and try again."}`);
     } finally {
       setLoading(false);
-    }
+}
   };
 
   return (
     <DashBoardLayout>
-      <div className="bg-#201726 text-purple-100">
+      <div className="bg-#201726 text-purple-100 min-h-screen">
         <header className="border-b border-purple-500/20 p-4">
           <div className="container flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -77,60 +113,28 @@ export default function Home() {
           </div>
         </header>
 
-        <main className="container py-12">
-          <h1 className="mb-8 text-center text-3xl font-bold">Airdrop Management</h1>
+        <main className="container py-8">
+          <div className="mb-6 flex items-center">
+            <Link href="/dashboard/airdrop-listing">
+              <Button variant="ghost" className="text-purple-100 hover:bg-purple-500/10 hover:text-purple-200">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </Link>
+            <h1 className="ml-4 text-2xl font-bold">Claim Airdrop</h1>
+          </div>
 
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="max-w-md mx-auto">
             <Card className="bg-zinc-900 border-purple-500/20">
               <CardHeader>
-                <CardTitle className="text-purple-100">Upload Recipients</CardTitle>
+                <CardTitle className="text-purple-100">Claim Your Tokens</CardTitle>
                 <CardDescription className="text-purple-100/70">
-                  Upload CSV files with recipient addresses
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center">
-                <Upload className="h-16 w-16 mb-4 text-purple-400" />
-                <p className="mb-6 text-center text-purple-100/70">Manage your recipient lists by uploading CSV files</p>
-                <Link href="/dashboard/airdrop-listing/upload" className="w-full">
-                  <Button className="w-full bg-purple-500 hover:bg-purple-600 text-black">
-                    Manage Recipients
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-zinc-900 border-purple-500/20">
-              <CardHeader>
-                <CardTitle className="text-purple-100">Distribute Tokens</CardTitle>
-                <CardDescription className="text-purple-100/70">
-                  Configure and execute your airdrop distribution
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center">
-                <Coins className="h-16 w-16 mb-4 text-purple-400" />
-                <p className="mb-6 text-center text-purple-100/70">
-                  Set up distribution parameters and execute your airdrop
-                </p>
-                <Link href="/dashboard/airdrop-listing/distribute" className="w-full">
-                  <Button className="w-full bg-purple-500 hover:bg-purple-600 text-black">
-                    Configure Distribution
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-zinc-900 border-purple-500/20 md:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-purple-100">Claim Airdrop</CardTitle>
-                <CardDescription className="text-purple-100/70">
-                  Claim your tokens if your address is whitelisted
+                  Enter the airdrop distributor address to claim your tokens
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="distributorAddress">Airdrop Distributor Address</Label>
+                  <Label htmlFor="distributorAddress">Distributor Address</Label>
                   <Input
                     id="distributorAddress"
                     placeholder="0x..."
