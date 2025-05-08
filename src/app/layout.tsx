@@ -1,5 +1,3 @@
-'use client';
-
 import { Inter } from 'next/font/google';
 import { Poppins } from 'next/font/google';
 import './globals.css';
@@ -7,8 +5,8 @@ import Header from './components/layout/Header';
 import { headers } from 'next/headers';
 import ContextProvider from '../contexts/appKitContext';
 
-import { config } from '../lib/wagmi-config';
-import { useState } from 'react';
+// import { config } from '../lib/wagmi-config';
+// import { useState } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
 
