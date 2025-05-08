@@ -16,10 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import DashBoardLayout from "../../DashboardLayout";
-// import WalletConnect from "@/components/WalletConnect";
 import AirdropFactoryABI from "../../../../lib/contracts/AirdropFactory.json";
 import WebCoinABI from "../../../../lib/contracts/WebCoin.json";
-import { Recipient } from "../../../../lib/merkle";
+import { createMerkleTree, Recipient } from "../../../../lib/merkle";
 
 type RecipientFile = {
   id: string;
@@ -79,9 +78,19 @@ export default function DistributePage() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
+      // Ensure we have valid addresses
+      const factoryAddress = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
+      if (!factoryAddress || !ethers.isAddress(factoryAddress)) {
+        throw new Error("Invalid factory contract address");
+      }
+      
+      if (!ethers.isAddress(contractAddress)) {
+        throw new Error("Invalid token contract address");
+      }
+
       // Initialize contracts
       const factoryContract = new ethers.Contract(
-        process.env.NEXT_PUBLIC_FACTORY_ADDRESS!,
+        factoryAddress,
         AirdropFactoryABI,
         signer
       );
@@ -90,16 +99,31 @@ export default function DistributePage() {
       // Combine recipients from all files
       const allRecipients = files.flatMap((file) => file.recipients);
       const totalRecipients = allRecipients.length;
-      const merkleRoot = files[0].merkleRoot; // Use the first file's Merkle root
+      
+      // Regenerate merkle tree to ensure it's up to date
+      const { merkleRoot } = createMerkleTree(allRecipients);
+      
+      // Parse amount properly
       const dropAmount = ethers.parseUnits(tokenAmount || "100", 18); // Assuming 18 decimals
       const totalDropAmount = dropAmount * BigInt(totalRecipients);
+      
+      // Set start time
       const startTime = scheduleDate
         ? Math.floor(new Date(scheduleDate).getTime() / 1000)
         : Math.floor(Date.now() / 1000);
 
+      console.log("Creating airdrop with:", {
+        tokenAddress: contractAddress,
+        merkleRoot,
+        dropAmount: dropAmount.toString(),
+        totalRecipients,
+        startTime
+      });
+
       // Approve token transfer
-      const approveTx = await tokenContract.approve(factoryContract.target, totalDropAmount);
+      const approveTx = await tokenContract.approve(factoryAddress, totalDropAmount);
       await approveTx.wait();
+      console.log("Approval complete");
 
       // Create airdrop
       const createTx = await factoryContract.createAirdrop(
@@ -109,18 +133,36 @@ export default function DistributePage() {
         totalRecipients,
         startTime
       );
+      console.log("Transaction sent:", createTx.hash);
       const receipt = await createTx.wait();
+      console.log("Transaction confirmed:", receipt);
 
       // Extract distributor address from event
       const event = receipt.logs
-        .map((log: any) => factoryContract.interface.parseLog(log))
-        .find((e: any) => e?.name === "AirdropCreated");
-      const newDistributorAddress = event?.args.distributorAddress;
+        .filter((log) => log && log.topics && log.topics.length > 0)
+        .map((log) => {
+          try {
+            return factoryContract.interface.parseLog({
+              topics: log.topics,
+              data: log.data
+            });
+          } catch (e) {
+            return null;
+          }
+        })
+        .find((e) => e && e.name === "AirdropCreated");
 
-      setDistributorAddress(newDistributorAddress);
-      // alert(`Airdrop created successfully! Distributor: ${newDistributorAddress}`);
-    } catch (err: any) {
-      setError(`Error: ${err.message}`);
+      if (event && event.args) {
+        const newDistributorAddress = event.args.distributorAddress;
+        setDistributorAddress(newDistributorAddress);
+        // Save last distributor address for claim page
+        localStorage.setItem("lastDistributorAddress", newDistributorAddress);
+      } else {
+        throw new Error("Failed to retrieve distributor address from transaction");
+      }
+    } catch (err) {
+      console.error("Distribution error:", err);
+      setError(`Error: ${err.message || "Unknown error occurred"}`);
     } finally {
       setLoading(false);
     }
@@ -135,7 +177,6 @@ export default function DistributePage() {
               <Coins className="h-6 w-6" />
               <span className="text-xl font-bold">LaunchPad</span>
             </div>
-            {/* <WalletConnect /> */}
           </div>
         </header>
 
