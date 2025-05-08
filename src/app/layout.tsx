@@ -4,6 +4,7 @@ import './globals.css';
 import Header from './components/layout/Header';
 import { headers } from 'next/headers';
 import ContextProvider from '../contexts/appKitContext';
+import { WalletProvider } from '../contexts/WalletContext';
 
 // import { config } from '../lib/wagmi-config';
 // import { useState } from 'react';
@@ -30,7 +31,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang='en'>
       <body className={`${inter.className} ${poppinsFont.variable} min-h-screen bg-black`}>
         <Header />
-        <ContextProvider cookies={cookies}>{children}</ContextProvider>
+        <ContextProvider cookies={cookies}>
+          <WalletProvider>{children} </WalletProvider>
+        </ContextProvider>
       </body>
     </html>
   );

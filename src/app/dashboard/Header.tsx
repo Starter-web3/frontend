@@ -4,6 +4,7 @@ import { useWallet } from '../../contexts/WalletContext'; // Update the path as 
 
 interface HeaderProps {
   toggleSidebar: () => void;
+  isConnected: boolean;
 }
 
 const DashboardHeader: React.FC<HeaderProps> = ({ toggleSidebar }) => {
