@@ -1,92 +1,83 @@
+// src/contexts/WalletContext.tsx
 'use client';
 
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { baseSepolia } from '../lib/wagmi-config'; // Adjust path as needed
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
+import { baseSepolia } from '../lib/wagmi-config';
 
 interface WalletContextType {
   address: `0x${string}` | undefined;
   isConnected: boolean;
-  connect: (connectorId?: string) => void;
-  disconnect: () => void;
   isConnecting: boolean;
+  connect: () => void;
+  disconnect: () => void;
   connectError: Error | null;
-  chainId: number;
   baseSepolia: typeof baseSepolia;
+  signMessage: (message: string) => Promise<`0x${string}` | undefined>;
 }
 
-export const WalletContext = createContext<WalletContextType | undefined>(undefined);
+const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
-export function WalletProvider({ children }: { children: ReactNode }) {
-  const { address, isConnected, chainId } = useAccount();
-  const {
-    connect: wagmiConnect,
-    connectors,
-    error: connectError,
-    isPending: isConnecting,
-  } = useConnect();
+export function WalletProvider({ children }: { children: React.ReactNode }) {
+  const { address, isConnected } = useAccount();
   const { disconnect: wagmiDisconnect } = useDisconnect();
+  const { signMessageAsync } = useSignMessage();
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<Error | null>(null);
 
-  // EIP-6963 wallet detection
-  const [availableWallets, setAvailableWallets] = useState<any[]>([]);
+  // Function to connect wallet using AppKit
+  const connect = async () => {
+    setIsConnecting(true);
+    setConnectError(null);
 
-  useEffect(() => {
-    // Function to handle wallet announcement events
-    const handleWalletAnnouncement = (event: any) => {
-      const { info, provider } = event.detail;
-      setAvailableWallets((prev) => {
-        if (!prev.some((wallet) => wallet.info.uuid === info.uuid)) {
-          return [...prev, { info, provider }];
-        }
-        return prev;
-      });
-    };
-
-    // Listen for wallet announcements
-    window.addEventListener('eip6963:announceProvider', handleWalletAnnouncement);
-
-    // Request wallets to announce themselves
-    window.dispatchEvent(new Event('eip6963:requestProvider'));
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('eip6963:announceProvider', handleWalletAnnouncement);
-    };
-  }, []);
-
-  // Connect to a specific connector by ID, or the first available connector if not specified
-  const connect = (connectorId?: string) => {
-    let targetConnector;
-
-    if (connectorId) {
-      targetConnector = connectors.find((c) => c.id === connectorId);
-    } else {
-      targetConnector = connectors.find((c) => c.type !== 'injected' || c.id === 'metaMask');
-    }
-
-    if (targetConnector) {
-      wagmiConnect({ connector: targetConnector });
-    } else if (availableWallets.length > 0) {
-      // Fall back to EIP-6963 detected wallets
-      const wallet = availableWallets[0];
-      // This is a simplified approach - you would need to adapt this to your wagmi setup
-      console.log('Connecting to EIP-6963 wallet:', wallet.info.name);
-      // Here you would integrate with your wagmi connector for the selected wallet
+    try {
+      // This calls the appkit connect method via custom element
+      const appkitButton = document.querySelector('appkit-button');
+      if (appkitButton) {
+        // Trigger click on the appkit-button element
+        (appkitButton as HTMLElement).click();
+      } else {
+        throw new Error('AppKit button not found in the DOM');
+      }
+    } catch (error) {
+      console.error('Wallet connection error:', error);
+      setConnectError(error instanceof Error ? error : new Error('Failed to connect wallet'));
+    } finally {
+      setIsConnecting(false);
     }
   };
 
-  const value = {
-    address,
-    isConnected,
-    connect,
-    disconnect: wagmiDisconnect,
-    isConnecting,
-    connectError,
-    chainId: chainId || baseSepolia.id,
-    baseSepolia,
+  // Function to disconnect wallet
+  const disconnect = () => {
+    wagmiDisconnect();
   };
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+  // Function to sign a message
+  const signMessage = async (message: string): Promise<`0x${string}` | undefined> => {
+    try {
+      return await signMessageAsync({ message });
+    } catch (error) {
+      console.error('Error signing message:', error);
+      return undefined;
+    }
+  };
+
+  return (
+    <WalletContext.Provider
+      value={{
+        address,
+        isConnected,
+        isConnecting,
+        connect,
+        disconnect,
+        connectError,
+        baseSepolia,
+        signMessage,
+      }}
+    >
+      {children}
+    </WalletContext.Provider>
+  );
 }
 
 export function useWallet() {

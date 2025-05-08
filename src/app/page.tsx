@@ -8,15 +8,15 @@ import WhyUs from './components/home/WhyUs';
 import HowItWorks from './components/home/HowItWorks';
 import CallToAction from './components/ui/CallToAction';
 import Footer from './components/layout/Footer';
-import { inintAppkit } from './config/appkit';
+// import { inintAppkit } from './config/appkit';
 
 export default function Home() {
-  useEffect(() => {
-    inintAppkit();
-  }, []);
+  // useEffect(() => {
+  //   inintAppkit();
+  // }, []);
 
   return (
-    <main className="min-h-screen bg-[#201726]">
+    <main className='min-h-screen bg-[#201726]'>
       <Hero />
       <StatsSection />
       <PropertyCardSlider />

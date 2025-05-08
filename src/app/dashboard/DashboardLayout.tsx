@@ -3,8 +3,11 @@ import React, { useState, ReactNode } from 'react';
 import DashboardSidebar from './Sidebar';
 import DashboardHeader from './Header';
 import Footer from '../components/layout/Footer';
+import { useWallet } from '../../contexts/WalletContext';
+
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isConnected } = useWallet(); // Get connection status
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -31,8 +34,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
 
         <div className='flex-1 flex flex-col min-h-screen'>
-          <DashboardHeader toggleSidebar={toggleSidebar} />
-          <main className='flex-1 p-4 md:p-8 overflow-auto'>{children}</main>
+          <DashboardHeader toggleSidebar={toggleSidebar} isConnected={isConnected} />
+          <main className='flex-1 p-4 md:p-8 overflow-auto'>
+            {!isConnected ? (
+              <div className='text-center p-8'>
+                <p>Please connect your wallet to access the dashboard</p>
+                <button onClick={() => document.querySelector('appkit-button')?.click()}>
+                  Connect Wallet
+                </button>
+              </div>
+            ) : (
+              children
+            )}
+          </main>
         </div>
       </div>
       <Footer />
