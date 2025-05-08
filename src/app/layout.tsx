@@ -4,10 +4,9 @@ import { Inter } from 'next/font/google';
 import { Poppins } from 'next/font/google';
 import './globals.css';
 import Header from './components/layout/Header';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WagmiProvider } from 'wagmi';
+import { headers } from 'next/headers';
+import ContextProvider from '../contexts/appKitContext';
 
-import { WalletProvider } from '../contexts/WalletContext'; //
 import { config } from '../lib/wagmi-config';
 import { useState } from 'react';
 
@@ -25,20 +24,15 @@ const metadata = {
     'Buy, sell, rent and lease properties in Nigeria with blockchain security and smart contracts.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersObj = await headers();
+  const cookies = headersObj.get('cookie');
 
   return (
     <html lang='en'>
       <body className={`${inter.className} ${poppinsFont.variable} min-h-screen bg-black`}>
-        <WagmiProvider config={config}>
-          <QueryClientProvider client={queryClient}>
-            <WalletProvider>
-              <Header />
-              {children}
-            </WalletProvider>
-          </QueryClientProvider>
-        </WagmiProvider>
+        <Header />
+        <ContextProvider cookies={cookies}>{children}</ContextProvider>
       </body>
     </html>
   );
