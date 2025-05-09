@@ -1,9 +1,9 @@
 'use client';
-import { useEffect } from 'react';
+// import { useEffect } from 'react';
 import Hero from './components/home/Hero';
 import StatsSection from './components/home/StatsSection';
-import PropertyCardSlider from './components/ui/PropertyCardSlider';
-import BlockChainFeatures from './components/home/BlockChainFeatures';
+import TokenTypesSlider from './components/ui/TokenTypesSlider';
+import PlatformFeatures from '././components/home/PlatformFeatures';
 import WhyUs from './components/home/WhyUs';
 import HowItWorks from './components/home/HowItWorks';
 import CallToAction from './components/ui/CallToAction';
@@ -19,8 +19,8 @@ export default function Home() {
     <main className='min-h-screen bg-[#201726]'>
       <Hero />
       <StatsSection />
-      <PropertyCardSlider />
-      <BlockChainFeatures />
+      <TokenTypesSlider />
+      <PlatformFeatures />
       <WhyUs />
       <HowItWorks />
       <CallToAction />

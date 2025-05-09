@@ -49,7 +49,7 @@ const ReviewMinimal: React.FC = () => {
         {/* Review text */}
         <div className="text-left">
           <div className="flex items-center">
-            <span className="text-white font-medium text-sm">500+ positive reviews</span>
+            <span className="text-white font-medium text-sm">500+ satisfied clients</span>
             <div className="ml-2 flex">
               {[1, 2, 3, 4, 5].map((star) => (
                 <svg key={star} width="10" height="10" viewBox="0 0 24 24" fill="#C44DFF" xmlns="http://www.w3.org/2000/svg">
@@ -240,8 +240,8 @@ const Hero: React.FC<HeroProps> = () => {
           }}
         />
 
-        {/* Housing/Real Estate Icons */}
-        {/* House Icon (Top Left) */}
+        {/* Token/Crypto Icons */}
+        {/* Token Icon (Top Left) */}
         <motion.div 
           className='absolute flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-r from-purple-500/20 to-blue-500/20 top-10 left-[15%] backdrop-blur-sm'
           animate={{
@@ -260,12 +260,12 @@ const Hero: React.FC<HeroProps> = () => {
           }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="#C44DFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M9 22V12H15V22" stroke="#C44DFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" stroke="#C44DFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M3 22C3 17.0294 7.02944 13 12 13C16.9706 13 21 17.0294 21 22" stroke="#C44DFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </motion.div>
 
-        {/* Key Icon (Bottom Left) */}
+        {/* NFT Icon (Bottom Left) */}
         <motion.div 
           className='absolute flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-400/20 bottom-20 left-[25%] backdrop-blur-sm'
           animate={{
@@ -285,11 +285,13 @@ const Hero: React.FC<HeroProps> = () => {
           }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M21 2L19 4M19 4L15 8M19 4L22 7M15 8C15.296 7.33762 15.4435 6.61754 15.4288 5.89236C15.4141 5.16717 15.2376 4.45466 14.9137 3.80496C14.5898 3.15526 14.127 2.58427 13.5639 2.13739C13.0008 1.6905 12.3519 1.37839 11.6709 1.22144C10.9899 1.06449 10.2934 1.06654 9.61329 1.22753C8.93315 1.38853 8.28646 1.70488 7.726 2.15477C7.16554 2.60466 6.70581 3.1782 6.38447 3.83051C6.06312 4.48281 5.88885 5.19722 5.874 5.923L2 9.848C1.69949 10.1491 1.48782 10.5269 1.38818 10.9365C1.28854 11.346 1.30446 11.7739 1.434 12.176L1.858 13.414C1.98195 13.8007 2.19801 14.1517 2.48811 14.4375C2.77821 14.7233 3.13442 14.936 3.524 15.06L5.149 15.584C5.53987 15.7083 5.95798 15.7244 6.36085 15.6308C6.76372 15.5372 7.13737 15.3372 7.446 15.048L15 8Z" stroke="#0AACE6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M4 5C4 4.44772 4.44772 4 5 4H19C19.5523 4 20 4.44772 20 5V7C20 7.55228 19.5523 8 19 8H5C4.44772 8 4 7.55228 4 7V5Z" stroke="#0AACE6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M4 13C4 12.4477 4.44772 12 5 12H11C11.5523 12 12 12.4477 12 13V19C12 19.5523 11.5523 20 11 20H5C4.44772 20 4 19.5523 4 19V13Z" stroke="#0AACE6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M16 13C16 12.4477 16.4477 12 17 12H19C19.5523 12 20 12.4477 20 13V19C20 19.5523 19.5523 20 19 20H17C16.4477 20 16 19.5523 16 19V13Z" stroke="#0AACE6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </motion.div>
 
-        {/* Building Icon (Top Right) */}
+        {/* Crypto Wallet Icon (Top Right) */}
         <motion.div 
           className='absolute flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-r from-purple-500/20 to-blue-500/20 top-1/3 right-[10%] backdrop-blur-sm'
           animate={{
@@ -309,11 +311,12 @@ const Hero: React.FC<HeroProps> = () => {
           }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 21H21M6 21V6C6 5.46957 6.21071 4.96086 6.58579 4.58579C6.96086 4.21071 7.46957 4 8 4H16C16.5304 4 17.0391 4.21071 17.4142 4.58579C17.7893 4.96086 18 5.46957 18 6V21M9 9H10M9 13H10M9 17H10M14 9H15M14 13H15M14 17H15" stroke="#C44DFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M19 7V5.5C19 4.83696 18.7366 4.20107 18.2678 3.73223C17.7989 3.26339 17.163 3 16.5 3H5.5C4.83696 3 4.20107 3.26339 3.73223 3.73223C3.26339 4.20107 3 4.83696 3 5.5V18.5C3 19.163 3.26339 19.7989 3.73223 20.2678C4.20107 20.7366 4.83696 21 5.5 21H16.5C17.163 21 17.7989 20.7366 18.2678 20.2678C18.7366 19.7989 19 19.163 19 18.5V17" stroke="#C44DFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M16 11.55H21V15.45H16C15.6022 15.45 15.2206 15.292 14.9393 15.0107C14.658 14.7294 14.5 14.3478 14.5 13.95V13.05C14.5 12.6522 14.658 12.2706 14.9393 11.9893C15.2206 11.708 15.6022 11.55 16 11.55Z" stroke="#C44DFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </motion.div>
 
-        {/* Contract/Document Icon (Bottom Right) */}
+        {/* Smart Contract Icon (Bottom Right) */}
         <motion.div 
           className='absolute flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500/20 to-cyan-400/20 bottom-1/4 right-[20%] backdrop-blur-sm'
           animate={{
@@ -366,7 +369,7 @@ const Hero: React.FC<HeroProps> = () => {
                 repeatType: 'reverse',
               }}
             >
-              <span className='mr-2 text-xs uppercase tracking-wider'>Web3 Powered</span>
+              <span className='mr-2 text-xs uppercase tracking-wider'>No-Code Platform</span>
               <div className='bg-gradient-to-r from-[#C44DFF] to-[#0AACE6] rounded-full w-5 h-5 flex items-center justify-center'>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M9 3L5.5 8.5L3 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -381,8 +384,8 @@ const Hero: React.FC<HeroProps> = () => {
             variants={itemVariants}
           >
             <span className='bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-blue-300'>
-              Unlock Nigerias Housing Market <br />
-              with Web3 Transparency.
+              Deploy Tokens & NFTs <br />
+              Without Writing Code
             </span>
           </motion.h1>
 
@@ -391,7 +394,7 @@ const Hero: React.FC<HeroProps> = () => {
             className='text-gray-300 text-lg max-w-xl mx-auto leading-tight'
             variants={itemVariants}
           >
-            Buy, rent, or sell with NFT-verified listings, trusted agents, and secure escrow—all on transparent smart contracts.
+            The complete platform for token creation, airdrops, and campaign management, all on the blockchain with Web3 simplicity.
           </motion.p>
 
           {/* Call to action buttons with hover effects */}
@@ -399,23 +402,23 @@ const Hero: React.FC<HeroProps> = () => {
             className='flex flex-col sm:flex-row justify-center gap-4 mt-6'
             variants={itemVariants}
           >
-            <Link href='/role-selection'>
+            <Link href='/launch-token'>
               <motion.button
                 className='bg-gradient-to-r from-[#C44DFF] to-[#0AACE6] text-white font-semibold text-sm rounded-full w-full sm:w-[138px] h-[40px] px-5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 hover:scale-105'
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
               >
-                Get Started
+                Deploy Now
               </motion.button>
             </Link>
 
-            <Link href='/seeker-dashboard'>
+            <Link href='/listings'>
               <motion.button
                 className='border border-white text-white font-semibold text-sm rounded-full w-full sm:w-[138px] h-[40px] px-5 transition-all duration-300 backdrop-blur-sm hover:bg-white/10 hover:border-blue-400'
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
               >
-                Join Waitlist
+                View Listings
               </motion.button>
             </Link>
           </motion.div>

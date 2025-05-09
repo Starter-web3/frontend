@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 
-type BlockchainFeaturesProps = Record<string, never>;
+type PlatformFeaturesProps = Record<string, never>;
 
 interface FeatureData {
   title: string;
@@ -10,29 +10,29 @@ interface FeatureData {
   icon: string;
 }
 
-const BlockchainFeatures: React.FC<BlockchainFeaturesProps> = () => {
+const PlatformFeatures: React.FC<PlatformFeaturesProps> = () => {
   const [activeFeature, setActiveFeature] = useState(0);
   
   const features: FeatureData[] = [
     {
-      title: 'NFT Property Titles',
-      description: 'Secure, immutable property ownership records minted as NFTs on the blockchain. No more title fraud.',
-      icon: 'M4 7V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3m3-4H3m4 0L3 12m4 0-4-4',
+      title: 'One-Click Token Deployment',
+      description: 'Deploy multiple token standards (ERC-20, ERC-721, ERC-1155) with just a few clicks. No coding required.',
+      icon: 'M13 10V3L4 14h7v7l9-11h-7z',
     },
     {
-      title: 'Smart Contract Escrow',
-      description: 'Funds are held securely in escrow smart contracts until all conditions of a sale or rental are met.',
-      icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+      title: 'Campaign Management',
+      description: 'Create, manage, and track airdrops and marketing campaigns with our integrated management system.',
+      icon: 'M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z',
     },
     {
-      title: 'On-Chain Verification',
-      description: 'All property documents and agent credentials are verified and recorded on the blockchain for complete transparency.',
-      icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+      title: 'Whitelist Management',
+      description: 'Easily manage token distribution with CSV uploads, manual address addition, and wallet verification systems.',
+      icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
     },
     {
-      title: 'Fractional Ownership',
-      description: 'Tokenized real estate allows investors to buy and sell fractions of high-value properties, improving market liquidity.',
-      icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
+      title: 'Specialized Token Templates',
+      description: 'Ready-to-deploy memecoin and stablecoin contracts with advanced features like anti-whale mechanisms and collateralization.',
+      icon: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z',
     },
   ];
 
@@ -88,13 +88,13 @@ const BlockchainFeatures: React.FC<BlockchainFeaturesProps> = () => {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Blockchain-Powered Real Estate
+            Strataforge Platform Features
           </motion.h2>
           <motion.p 
             variants={itemVariants}
             className="text-gray-400 max-w-2xl mx-auto"
           >
-            Our platform leverages blockchain technology to solve the most persistent problems in the Nigerian real estate market.
+            Our unified platform empowers creators, businesses, and communities to deploy tokens without requiring blockchain development expertise.
           </motion.p>
         </motion.div>
 
@@ -107,15 +107,15 @@ const BlockchainFeatures: React.FC<BlockchainFeaturesProps> = () => {
         >
           {features.map((feature, index) => (
             <motion.div
-            key={index}
-            variants={itemVariants}
-            className={`bg-gradient-to-br p-[1px] rounded-xl ${
-              index % 2 === 0 
-                ? 'from-[#C44DFF]/20 to-[#0AACE6]/20' 
-                : 'from-[#0AACE6]/20 to-[#C44DFF]/20'
-            } ${activeFeature === index ? 'ring-2 ring-purple-500/50' : ''}`}
-            onMouseEnter={() => setActiveFeature(index)}
-          >
+              key={index}
+              variants={itemVariants}
+              className={`bg-gradient-to-br p-[1px] rounded-xl ${
+                index % 2 === 0 
+                  ? 'from-[#C44DFF]/20 to-[#0AACE6]/20' 
+                  : 'from-[#0AACE6]/20 to-[#C44DFF]/20'
+              } ${activeFeature === index ? 'ring-2 ring-purple-500/50' : ''}`}
+              onMouseEnter={() => setActiveFeature(index)}
+            >
               <div className="bg-[#1E1425] p-6 rounded-xl h-full flex flex-col">
                 <div className="flex items-center mb-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -147,4 +147,4 @@ const BlockchainFeatures: React.FC<BlockchainFeaturesProps> = () => {
   );
 };
 
-export default BlockchainFeatures;
+export default PlatformFeatures;
