@@ -103,7 +103,7 @@ const Header: React.FC<HeaderProps> = () => {
 
             <nav className='hidden md:block'>
               <ul className='flex space-x-8'>
-                {['Home', 'Features', 'Listings', 'About us'].map((item) => (
+                {['Home', 'Features', 'Pricing', 'About us'].map((item) => (
                   <li key={item}>
                     <Link
                       href={item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
@@ -149,7 +149,7 @@ const Header: React.FC<HeaderProps> = () => {
         {isMobileMenuOpen && (
           <div className='md:hidden bg-black/20 backdrop-blur-sm rounded-b-lg'>
             <div className='px-2 pt-2 pb-3 space-y-1 sm:px-3'>
-              {['Home', 'Features', 'Listings', 'About us'].map((item) => (
+              {['Home', 'Features', 'Pricing', 'About us'].map((item) => (
                 <Link
                   key={item}
                   href={item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}

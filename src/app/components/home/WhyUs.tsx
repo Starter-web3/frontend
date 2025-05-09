@@ -29,9 +29,9 @@ const WhyUs: React.FC<WhyUsProps> = () => {
           <path d='M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.2L4 17.2V4H20V16Z' />
         </svg>
       ),
-      title: 'Communication',
+      title: 'No-Code Simplicity',
       description:
-        'We prioritize clear, transparent communication at every step of your property journey.',
+        'Deploy tokens and manage campaigns with ease - no blockchain development expertise required.',
       gradientFrom: '#C44DFF',
       gradientTo: '#9A00FF',
     },
@@ -46,9 +46,9 @@ const WhyUs: React.FC<WhyUsProps> = () => {
           <path d='M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 17C10.9 17 10 16.1 10 15C10 13.9 10.9 13 12 13C13.1 13 14 13.9 14 15C14 16.1 13.1 17 12 17ZM15 8H9V6C9 4.34 10.34 3 12 3C13.66 3 15 4.34 15 6V8Z' />
         </svg>
       ),
-      title: 'Reliability',
+      title: 'Complete Ecosystem',
       description:
-        'You can count on us to deliver every time. From verified listings to secure transactions, ProptyChain is built on trust and consistency.',
+        'From token creation to airdrops and marketing campaigns - manage your entire token lifecycle in one unified platform.',
       gradientFrom: '#0AACE6',
       gradientTo: '#0080FF',
     },
@@ -63,9 +63,9 @@ const WhyUs: React.FC<WhyUsProps> = () => {
           <path d='M12 2L4 5V11.09C4 16.14 7.41 20.85 12 22C16.59 20.85 20 16.14 20 11.09V5L12 2ZM12 17.75C11.45 17.75 11 17.3 11 16.75V14.25C11 13.7 11.45 13.25 12 13.25C12.55 13.25 13 13.7 13 14.25V16.75C13 17.3 12.55 17.75 12 17.75ZM13 12H11V10H13V12Z' />
         </svg>
       ),
-      title: 'Quality First',
+      title: 'Multiple Token Standards',
       description:
-        'At ProptyChain, we believe in offering nothing but the best. Our listings are carefully curated, ensuring only top-tier properties are showcased.',
+        'Deploy ERC-20, ERC-721, ERC-1155, memecoins, and stablecoins with specialized templates and configuration options.',
       gradientFrom: '#00C2FF',
       gradientTo: '#0AACE6',
     },
@@ -109,7 +109,7 @@ const WhyUs: React.FC<WhyUsProps> = () => {
         >
           <div className='inline-block mb-4'>
             <div className='bg-gray-800/80 backdrop-blur-md text-white text-sm py-1 px-4 rounded-full flex items-center border border-gray-700'>
-              <span className='mr-2 text-xs uppercase tracking-wider font-medium'>Blockchain Powered</span>
+              <span className='mr-2 text-xs uppercase tracking-wider font-medium'>Token Platform</span>
               <div className='bg-blue-500 rounded-full w-4 h-4 flex items-center justify-center'>
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M9 3L5.5 8.5L3 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -126,11 +126,11 @@ const WhyUs: React.FC<WhyUsProps> = () => {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Why Choose ProptyChain?
+            Why Choose StrataForge?
           </h2>
           
           <p className='text-gray-300 max-w-2xl mx-auto'>
-            Our blockchain-powered platform brings trust, transparency, and efficiency to Nigerias real estate market.
+            Our no-code platform brings trust, transparency, and efficiency to token deployment and campaign management.
           </p>
         </motion.div>
 
@@ -165,7 +165,7 @@ const WhyUs: React.FC<WhyUsProps> = () => {
               <p className='text-gray-400 text-sm leading-relaxed'>{card.description}</p>
               
               <div className='mt-6 pt-4 border-t border-gray-700/30 flex justify-between items-center'>
-                <div className='text-xs text-gray-500'>Blockchain verified</div>
+                <div className='text-xs text-gray-500'>Web3 verified</div>
                 <motion.div 
                   className='w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center'
                   whileHover={{ scale: 1.2, rotate: 90 }}

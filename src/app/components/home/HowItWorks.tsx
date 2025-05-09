@@ -18,18 +18,18 @@ const HowItWorks: React.FC<HowItWorksProps> = () => {
     },
     {
       number: 2,
-      title: 'Browse Listings',
-      description: 'Explore verified property listings with blockchain-backed ownership and inspection records.',
+      title: 'Configure Token',
+      description: 'Set up your token parameters with our intuitive interface - no coding required.',
     },
     {
       number: 3,
-      title: 'Secure Transaction',
-      description: 'Execute smart contracts for purchase, rental, or investment with automatic escrow protection.',
+      title: 'One-Click Deploy',
+      description: 'Deploy your token to the blockchain with a single click and automatic verification.',
     },
     {
       number: 4,
-      title: 'Receive NFT Title',
-      description: 'Get your property title as a secure NFT with complete ownership history and verification.',
+      title: 'Manage Campaigns',
+      description: 'Run airdrops, marketing campaigns, and track analytics from your dashboard.',
     },
   ];
 
@@ -74,7 +74,7 @@ const HowItWorks: React.FC<HowItWorksProps> = () => {
             How It Works
           </motion.h2>
           <motion.p variants={itemVariants} className="text-gray-400 max-w-2xl mx-auto">
-            Experience a seamless property journey powered by blockchain technology
+            Experience a seamless token deployment journey powered by StrataForge
           </motion.p>
         </motion.div>
 

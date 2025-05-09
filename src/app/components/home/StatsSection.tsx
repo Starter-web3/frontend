@@ -17,12 +17,12 @@ interface Counter {
 }
 
 const StatsSection: React.FC<StatsSectionProps> = () => {
-  // Use useMemo to prevent the stats array from being recreated on each render
+  // Updated stats based on PRD information that are accurate and compelling
   const stats = useMemo<StatItem[]>(() => [
-    { value: 1000, label: 'Properties Listed', prefix: '+' },
-    { value: 70, label: 'Secure Transactions', suffix: '%' },
-    { value: 320, label: 'Happy Clients', prefix: '+' },
-    { value: 5, label: 'Million in Volume', prefix: '$' },
+    { value: 5, label: 'Token Types Supported', prefix: '' },
+    { value: 99.9, label: 'Platform Uptime Target', suffix: '%' },
+    { value: 4, label: 'Target Audience Segments', prefix: '' },
+    { value: 5, label: 'Competitive Advantages', prefix: '' },
   ], []);
 
   const counters = useRef<Array<Counter>>([]).current;
@@ -37,7 +37,7 @@ const StatsSection: React.FC<StatsSectionProps> = () => {
               onUpdate: (value) => {
                 if (counters[i]?.node) {
                   counters[i].node.textContent = 
-                    `${stat.prefix || ''}${Math.floor(value)}${stat.suffix || ''}`;
+                    `${stat.prefix || ''}${Number.isInteger(stat.value) ? Math.floor(value) : value.toFixed(1)}${stat.suffix || ''}`;
                 }
               },
             });
@@ -96,7 +96,7 @@ const StatsSection: React.FC<StatsSectionProps> = () => {
               variants={itemVariants}
             >
               <h3 
-                className="text-3xl md:text-4xl font-bold mb-2 bg-clip-text text-transparent" 
+                className="text-3xl md:text-4xl font-bold mb-2 bg-clip-text text-transparent"
                 style={{
                   background: 'linear-gradient(to right, #C44DFF, #0AACE6)',
                   WebkitBackgroundClip: 'text',

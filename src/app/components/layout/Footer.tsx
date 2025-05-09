@@ -12,17 +12,17 @@ export default function Footer() {
           <div className="md:col-span-4">
             <div className="flex items-center mb-4">
               <Image
-                src="/proptychain-logo.png"
-                alt="Logo"
+                src="/strataforge-logo.png"
+                alt="StrataForge Logo"
                 width={120}
                 height={40}
                 className="object-contain"
               />
             </div>
             <p className="text-gray-400 text-sm mb-8">
-              ProptyChain is a facilitator, not a broker-dealer. Listings are posted by property
-              owners. All transactions don&apos;t involve risk and possible loss of funds. Past
-              results don&apos;t guarantee future outcomes.
+              StrataForge is a no-code token deployment platform that empowers creators, businesses, and communities
+              to launch tokens without requiring blockchain development expertise. All transactions involve risk and
+              possible loss of funds. Past results dont guarantee future outcomes.
             </p>
 
             {/* Social Icons */}
@@ -59,10 +59,10 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/community"
+                  href="/features"
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
-                  Community
+                  Features
                 </Link>
               </li>
               <li>
@@ -93,6 +93,14 @@ export default function Footer() {
                   className="text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   FAQs
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/documentation"
+                  className="text-gray-400 hover:text-white transition-colors text-sm"
+                >
+                  Documentation
                 </Link>
               </li>
               <li>
@@ -134,7 +142,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="mt-16 pt-8 text-center md:text-left">
-          <p className="text-gray-400 text-sm">ProptyChain © {new Date().getFullYear()}</p>
+          <p className="text-gray-400 text-sm">StrataForge © {new Date().getFullYear()}</p>
         </div>
       </div>
     </footer>
