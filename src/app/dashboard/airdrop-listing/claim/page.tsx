@@ -130,7 +130,8 @@ export default function ClaimPage() {
         // Check if we need to search through recipients
         if (file.recipients) {
           const recipient = file.recipients.find(
-            (r: any) => r.address && r.address.toLowerCase() === userAddress && r.proof,
+            (r: { address: string; proof: string[] }) =>
+              r.address && r.address.toLowerCase() === userAddress && r.proof,
           );
 
           if (recipient && recipient.proof) {

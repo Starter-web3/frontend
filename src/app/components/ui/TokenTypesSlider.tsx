@@ -69,7 +69,7 @@ const TokenTypesSlider = () => {
       clearInterval(timer);
     };
     // }, [current]); //removed to fix error
-  }, []); //removed to fix error
+  }); //removed to fix error
 
   return (
     <section className='py-10 px-6 md:px-12 lg:px-16 relative overflow-hidden bg-cover bg-center'>

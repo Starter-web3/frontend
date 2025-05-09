@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAccount, useWalletClient } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { ethers } from 'ethers';
 import { Button } from '@/components/ui/button';
 import {
@@ -204,18 +204,19 @@ export default function DistributePage() {
 
       // Extract distributor address from event
       const event = receipt.logs
-        .filter((log: any) => log && log.topics && log.topics.length > 0)
-        .map((log: any) => {
+        .filter((log): log is ethers.Log => log && log.topics && log.topics.length > 0)
+        .map((log): ethers.LogDescription | undefined => {
           try {
             return factoryContract.interface.parseLog({
               topics: log.topics,
               data: log.data,
             });
-          } catch (e: any) {
-            return null;
+          } catch (e: unknown) {
+            console.log(e);
+            return undefined;
           }
         })
-        .find((e: any) => e && e.name === 'AirdropCreated');
+        .find((e): e is ethers.LogDescription => e !== undefined && e.name === 'AirdropCreated');
 
       if (event && event.args) {
         const newDistributorAddress = event.args.distributorAddress;
