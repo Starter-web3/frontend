@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useAccount } from "wagmi";
+import { useAccount, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,7 @@ type RecipientFile = {
 
 export default function DistributePage() {
   const { isConnected } = useAccount();
+  const { data: walletClient } = useWalletClient();
   const [tokenName, setTokenName] = useState("WebCoin");
   const [tokenAmount, setTokenAmount] = useState("");
   const [contractAddress, setContractAddress] = useState(process.env.NEXT_PUBLIC_TOKEN_ADDRESS || "");
@@ -42,6 +43,9 @@ export default function DistributePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [distributorAddress, setDistributorAddress] = useState("");
+  const [mintAmount, setMintAmount] = useState("");
+  const [mintStatus, setMintStatus] = useState("");
+  const [mintLoading, setMintLoading] = useState(false);
 
   // Load files from local storage
   useEffect(() => {
@@ -53,6 +57,56 @@ export default function DistributePage() {
 
   const handleMaxAmount = () => {
     setTokenAmount("1000"); // Example max amount
+  };
+
+  // Modified handleMint function
+  const handleMint = async () => {
+    if (!window.ethereum) {
+      setError("Please install MetaMask or another wallet!");
+      return;
+    }
+    if (!isConnected) {
+      setError("Please connect your wallet!");
+      return;
+    }
+    if (!ethers.isAddress(distributorAddress)) {
+      setError("No valid distributor address available. Create an airdrop first.");
+      return;
+    }
+    if (!mintAmount || isNaN(Number(mintAmount)) || Number(mintAmount) <= 0) {
+      setError("Enter a valid mint amount.");
+      return;
+    }
+
+    try {
+      setMintLoading(true);
+      setError("");
+      setMintStatus("Minting tokens to distributor...");
+
+      // Initialize provider and signer with window.ethereum
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // Initialize token contract
+      const tokenContract = new ethers.Contract(contractAddress, WebCoinABI, signer);
+
+      // Parse mint amount
+      const amountToMint = ethers.parseUnits(mintAmount, 18); // Assuming 18 decimals
+
+      // Mint tokens
+      const mintTx = await tokenContract.mint(distributorAddress, amountToMint);
+      console.log("Mint transaction sent:", mintTx.hash);
+      await mintTx.wait();
+      console.log("Mint transaction confirmed");
+
+      setMintStatus(`Successfully minted ${mintAmount} WebCoin to ${distributorAddress}`);
+    } catch (mintErr) {
+      console.error("Minting error:", mintErr);
+      setError(`Minting failed: ${mintErr.message}`);
+      setMintStatus("");
+    } finally {
+      setMintLoading(false);
+    }
   };
 
   const handleDistribute = async () => {
@@ -205,9 +259,15 @@ export default function DistributePage() {
             </Alert>
           )}
 
+          {mintStatus && (
+            <Alert className={`mb-4 ${mintStatus.includes("Failed") ? "bg-red-500/10 border-red-500/20" : "bg-blue-500/10 border-blue-500/20"}`}>
+              <AlertDescription>{mintStatus}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              <Card className="bg-purple-900/40 border-purple-500/20">
+              <Card className="bg-zinc-900/10 border-purple-500/20">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
@@ -319,12 +379,46 @@ export default function DistributePage() {
                       </Button>
                     </div>
                   </div>
+
+                  <Separator className="bg-purple-500/20" />
+                  <div>
+                    <Label htmlFor="mintAmount">Mint Tokens to Distributor</Label>
+                    <div className="space-y-4 mt-1.5">
+                      <div>
+                        <Label htmlFor="mintRecipient">Recipient (Distributor Address)</Label>
+                        <Input
+                          id="mintRecipient"
+                          value={distributorAddress || "Create airdrop to set recipient"}
+                          readOnly
+                          className="mt-1.5 bg-purple-800/40 border-purple-500/20"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="mintAmount">Mint Amount</Label>
+                        <Input
+                          id="mintAmount"
+                          type="number"
+                          placeholder="0.0"
+                          value={mintAmount}
+                          onChange={(e) => setMintAmount(e.target.value)}
+                          className="mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500"
+                        />
+                      </div>
+                      <Button
+                        className="w-full bg-purple-500 hover:bg-purple-600 text-black"
+                        onClick={handleMint}
+                        disabled={!distributorAddress || !mintAmount || mintLoading || !isConnected}
+                      >
+                        {mintLoading ? "Minting..." : "Mint Tokens"}
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
             <div>
-              <Card className="bg-purple-900/40 border-purple-500/20">
+              <Card className="bg-zinc-900/10 border-purple-500/20">
                 <CardHeader>
                   <CardTitle>Advanced Settings</CardTitle>
                 </CardHeader>
