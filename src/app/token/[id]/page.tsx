@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { sampleTokens, Token } from '@/src/app/listings/page'; // Adjust import path based on your file structure
+import { sampleTokens, Token } from '../../listings/tokenData';
 
 interface ExtendedToken extends Token {
   tgeDetails?: {
