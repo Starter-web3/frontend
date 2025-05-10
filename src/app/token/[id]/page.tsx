@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { sampleTokens, Token } from '../../listings/tokenData';
 
@@ -23,17 +23,21 @@ interface ExtendedToken extends Token {
   };
 }
 
-export default function TokenDetailPage({ params }: { params: { id: string } }) {
+export default function TokenDetailPage() {
+  // Use the useParams hook instead of receiving params as props
+  const params = useParams();
+  const id = params.id as string;
+
   const [token, setToken] = useState<ExtendedToken | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Find the token with the matching ID
-    const foundToken = sampleTokens.find((t) => t.id === params.id);
+    // Find the token with the matching ID - now using id from useParams
+    const foundToken = sampleTokens.find((t) => t.id === id);
 
     if (foundToken) {
-      // Add mock TGE details and social links (in a real app, this would come from your API)
+      // Rest of your code remains the same
       const extendedToken: ExtendedToken = {
         ...foundToken,
         tgeDetails: {
@@ -58,7 +62,7 @@ export default function TokenDetailPage({ params }: { params: { id: string } }) 
       setToken(extendedToken);
     }
     setLoading(false);
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (

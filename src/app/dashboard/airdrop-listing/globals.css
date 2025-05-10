@@ -35,10 +35,10 @@ body {
 }
 
 @layer base {
-  /* * {
-    /* @apply border-border; 
-  } */
+  * {
+    @apply border-[#2e1933];
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#0f0414] text-[#f8fafc];
   }
 }
