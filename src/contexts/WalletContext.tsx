@@ -1,7 +1,6 @@
-// src/contexts/WalletContext.tsx
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
 import { baseSepolia } from '../lib/wagmi-config';
 

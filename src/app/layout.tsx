@@ -17,11 +17,11 @@ const poppinsFont = Poppins({
   variable: '--font-poppins',
 });
 
-const metadata = {
-  title: 'ProptyChain - Blockchain-Secured Real Estate in Nigeria',
-  description:
-    'Buy, sell, rent and lease properties in Nigeria with blockchain security and smart contracts.',
-};
+// const metadata = {
+//   title: 'ProptyChain - Blockchain-Secured Real Estate in Nigeria',
+//   description:
+//     'Buy, sell, rent and lease properties in Nigeria with blockchain security and smart contracts.',
+// };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headersObj = await headers();
