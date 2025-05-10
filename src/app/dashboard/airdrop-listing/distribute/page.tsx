@@ -201,22 +201,27 @@ export default function DistributePage() {
       console.log('Transaction sent:', createTx.hash);
       const receipt = await createTx.wait();
       console.log('Transaction confirmed:', receipt);
-
       // Extract distributor address from event
       const event = receipt.logs
-        .filter((log): log is ethers.Log => log && log.topics && log.topics.length > 0)
-        .map((log): ethers.LogDescription | undefined => {
+        .filter((log: ethers.Log) => log && log.topics && log.topics.length > 0)
+        .map((log: ethers.Log): ethers.LogDescription | undefined => {
           try {
-            return factoryContract.interface.parseLog({
+            // The parseLog method might return null
+            const result = factoryContract.interface.parseLog({
               topics: log.topics,
               data: log.data,
             });
+            // Convert null to undefined to match our return type
+            return result || undefined;
           } catch (e: unknown) {
             console.log(e);
             return undefined;
           }
         })
-        .find((e): e is ethers.LogDescription => e !== undefined && e.name === 'AirdropCreated');
+        .find(
+          (e: ethers.LogDescription | undefined): e is ethers.LogDescription =>
+            e !== undefined && e.name === 'AirdropCreated',
+        );
 
       if (event && event.args) {
         const newDistributorAddress = event.args.distributorAddress;

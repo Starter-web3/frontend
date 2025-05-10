@@ -76,7 +76,8 @@ export default function Home() {
 
         if (file.recipients) {
           const recipient = file.recipients.find(
-            (r) => r.address && r.address.toLowerCase() === userAddress && r.proof,
+            (r: { address?: string; proof?: string[] }) =>
+              r.address && r.address.toLowerCase() === userAddress && r.proof,
           );
 
           if (recipient && recipient.proof) {
