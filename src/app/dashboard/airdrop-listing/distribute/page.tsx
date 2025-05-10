@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { ethers } from 'ethers';
-import { Button } from '@/components/ui/button';
+import { Button } from '../../../../../components/ui/button';
 import {
   Card,
   CardContent,
@@ -12,22 +12,27 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '../../../../../components/ui/card';
+import { Input } from '../../../../../components/ui/input';
+import { Label } from '../../../../../components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from '../../../../../components/ui/select';
+import { Switch } from '../../../../../components/ui/switch';
+import { Alert, AlertDescription } from '../../../../../components/ui/alert';
 import { ArrowLeft, Coins, Calendar, Info } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '../../../../../components/ui/badge';
+import { Separator } from '../../../../../components/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../../../../../components/ui/tooltip';
 import DashBoardLayout from '../../DashboardLayout';
 import AirdropFactoryABI from '../../../../lib/contracts/AirdropFactory.json';
 import WebCoinABI from '../../../../lib/contracts/WebCoin.json';
@@ -313,7 +318,9 @@ export default function DistributePage() {
                         id='tokenName'
                         placeholder='Enter token name'
                         value={tokenName}
-                        onChange={(e) => setTokenName(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setTokenName(e.target.value)
+                        }
                         className='mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500'
                       />
                     </div>
@@ -326,7 +333,9 @@ export default function DistributePage() {
                           type='number'
                           placeholder='0.0'
                           value={tokenAmount}
-                          onChange={(e) => setTokenAmount(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setTokenAmount(e.target.value)
+                          }
                           className='bg-purple-800/40 border-purple-500/20 focus:border-purple-500'
                         />
                         <Button
@@ -345,7 +354,9 @@ export default function DistributePage() {
                         id='contractAddress'
                         placeholder='0x...'
                         value={contractAddress}
-                        onChange={(e) => setContractAddress(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setContractAddress(e.target.value)
+                        }
                         className='mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500'
                       />
                     </div>
@@ -396,7 +407,9 @@ export default function DistributePage() {
                         id='scheduleDate'
                         type='date'
                         value={scheduleDate}
-                        onChange={(e) => setScheduleDate(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setScheduleDate(e.target.value)
+                        }
                         className='bg-purple-800/40 border-purple-500/20 focus:border-purple-500'
                       />
                       <Button
@@ -428,7 +441,9 @@ export default function DistributePage() {
                           type='number'
                           placeholder='0.0'
                           value={mintAmount}
-                          onChange={(e) => setMintAmount(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setMintAmount(e.target.value)
+                          }
                           className='mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500'
                         />
                       </div>
@@ -479,7 +494,9 @@ export default function DistributePage() {
                       id='batchSize'
                       type='number'
                       value={batchSize}
-                      onChange={(e) => setBatchSize(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setBatchSize(e.target.value)
+                      }
                       className='mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500'
                     />
                   </div>
