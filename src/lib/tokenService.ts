@@ -1,7 +1,7 @@
-import { Token, sampleTokens } from '@/src/app/listings/page'; 
+import { Token, sampleTokens } from '../app/listings/tokenData';
 
 export const getTokenById = (id: string): Token | undefined => {
-  return sampleTokens.find(token => token.id === id);
+  return sampleTokens.find((token) => token.id === id);
 };
 
 export const getAllTokens = (): Token[] => {
@@ -9,5 +9,5 @@ export const getAllTokens = (): Token[] => {
 };
 
 export const getTokensByType = (type: string): Token[] => {
-  return sampleTokens.filter(token => token.type === type);
+  return sampleTokens.filter((token) => token.type === type);
 };
