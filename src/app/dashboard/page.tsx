@@ -2,10 +2,10 @@ import React from 'react';
 
 import DashBoardLayout from './DashboardLayout';
 
-import DashBoardPropertyCard from '@/src/ui/dashboard/PropertyCard';
-import SavedPropertyItem from '@/src/ui/dashboard/SavedPropertyItem';
-import TransactionItem from '@/src/ui/dashboard/TransactionItem';
-import AlertItem from '@/src/ui/dashboard/AlertItem';
+//import DashBoardPropertyCard from '@/src/ui/dashboard/PropertyCard';
+// import SavedPropertyItem from '@/src/ui/dashboard/SavedPropertyItem';
+// import TransactionItem from '@/src/ui/dashboard/TransactionItem';
+// import AlertItem from '@/src/ui/dashboard/AlertItem';
 
 // Sample property data
 const propertyData = [
@@ -114,14 +114,14 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+        {/* <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
           {propertyData.map((property) => (
             <DashBoardPropertyCard key={property.id} property={property} />
           ))}
-        </div>
+        </div> */}
       </div>
 
-      <div className='mb-10'>
+      {/* <div className='mb-10'>
         <h2 className='font-poppins font-semibold text-xl md:text-2xl mb-6'>
           Your Saved Properties
         </h2>
@@ -134,9 +134,9 @@ const Dashboard = () => {
         <button className='mt-4 px-6 py-3 bg-gradient-to-r from-[hsl(var(--primary-from))] to-[hsl(var(--primary-to))] text-[hsl(var(--foreground))] rounded-3xl hover:opacity-90 transition text-sm font-medium'>
           View All Saved Homes
         </button>
-      </div>
+      </div> */}
 
-      <div className='mb-10'>
+      {/* <div className='mb-10'>
         <h2 className='font-poppins font-semibold text-xl md:text-2xl mb-6'>Active Transactions</h2>
         <div className='bg-[hsl(var(--foreground)/0.05)] rounded-lg overflow-hidden border border-[hsl(var(--border))]'>
           <div className='overflow-x-auto'>
@@ -165,9 +165,9 @@ const Dashboard = () => {
             </table>
           </div>
         </div>
-      </div>
+      </div> */}
 
-      <div className='mb-10'>
+      {/* <div className='mb-10'>
         <h2 className='font-poppins font-semibold text-xl md:text-2xl mb-6'>
           Alerts & Notifications
         </h2>
@@ -176,7 +176,7 @@ const Dashboard = () => {
             <AlertItem key={alert.id} alert={alert} />
           ))}
         </div>
-      </div>
+      </div> */}
     </DashBoardLayout>
   );
 };
