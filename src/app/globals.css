@@ -9,7 +9,7 @@
   --background: 275 28% 13%;
   --header-background: #161318;
   --foreground: 0 0% 100%;
-  --sidebarBorder-color: 276 25% 12% 1;
+  --sidebarBorder-color: 276 25% 12% / 1; /* Fixed alpha channel syntax */
   --transaction-table-header-background: 196 92% 47%;
 
   --primary-from: 192 91% 48%;
