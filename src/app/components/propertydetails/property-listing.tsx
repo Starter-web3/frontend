@@ -1,44 +1,45 @@
-// import { useParams, Navigate } from "react-router-dom";
-// import { getPropertyById } from "@/data/properties";
-import Header from "./header"
-import PropertyShowcase from "./property-showcase"
-import PropertyDetails from "./property-details"
-import PropertyDescription from "./property-description"
-import PropertyOverview from "./property-overview"
-import OwnerInformation from "./owner-information"
-import OwnershipDetails from "./ownership-details"
-import ContactForm from "./contact-form"
-import ActionButtons from "./action-buttons"
-import BrowseMore from "./browse-more"
+import Header from './header';
+import PropertyShowcase from './property-showcase';
+import PropertyDetails from './property-details';
+import PropertyDescription from './property-description';
+import PropertyOverview from './property-overview';
+import OwnerInformation from './owner-information';
+import OwnershipDetails from './ownership-details';
+import ContactForm from './contact-form';
+import ActionButtons from './action-buttons';
+import BrowseMore from './browse-more';
 // import Footer from "./footer"
-import Footer from "../layout/Footer";
+import Footer from '../layout/Footer';
 
 export default function PropertyListing() {
-
-
-
-
   return (
-    <div className="flex flex-col min-h-screen bg-[#201726]">
+    <div className='flex flex-col min-h-screen bg-[#201726]'>
       <Header />
-      <div className="container mx-auto px-4 max-w-6xl">
+      <div className='container mx-auto px-4 max-w-6xl'>
         <PropertyShowcase />
 
         {/* Property Details and Description side by side */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          <div className="lg:col-span-2">
-            <h1 className="text-2xl font-bold">2 Bedroom Apartment - Ikeja</h1>
+        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6'>
+          <div className='lg:col-span-2'>
+            <h1 className='text-2xl font-bold'>2 Bedroom Apartment - Ikeja</h1>
             <PropertyDescription />
           </div>
-          <div className="lg:col-span-1">
-            <PropertyDetails price={""} location={""} bedrooms={0} bathrooms={0} area={""} zone={""} />
+          <div className='lg:col-span-1'>
+            <PropertyDetails
+              price={''}
+              location={''}
+              bedrooms={0}
+              bathrooms={0}
+              area={''}
+              zone={''}
+            />
           </div>
         </div>
 
         <PropertyOverview />
 
         {/* Owner Information and Contact Form side by side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8'>
           <div>
             <OwnerInformation />
             <OwnershipDetails />
@@ -53,9 +54,8 @@ export default function PropertyListing() {
       </div>
       <Footer />
     </div>
-  )
+  );
 }
-
 
 // import { useRouter } from 'next/router';
 // import Header from "./header";
