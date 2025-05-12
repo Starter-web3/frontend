@@ -8,73 +8,73 @@ import DashBoardLayout from './DashboardLayout';
 // import AlertItem from '@/src/ui/dashboard/AlertItem';
 
 // Sample property data
-const propertyData = [
-  {
-    id: 1,
-    title: '2BR Apartment – Yaba',
-    price: '2,500',
-    ethPrice: '0.85',
-    location: 'Ziks Avenue, Yaba',
-    bedrooms: 2,
-    bathrooms: 2,
-    area: '1,200',
-    type: 'Apartment',
-    image: null, // Use null for placeholder
-    zone: 'Yaba Zone',
-    verified: true,
-    nairaPrice: '1,875,000', // Added nairaPrice field
-  },
-  {
-    id: 2,
-    title: '2BR Apartment – Yaba',
-    price: '2,500',
-    ethPrice: '0.85',
-    location: 'Ziks Avenue, Yaba',
-    bedrooms: 2,
-    bathrooms: 2,
-    area: '1,200',
-    type: 'Apartment',
-    image: null, // Use null for placeholder
-    zone: 'Yaba Zone',
-    verified: true,
-  },
-  {
-    id: 3,
-    title: '2BR Apartment – Yaba',
-    price: '2,500',
-    ethPrice: '0.85',
-    location: 'Ziks Avenue, Yaba',
-    bedrooms: 2,
-    bathrooms: 2,
-    area: '1,200',
-    type: 'Apartment',
-    image: null, // Use null for placeholder
-    zone: 'Yaba Zone',
-    verified: true,
-  },
-];
+// const propertyData = [
+//   {
+//     id: 1,
+//     title: '2BR Apartment – Yaba',
+//     price: '2,500',
+//     ethPrice: '0.85',
+//     location: 'Ziks Avenue, Yaba',
+//     bedrooms: 2,
+//     bathrooms: 2,
+//     area: '1,200',
+//     type: 'Apartment',
+//     image: null, // Use null for placeholder
+//     zone: 'Yaba Zone',
+//     verified: true,
+//     nairaPrice: '1,875,000', // Added nairaPrice field
+//   },
+//   {
+//     id: 2,
+//     title: '2BR Apartment – Yaba',
+//     price: '2,500',
+//     ethPrice: '0.85',
+//     location: 'Ziks Avenue, Yaba',
+//     bedrooms: 2,
+//     bathrooms: 2,
+//     area: '1,200',
+//     type: 'Apartment',
+//     image: null, // Use null for placeholder
+//     zone: 'Yaba Zone',
+//     verified: true,
+//   },
+//   {
+//     id: 3,
+//     title: '2BR Apartment – Yaba',
+//     price: '2,500',
+//     ethPrice: '0.85',
+//     location: 'Ziks Avenue, Yaba',
+//     bedrooms: 2,
+//     bathrooms: 2,
+//     area: '1,200',
+//     type: 'Apartment',
+//     image: null, // Use null for placeholder
+//     zone: 'Yaba Zone',
+//     verified: true,
+//   },
+// ];
 
-// Sample transaction data
-const transactionData = [
-  { id: 1, property: '3BR Surulere', status: 'In Progress' as const, amount: '0.75 ETH' },
-  { id: 2, property: 'Shop Ikeja', status: 'Escrowed' as const, amount: '0.75 ETH' },
-  { id: 3, property: '3BR Surulere', status: 'In Progress' as const, amount: '0.75 ETH' },
-  { id: 4, property: 'Shop Ikeja', status: 'Escrowed' as const, amount: '0.75 ETH' },
-];
+// // Sample transaction data
+// const transactionData = [
+//   { id: 1, property: '3BR Surulere', status: 'In Progress' as const, amount: '0.75 ETH' },
+//   { id: 2, property: 'Shop Ikeja', status: 'Escrowed' as const, amount: '0.75 ETH' },
+//   { id: 3, property: '3BR Surulere', status: 'In Progress' as const, amount: '0.75 ETH' },
+//   { id: 4, property: 'Shop Ikeja', status: 'Escrowed' as const, amount: '0.75 ETH' },
+// ];
 
-// Sample saved properties
-const savedProperties = [
-  { id: 1, title: '2BR Flat in Lekki – 0.8 ETH / $2,500' },
-  { id: 2, title: 'Studio Apartment in Yaba – 7.50 ETH / $2,500' },
-  { id: 3, title: 'Mini-flat in Ajah – 0.95 ETH / $2,500' },
-];
+// // Sample saved properties
+// const savedProperties = [
+//   { id: 1, title: '2BR Flat in Lekki – 0.8 ETH / $2,500' },
+//   { id: 2, title: 'Studio Apartment in Yaba – 7.50 ETH / $2,500' },
+//   { id: 3, title: 'Mini-flat in Ajah – 0.95 ETH / $2,500' },
+// ];
 
-// Sample alerts
-const alertsData = [
-  { id: 1, message: 'New verified listings available in your area.' },
-  { id: 2, message: 'Your transaction with HomeFinders is now Escrowed.' },
-  { id: 3, message: 'Wallet top-up successful: +5 ETH.' },
-];
+// // Sample alerts
+// const alertsData = [
+//   { id: 1, message: 'New verified listings available in your area.' },
+//   { id: 2, message: 'Your transaction with HomeFinders is now Escrowed.' },
+//   { id: 3, message: 'Wallet top-up successful: +5 ETH.' },
+// ];
 
 const Dashboard = () => {
   return (

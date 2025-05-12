@@ -1,7 +1,7 @@
 import { MerkleTree } from 'merkletreejs';
 import keccak256 from 'keccak256';
 import Papa from 'papaparse';
-import type { ParseResult } from 'papaparse';
+//import type { ParseResult } from 'papaparse';
 import { ethers } from 'ethers';
 
 export interface Recipient {
