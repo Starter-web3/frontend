@@ -1,0 +1,135 @@
+/* app/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,500;1,600;1,700;1,800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500&display=swap');
+
+@import 'tailwindcss';
+
+:root {
+  --background: 275 28% 13%;
+  --header-background: #161318;
+  --foreground: 0 0% 100%;
+  --sidebarBorder-color: 276 25% 12% / 1; /* Fixed alpha channel syntax */
+  --transaction-table-header-background: 196 92% 47%;
+
+  --primary-from: 192 91% 48%;
+  --primary-to: 285 100% 65%;
+
+  --accent: 192 100% 48%;
+  --muted: 0 0% 100% / 0.1;
+  --border: 0 0% 100% / 0.14;
+
+  --card: 0 0% 100% / 0.1;
+  --card-foreground: 0 0% 100%;
+
+  --radius: 0.5rem;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Poppins', system-ui, sans-serif;
+  --font-vietnam: 'Be Vietnam Pro', system-ui, sans-serif;
+}
+
+html,
+body {
+  font-family: var(--font-sans) !important;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.font-poppins {
+  font-family: var(--font-heading);
+}
+
+.font-inter {
+  font-family: var(--font-sans);
+}
+
+.font-vietnam {
+  font-family: var(--font-vietnam);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted) / 0.5);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted) / 0.7);
+}
+
+/* Property card hover effect */
+.property-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.property-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Gradient buttons */
+.gradient-button {
+  background: linear-gradient(to right, hsl(var(--primary-from)), hsl(var(--primary-to)));
+  transition: opacity 0.3s ease;
+}
+
+.gradient-button:hover {
+  opacity: 0.9;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+  .welcome-section h1 {
+    font-size: 1.75rem;
+  }
+
+  .welcome-section p {
+    font-size: 0.875rem;
+  }
+}
+
+/* Table responsiveness */
+@media (max-width: 640px) {
+  .table-container {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 500px;
+  }
+}
+
+/* NEW badge animation */
+@keyframes pulse {
+  0% {
+    transform: scale(1) rotate(12deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(12deg);
+  }
+  100% {
+    transform: scale(1) rotate(12deg);
+  }
+}
+
+.new-badge {
+  animation: pulse 2s infinite;
+}
+
+/* Make the transitions smoother */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow,
+    transform;
+  transition-duration: 200ms;
+}
