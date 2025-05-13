@@ -5,7 +5,7 @@
   "scripts": {
     "vercel-build": "npm install --production=false --legacy-peer-deps && next build",
     "dev": "next dev --turbopack",
-    "build": "npm install --legacy-peer-deps && next build",
+    "build": "npm install --production=false --legacy-peer-deps && next build",
     "start": "next start",
     "lint": "next lint"
   },
