@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/src/ui/button';
+import { Button } from '../../../../components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Pagination() {

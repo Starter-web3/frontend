@@ -2,9 +2,15 @@
 
 import { useState } from 'react';
 import { Search, Home, Building, MapPin, Warehouse, MoreHorizontal } from 'lucide-react';
-import { Button } from '@/src/ui/button';
-import { Input } from '@/src/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/ui/select';
+import { Button } from '../../../../components/ui/button';
+import { Input } from '../../../../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../../components/ui/select';
 
 export default function HeroSection() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,27 +18,31 @@ export default function HeroSection() {
   const [listingType, setListingType] = useState('Listing Type');
 
   const propertyTypes = [
-    { type: "Residential", icon: <Home className="h-5 w-5" />, count: 50 },
-    { type: "Commercial", icon: <Building className="h-5 w-5" />, count: 67 },
-    { type: "Land & Plots", icon: <MapPin className="h-5 w-5" />, count: 76 },
-    { type: "Industrial", icon: <Warehouse className="h-5 w-5" />, count: 76 },
-    { type: "Others", icon: <MoreHorizontal className="h-5 w-5" />, count: 78 },
+    { type: 'Residential', icon: <Home className='h-5 w-5' />, count: 50 },
+    { type: 'Commercial', icon: <Building className='h-5 w-5' />, count: 67 },
+    { type: 'Land & Plots', icon: <MapPin className='h-5 w-5' />, count: 76 },
+    { type: 'Industrial', icon: <Warehouse className='h-5 w-5' />, count: 76 },
+    { type: 'Others', icon: <MoreHorizontal className='h-5 w-5' />, count: 78 },
   ];
 
   return (
-    <section className='mt-15 py-20 px-6 md:px-12 lg:px-16 relative overflow-hidden bg-cover bg-center text-white' 
+    <section
+      className='mt-15 py-20 px-6 md:px-12 lg:px-16 relative overflow-hidden bg-cover bg-center text-white'
       style={{
-        backgroundImage: 'linear-gradient(to bottom, rgba(0, 90, 150, 0.7), rgba(60, 10, 90, 0.7)), url("/listing-bg.png")',
+        backgroundImage:
+          'linear-gradient(to bottom, rgba(0, 90, 150, 0.7), rgba(60, 10, 90, 0.7)), url("/listing-bg.png")',
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      }}>
+        backgroundPosition: 'center',
+      }}
+    >
       <div className='max-w-7xl mx-auto'>
         <p className='text-center text-sm mb-2'>
           Search verified listings on-chain. Rent or own with trust.
         </p>
 
         <h1 className='text-4xl md:text-5xl font-bold text-center mb-8'>
-          Let&apos;s Discover <span className='text-purple-500'>Lagos</span> <span className='text-blue-400'>City</span>
+          Let&apos;s Discover <span className='text-purple-500'>Lagos</span>{' '}
+          <span className='text-blue-400'>City</span>
         </h1>
 
         <div className='flex flex-col md:flex-row items-stretch bg-white rounded-full p-1.5 max-w-4xl mx-auto'>
@@ -46,15 +56,15 @@ export default function HeroSection() {
             />
           </div> */}
 
-<div className='flex items-center flex-1 px-2 sm:px-3 py-1 sm:py-1.5 border-r border-gray-200'>
-  <Input
-    type='text'
-    placeholder='Search: 2 bed flats'
-    className='border-0 focus-visible:ring-0 text-black placeholder:text-gray-400 flex-1 pl-2 sm:pl-4 text-sm sm:text-base'
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-  />
-</div>
+          <div className='flex items-center flex-1 px-2 sm:px-3 py-1 sm:py-1.5 border-r border-gray-200'>
+            <Input
+              type='text'
+              placeholder='Search: 2 bed flats'
+              className='border-0 focus-visible:ring-0 text-black placeholder:text-gray-400 flex-1 pl-2 sm:pl-4 text-sm sm:text-base'
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
           <div className='border-r border-gray-200 px-2'>
             <Select value={area} onValueChange={setArea}>
@@ -86,7 +96,7 @@ export default function HeroSection() {
             </Select>
           </div>
 
-          <Button 
+          <Button
             className='flex items-center justify-center text-white px-4 py-2 rounded-full'
             style={{
               background: 'linear-gradient(90deg, #0AA5E6 0%, #9B4FE9 100%)',
@@ -95,7 +105,7 @@ export default function HeroSection() {
               height: '45px',
               border: 'none',
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'hidden',
             }}
           >
             <span className='mr-2 font-medium'>Search Properties</span>
@@ -104,7 +114,6 @@ export default function HeroSection() {
             </div>
           </Button>
         </div>
-        
 
         {/* Property type categories */}
         <div className='grid grid-cols-2 md:grid-cols-5 gap-4 mt-12'>

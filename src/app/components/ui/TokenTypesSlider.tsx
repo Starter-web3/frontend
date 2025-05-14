@@ -58,17 +58,18 @@ const TokenTypesSlider = () => {
   const prevSlide = () => {
     setCurrent(current === 0 ? properties.length - 1 : current - 1);
   };
-  
+
   // Auto slide every 5 seconds
   useEffect(() => {
     const timer = setInterval(() => {
       nextSlide();
     }, 5000);
-    
+
     return () => {
       clearInterval(timer);
     };
-  }, [current]);
+    // }, [current]); //removed to fix error
+  }); //removed to fix error
 
   return (
     <section className='py-10 px-6 md:px-12 lg:px-16 relative overflow-hidden bg-cover bg-center'>
@@ -87,17 +88,27 @@ const TokenTypesSlider = () => {
             <div className='space-y-6'>
               <div>
                 <p className='text-purple-300 text-sm font-medium'>Token Type</p>
-                <h3 className='text-xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300'>{properties[current].style}</h3>
+                <h3 className='text-xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300'>
+                  {properties[current].style}
+                </h3>
               </div>
 
               <div>
                 <p className='text-purple-300 text-sm font-medium'>Token Name</p>
-                <h3 className={`text-xl font-medium bg-clip-text text-transparent bg-gradient-to-r ${properties[current].nameColor}`}>{properties[current].name}</h3>
+                <h3
+                  className={`text-xl font-medium bg-clip-text text-transparent bg-gradient-to-r ${properties[current].nameColor}`}
+                >
+                  {properties[current].name}
+                </h3>
               </div>
 
               <div>
                 <p className='text-purple-300 text-sm font-medium'>Key Features</p>
-                <p className={`text-2xl font-semibold bg-clip-text text-transparent bg-gradient-to-r ${properties[current].color}`}>{properties[current].features}</p>
+                <p
+                  className={`text-2xl font-semibold bg-clip-text text-transparent bg-gradient-to-r ${properties[current].color}`}
+                >
+                  {properties[current].features}
+                </p>
               </div>
 
               {/* Web3 token indicator (new UI) */}
@@ -117,13 +128,13 @@ const TokenTypesSlider = () => {
               onClick={prevSlide}
               className='absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-black/30 hover:bg-purple-900/70 p-2 rounded-full transition-all duration-300 backdrop-blur-sm border border-white/10'
             >
-              <ChevronLeft size={24} className="text-white" />
+              <ChevronLeft size={24} className='text-white' />
             </button>
             <button
               onClick={nextSlide}
               className='absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-black/30 hover:bg-purple-900/70 p-2 rounded-full transition-all duration-300 backdrop-blur-sm border border-white/10'
             >
-              <ChevronRight size={24} className="text-white" />
+              <ChevronRight size={24} className='text-white' />
             </button>
 
             {/* Image Slider (old structure, new UI elements) */}
@@ -137,7 +148,9 @@ const TokenTypesSlider = () => {
                   transition={{ duration: 0.5 }}
                   className='h-full w-full flex items-center justify-center'
                 >
-                  <div className={`relative h-full w-full flex items-center justify-center bg-gradient-to-r ${properties[current].color} opacity-50 backdrop-blur-sm`}>
+                  <div
+                    className={`relative h-full w-full flex items-center justify-center bg-gradient-to-r ${properties[current].color} opacity-50 backdrop-blur-sm`}
+                  >
                     <Image
                       src={properties[current].image}
                       alt={`${properties[current].style} - ${properties[current].name}`}
@@ -150,14 +163,16 @@ const TokenTypesSlider = () => {
                     {/* Verified Badge (new UI) */}
                     {properties[current].verified && (
                       <div className='absolute top-4 right-4 bg-black/50 backdrop-blur-sm p-2 rounded-full border border-purple-500/50 flex items-center justify-center z-20'>
-                        <CheckCircle size={18} className="text-purple-400" />
+                        <CheckCircle size={18} className='text-purple-400' />
                         <span className='ml-1 text-xs font-medium text-white'>AUDITED</span>
                       </div>
                     )}
 
                     {/* Property index indicator (new UI) */}
                     <div className='absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full border border-white/20'>
-                      <p className='text-sm text-white font-medium'>{current + 1}/{properties.length}</p>
+                      <p className='text-sm text-white font-medium'>
+                        {current + 1}/{properties.length}
+                      </p>
                     </div>
                   </div>
                 </motion.div>
@@ -173,7 +188,9 @@ const TokenTypesSlider = () => {
               key={index}
               onClick={() => setCurrent(index)}
               className={`h-2 rounded-full transition-all duration-300 ${
-                index === current ? `w-8 bg-gradient-to-r ${properties[index].color}` : 'w-2 bg-white/30'
+                index === current
+                  ? `w-8 bg-gradient-to-r ${properties[index].color}`
+                  : 'w-2 bg-white/30'
               }`}
               aria-label={`Go to slide ${index + 1}`}
             ></button>

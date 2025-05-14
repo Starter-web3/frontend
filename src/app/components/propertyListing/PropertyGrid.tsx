@@ -1,5 +1,5 @@
-"use client";
-import PropertyCard from '@/src/app/components/propertyListing/PropertyCard';
+'use client';
+import PropertyCard from './PropertyCard';
 // import { useState } from 'react';
 // Sample property data
 const properties = [
@@ -93,17 +93,6 @@ const properties = [
   },
 ];
 
-// export default function PropertyGrid() {
-//   return (
-//     <div className='max-w-7xl mx-auto px-4 py-6'>
-//       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6'>
-//         {properties.map((property) => (
-//           <PropertyCard key={property.id} {...property} />
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }
 export default function PropertyGrid() {
   // const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
 
@@ -111,10 +100,7 @@ export default function PropertyGrid() {
     <div className='max-w-7xl mx-auto px-4 py-6'>
       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6'>
         {properties.map((property) => (
-          <PropertyCard 
-            key={property.id} 
-            {...property} 
-          />
+          <PropertyCard key={property.id} {...property} />
         ))}
       </div>
     </div>
