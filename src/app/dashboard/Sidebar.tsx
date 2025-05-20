@@ -43,7 +43,7 @@ const DashboardSidebar = () => {
             <div className='w-8 h-8 rounded-full bg-gray-400 overflow-hidden'>
               {/* User avatar could be here */}
             </div>
-            <span className='font-inter'>Property Seeker</span>
+            <span className='font-inter'>Project Manager</span>
           </div>
 
           <nav className='space-y-1 flex-grow'>
@@ -79,46 +79,11 @@ const DashboardSidebar = () => {
                   />
                 </svg>
               }
-              text='Find Properties'
-              active={currentPath === '/find-properties'}
+              text='Find Aidrops'
+              active={currentPath === '/find-aidrops'}
             />
             <SidebarLink
-              href='/dashboard/create-listing'
-              icon={
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
-                  viewBox='0 0 20 20'
-                  fill='currentColor'
-                >
-                  <path d='M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z' />
-                </svg>
-              }
-              text='Create Listings'
-              active={currentPath === '/create-listing'}
-            />
-            <SidebarLink
-              href='/dashboard/propertynft'
-              icon={
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
-                  viewBox='0 0 20 20'
-                  fill='currentColor'
-                >
-                  <path d='M9 2a1 1 0 000 2h2a1 1 0 100-2H9z' />
-                  <path
-                    fillRule='evenodd'
-                    d='M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z'
-                    clipRule='evenodd'
-                  />
-                </svg>
-              }
-              text='Create Property NFT'
-              active={currentPath === '/propertynft'}
-            />
-            <SidebarLink
-              href='/dashboard/deposit'
+              href='/dashboard/airdrop-listing/upload'
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
@@ -134,9 +99,45 @@ const DashboardSidebar = () => {
                   />
                 </svg>
               }
-              text='Escrow Transactions'
-              active={currentPath === '/dashboard/deposit'}
+              text='Upload Whitelisted CSV'
+              active={currentPath === '/dashboard/airdrop-listing/upload'}
             />
+            <SidebarLink
+              href='/dashboard/airdrop-listing/distribute'
+              icon={
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
+                  <path d='M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z' />
+                </svg>
+              }
+              text='Distribute Airdrop'
+              active={currentPath === '/dashboard/airdrop-listing/distribute'}
+            />
+            <SidebarLink
+              href='/dashboard/airdrop-listing/claim'
+              icon={
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
+                  <path d='M9 2a1 1 0 000 2h2a1 1 0 100-2H9z' />
+                  <path
+                    fillRule='evenodd'
+                    d='M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              }
+              text='Claim Airdrop'
+              active={currentPath === '/dashboard/airdrop-listing/claim'}
+            />
+          
             <SidebarLink
               href='/dashboard/airdrop-listing'
               icon={
