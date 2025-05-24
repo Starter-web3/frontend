@@ -5,8 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { TokenType, sampleTokens } from './tokenData';
 
-// Sample token data with unique background images
-
 // Filter types for our tokens
 const tokenTypes: TokenType[] = ['ERC-20', 'ERC-721', 'ERC-1155', 'Memecoin', 'Stablecoin'];
 
@@ -26,9 +24,15 @@ export default function TokenListingPage() {
           <div className='relative'>
             <select
               className='bg-gray-800 border border-gray-700 text-white rounded-md px-4 py-2 appearance-none cursor-pointer pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500'
-              
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as TokenType | 'All')}
             >
-              
+              <option value='All'>All Tokens</option>
+              {tokenTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
             </select>
             <div className='absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none'>
               <svg
