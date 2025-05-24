@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useWallet } from '../../../contexts/WalletContext';
+import toast from 'react-hot-toast';
 
 // Minimal review component (now static, not clickable or expandable)
 const ReviewMinimal: React.FC = () => {
@@ -68,6 +70,7 @@ type HeroProps = Record<string, never>;
 
 const Hero: React.FC<HeroProps> = () => {
   const [scrollY, setScrollY] = useState(0);
+  const { isConnected } = useWallet();
 
   // Handle scroll effect
   useEffect(() => {
@@ -80,6 +83,7 @@ const Hero: React.FC<HeroProps> = () => {
     };
   }, []);
 
+  
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -99,6 +103,16 @@ const Hero: React.FC<HeroProps> = () => {
       opacity: 1,
       transition: { type: 'spring', stiffness: 100 },
     },
+  };
+  // Handle connection status
+  const handleGetStarted = () => {
+    if (!isConnected) {
+      console.error("Please connect your wallet first!");
+      toast.error('Please connect your wallet first!', {
+        position: 'top-center',
+        duration: 4000,
+      });
+    }
   };
 
   return (
@@ -402,15 +416,26 @@ const Hero: React.FC<HeroProps> = () => {
             className='flex flex-col sm:flex-row justify-center gap-4 mt-6'
             variants={itemVariants}
           >
-            <Link href='/launch-token'>
+           {isConnected ? (
+              <Link href='/role-selection'>
+                <motion.button
+                  className='bg-gradient-to-r from-[#C44DFF] to-[#0AACE6] text-white font-semibold text-sm rounded-full w-full sm:w-[138px] h-[40px] px-5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 hover:scale-105'
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Get Started
+                </motion.button>
+              </Link>
+            ) : (
               <motion.button
+                onClick={handleGetStarted}
                 className='bg-gradient-to-r from-[#C44DFF] to-[#0AACE6] text-white font-semibold text-sm rounded-full w-full sm:w-[138px] h-[40px] px-5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 hover:scale-105'
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
               >
-                Deploy Now
+                Get Started
               </motion.button>
-            </Link>
+            )}
 
             <Link href='/listings'>
               <motion.button
