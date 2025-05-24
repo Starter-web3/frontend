@@ -44,7 +44,7 @@ const DashboardHeader: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         <div className='hidden md:block relative w-80'>
           <input
             type='text'
-            placeholder='Search properties...'
+            placeholder='Search airdrops...'
             className='w-full py-2 px-4 rounded-3xl focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary-from))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))]'
           />
         </div>
@@ -108,7 +108,7 @@ const DashboardHeader: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         )}
 
         <button className='px-3 md:px-7 py-2 text-[hsl(var(--foreground))] text-sm md:text-base font-medium rounded-3xl bg-gradient-to-r from-[hsl(var(--primary-from))] to-[hsl(var(--primary-to))] hover:opacity-90 transition'>
-          <span className='hidden md:inline'>Find </span>Properties
+          <span className='hidden md:inline'>Find </span>Airdrops
         </button>
       </div>
 
@@ -117,7 +117,7 @@ const DashboardHeader: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         <div className='absolute top-16 left-0 right-0 px-4 z-10 md:hidden'>
           <input
             type='text'
-            placeholder='Search properties...'
+            placeholder='Search airdrops...'
             className='w-full py-2 px-4 rounded-3xl focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary-from))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))] bg-[--header-background]'
             autoFocus
           />
