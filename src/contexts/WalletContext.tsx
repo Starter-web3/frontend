@@ -1,11 +1,13 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
-import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { useDisconnect, useSignMessage } from 'wagmi';
 import { baseSepolia } from '../lib/wagmi-config';
 
 interface WalletContextType {
   address: `0x${string}` | undefined;
+  caipAddress: string | undefined;
   isConnected: boolean;
   isConnecting: boolean;
   connect: () => void;
@@ -17,12 +19,31 @@ interface WalletContextType {
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
+// localStorage key for wallet address
+const WALLET_ADDRESS_KEY = 'wallet_address';
+
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const { address, isConnected } = useAccount();
+  // Use AppKit hook for more reliable account info
+  const { address, caipAddress, isConnected } = useAppKitAccount();
   const { disconnect: wagmiDisconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectError, setConnectError] = useState<Error | null>(null);
+
+  // Effect to store/remove wallet address in localStorage
+  useEffect(() => {
+    console.log('Wallet state changed:', { address, caipAddress, isConnected });
+    
+    if (address && isConnected) {
+      // Store wallet address when connected
+      localStorage.setItem(WALLET_ADDRESS_KEY, address);
+      console.log('Stored wallet address:', address);
+    } else if (!isConnected) {
+      // Remove wallet address when disconnected
+      localStorage.removeItem(WALLET_ADDRESS_KEY);
+      console.log('Removed wallet address from storage');
+    }
+  }, [address, isConnected]);
 
   // Function to connect wallet using AppKit
   const connect = async () => {
@@ -49,6 +70,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   // Function to disconnect wallet
   const disconnect = () => {
     wagmiDisconnect();
+    // Address will be removed from localStorage automatically via useEffect
   };
 
   // Function to sign a message
@@ -64,7 +86,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   return (
     <WalletContext.Provider
       value={{
-        address,
+        address: address as `0x${string}` | undefined,
+        caipAddress,
         isConnected,
         isConnecting,
         connect,
@@ -85,4 +108,10 @@ export function useWallet() {
     throw new Error('useWallet must be used within a WalletProvider');
   }
   return context;
+}
+
+// Utility function to get wallet address from localStorage
+export function getStoredWalletAddress(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(WALLET_ADDRESS_KEY);
 }
