@@ -22,20 +22,13 @@ export default function TokenListingPage() {
       {/* Main Content */}
       <main className='container mx-auto py-8 px-4'>
         <div className='flex justify-between items-center mb-8'>
-          <h1 className='text-3xl font-bold'>Token Listings</h1>
-
+          
           <div className='relative'>
             <select
               className='bg-gray-800 border border-gray-700 text-white rounded-md px-4 py-2 appearance-none cursor-pointer pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500'
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as TokenType | 'All')}
+              
             >
-              <option value='All'>All Token Types</option>
-              {tokenTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              
             </select>
             <div className='absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none'>
               <svg
