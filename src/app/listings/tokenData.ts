@@ -33,7 +33,7 @@ export const sampleTokens: Token[] = [
     description: 'A collection of unique digital art tokens on the Ethereum blockchain.',
     features: ['Royalty support', 'Metadata included', 'Marketplace ready'],
     logoUrl: '/token-image/cryptopunk1.png',
-    backgroundUrl: '/token-image/cryptopunk2.jpeg',
+    backgroundUrl: '/token-image/cryptopunk3.jpg',
   },
   {
     id: '2',
@@ -65,7 +65,7 @@ export const sampleTokens: Token[] = [
     description: 'Community-driven memecoin with deflationary mechanics.',
     features: ['Anti-whale', '2% redistribution', 'Liquidity locked'],
     logoUrl: '/token-image/moondog.jpeg',
-    backgroundUrl: '/token-image/background/moondog-bg.jpeg',
+    backgroundUrl: '/token-image/moondog3.jpg',
   },
   {
     id: '4',
@@ -97,7 +97,7 @@ export const sampleTokens: Token[] = [
     description: 'Multi-token standard for in-game assets and collectibles.',
     features: ['Mixed fungible/non-fungible', 'Batch transfers', 'Gaming integration'],
     logoUrl: '/token-image/gameitem.jpeg',
-    backgroundUrl: '/token-image/background/gameitem-bg.jpeg',
+    backgroundUrl: '/token-image/game item2.jpg',
   },
   {
     id: '6',
@@ -113,7 +113,7 @@ export const sampleTokens: Token[] = [
     description: 'Limited edition digital art pieces with provenance.',
     features: ['Provenance tracking', 'Artist royalties', 'High-res metadata'],
     logoUrl: '/token-image/artcollection.jpeg',
-    backgroundUrl: '/token-image/background/artcollection-bg.jpeg',
+    backgroundUrl: '/token-image/artcollection2.jpg',
   },
   {
     id: '7',
@@ -128,8 +128,8 @@ export const sampleTokens: Token[] = [
     createdAt: '2025-02-01',
     description: 'Token for decentralized governance of protocol decisions.',
     features: ['Voting rights', 'Proposal creation', 'Treasury management'],
-    logoUrl: '/token-image/overnance.jpeg',
-    backgroundUrl: '/token-image/overnance.jpeg/goverment.jpeg',
+    logoUrl: '/token-image/goverment.jpeg',
+    backgroundUrl: '/token-image/governacedao2.jpg',
   },
   {
     id: '8',
@@ -145,6 +145,9 @@ export const sampleTokens: Token[] = [
     description: 'Index token representing a basket of DeFi assets.',
     features: ['Auto-rebalancing', 'Diversified exposure', 'Low management fee'],
     logoUrl: '/token-image/defiindex.jpeg',
-    backgroundUrl: '/token-image/defiindex2.jpeg',
+    backgroundUrl: '/token-image/defiindex2.jpg',
   },
 ];
+
+
+
