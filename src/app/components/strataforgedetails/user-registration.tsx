@@ -5,7 +5,7 @@ import type React from 'react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-export default function ProptyChainRegistration() {
+export default function StratforgeUserRegistration() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);

@@ -1,7 +1,7 @@
 "use client"
 
-import ProptyChainSelection from "../components/propertydetails/propty-role-selection"
+import RoleSelection from "../components/strataforgedetails/userroleSelection"
 
 export default function Page() {
-  return <ProptyChainSelection />
+  return <RoleSelection />
 }

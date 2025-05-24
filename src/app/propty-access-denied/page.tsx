@@ -1,6 +1,6 @@
 "use client"
 
-import ProptyChainAccessDenied from "../components/propertydetails/propty-access-denied"
+import ProptyChainAccessDenied from "../components/strataforgedetails/propty-access-denied"
 
 export default function Page() {
   return <ProptyChainAccessDenied />
