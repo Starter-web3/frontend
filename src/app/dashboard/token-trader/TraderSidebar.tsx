@@ -1,9 +1,8 @@
-// app/dashboard/Sidebar.tsx
 'use client';
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useWallet } from '../../contexts/WalletContext';
+import { useWallet } from '../../../contexts/WalletContext';
 
 interface SidebarLinkProps {
   href: string;
@@ -41,30 +40,15 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ href, icon, text, active, onC
   );
 };
 
-const DashboardSidebar = () => {
-  const { isConnected, disconnect, connect } = useWallet();
+const TraderSidebar = () => {
+  const { isConnected, disconnect } = useWallet(); // Removed unused 'address' to fix ESLint error
   const pathname = usePathname();
-  const currentPath = pathname || '/dashboard';
+  const currentPath = pathname || '/dashboard/token-trader';
 
-  const handleDisconnect = () => {
-    try {
-      disconnect();
-      // Clear walletconnect storage safely
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('walletconnect');
-      }
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Disconnect error:', error);
-    }
-  };
-
-  const handleConnect = async () => {
-    try {
-      await connect();
-    } catch (error) {
-      console.error('Connect error:', error);
-    }
+  // Handle logout
+  const handleLogout = () => {
+    disconnect();
+    window.location.href = '/';
   };
 
   return (
@@ -77,6 +61,7 @@ const DashboardSidebar = () => {
               <span className='text-[hsl(var(--foreground))]'>Forge</span>
             </div>
           </div>
+
           <div className='flex items-center gap-2 mb-8 px-4'>
             <div className='w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-600 flex items-center justify-center'>
               <svg className='w-4 h-4 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -89,7 +74,7 @@ const DashboardSidebar = () => {
               </svg>
             </div>
             <div className='flex flex-col'>
-              <span className='font-inter text-sm font-medium'>Token Creator</span>
+              <span className='font-inter text-sm font-medium'>Trader</span>
               {isConnected ? (
                 <div className='flex items-center gap-1'>
                   <div className='w-1.5 h-1.5 bg-green-400 rounded-full'></div>
@@ -103,62 +88,17 @@ const DashboardSidebar = () => {
               )}
             </div>
           </div>
+
           <nav className='space-y-1 flex-grow'>
             <SidebarLink
-              href='/dashboard'
+              href='/dashboard/token-trader/token-details'
               icon={
-                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
-                  <path d='M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4z' />
-                  <path d='M3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6z' />
-                </svg>
-              }
-              text='Dashboard'
-              active={currentPath === '/dashboard'}
-            />
-            <SidebarLink
-              href='/dashboard/airdrop-listing/upload'
-              icon={
-                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
-                  <path d='M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z' />
-                  <path
-                    fillRule='evenodd'
-                    d='M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z'
-                    clipRule='evenodd'
-                  />
-                </svg>
-              }
-              text='Upload Whitelisted CSV'
-              active={currentPath === '/dashboard/airdrop-listing/upload'}
-            />
-            <SidebarLink
-              href='/dashboard/airdrop-listing/distribute'
-              icon={
-                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
-                  <path d='M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z' />
-                </svg>
-              }
-              text='Distribute Airdrop'
-              active={currentPath === '/dashboard/airdrop-listing/distribute'}
-            />
-            <SidebarLink
-              href='/dashboard/airdrop-listing/claim'
-              icon={
-                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
-                  <path d='M9 2a1 1 0 000 2h2a1 1 0 100-2H9z' />
-                  <path
-                    fillRule='evenodd'
-                    d='M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z'
-                    clipRule='evenodd'
-                  />
-                </svg>
-              }
-              text='Claim Airdrop'
-              active={currentPath === '/dashboard/airdrop-listing/claim'}
-            />
-            <SidebarLink
-              href='/dashboard/tokens'
-              icon={
-                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
                   <path
                     fillRule='evenodd'
                     d='M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 3h8a1 1 0 011 1v4a1 1 0 01-1 1H6a1 1 0 01-1-1V8a1 1 0 011-1z'
@@ -166,13 +106,86 @@ const DashboardSidebar = () => {
                   />
                 </svg>
               }
-              text='Token Wallet'
-              active={currentPath === '/dashboard/tokens'}
+              text='Token Details'
+              active={currentPath === '/dashboard/token-trader/token-details'}
+            />
+            <SidebarLink
+              href='/dashboard/token-trader/marketplace'
+              icon={
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
+                  <path d='M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z' />
+                </svg>
+              }
+              text='Marketplace'
+              active={currentPath === '/dashboard/token-trader/marketplace'}
+            />
+            <SidebarLink
+              href='/dashboard/token-trader/airdrop'
+              icon={
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
+                  <path
+                    fillRule='evenodd'
+                    d='M2 5a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm14 1a1 1 0 11-2 0 1 1 0 012 0zM2 13a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2zm14 1a1 1 0 11-2 0 1 1 0 012 0z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              }
+              text='Airdrops'
+              active={currentPath === '/dashboard/token-trader/airdrop'}
+            />
+            <SidebarLink
+              href='/dashboard/token-trader/portfolio'
+              icon={
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
+                  <path
+                    fillRule='evenodd'
+                    d='M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 4h8a1 1 0 011 1v2a1 1 0 01-1 1H6a1 1 0 01-1-1V9a1 1 0 011-1z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              }
+              text='My Portfolio'
+              active={currentPath === '/dashboard/token-trader/portfolio'}
+            />
+            <SidebarLink
+              href='/dashboard/token-trader/trading'
+              icon={
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
+                  <path d='M10 2a8 8 0 00-8 8c0 1.57.45 3.03 1.22 4.26l-1.2 1.2A1 1 0 003 17h4a1 1 0 001-1v-1a7 7 0 017-7h1a1 1 0 001-1V3a1 1 0 00-1.74-.72A7.96 7.96 0 0010 2z' />
+                </svg>
+              }
+              text='Trading'
+              active={currentPath === '/dashboard/token-trader/trading'}
             />
             <SidebarLink
               href='/profile'
               icon={
-                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
                   <path
                     fillRule='evenodd'
                     d='M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z'
@@ -184,11 +197,17 @@ const DashboardSidebar = () => {
               active={currentPath === '/profile'}
             />
           </nav>
+
           <div className='mt-auto pt-4 border-t border-gray-700/30'>
             <SidebarLink
               href='/support'
               icon={
-                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
                   <path
                     fillRule='evenodd'
                     d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z'
@@ -202,7 +221,12 @@ const DashboardSidebar = () => {
             <SidebarLink
               href='#'
               icon={
-                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
                   <path
                     fillRule='evenodd'
                     d='M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm1 2v10h10V5H4zm4 4a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z'
@@ -210,9 +234,9 @@ const DashboardSidebar = () => {
                   />
                 </svg>
               }
-              text={isConnected ? 'Log Out' : 'Connect Wallet'}
+              text={isConnected ? 'Disconnect Wallet' : 'Connect Wallet'}
               active={false}
-              onClick={isConnected ? handleDisconnect : handleConnect}
+              onClick={isConnected ? handleLogout : undefined}
             />
           </div>
         </div>
@@ -221,4 +245,4 @@ const DashboardSidebar = () => {
   );
 };
 
-export default DashboardSidebar;
+export default TraderSidebar;
