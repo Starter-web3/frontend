@@ -1,182 +1,633 @@
-import React from 'react';
-
+'use client';
+import React, { useState, useEffect } from 'react';
+import { useWallet } from '../../contexts/WalletContext';
+import { useReadContract, useReadContracts } from 'wagmi';
+import { Abi } from 'viem';
+import StrataForgeFactoryABI from '../../app/components/ABIs/StrataForgeFactoryABI.json';
+import StrataForgeAdminABI from '../../app/components/ABIs/StrataForgeAdminABI.json';
 import DashBoardLayout from './DashboardLayout';
+import Link from 'next/link';
 
-//import DashBoardPropertyCard from '@/src/ui/dashboard/PropertyCard';
-// import SavedPropertyItem from '@/src/ui/dashboard/SavedPropertyItem';
-// import TransactionItem from '@/src/ui/dashboard/TransactionItem';
-// import AlertItem from '@/src/ui/dashboard/AlertItem';
+// SVG Icons
+const Erc20Icon = () => (
+  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" strokeWidth="2" />
+    <path d="M12 6v12M6 12h12" strokeWidth="2" />
+  </svg>
+);
 
-// Sample property data
-// const propertyData = [
-//   {
-//     id: 1,
-//     title: '2BR Apartment – Yaba',
-//     price: '2,500',
-//     ethPrice: '0.85',
-//     location: 'Ziks Avenue, Yaba',
-//     bedrooms: 2,
-//     bathrooms: 2,
-//     area: '1,200',
-//     type: 'Apartment',
-//     image: null, // Use null for placeholder
-//     zone: 'Yaba Zone',
-//     verified: true,
-//     nairaPrice: '1,875,000', // Added nairaPrice field
-//   },
-//   {
-//     id: 2,
-//     title: '2BR Apartment – Yaba',
-//     price: '2,500',
-//     ethPrice: '0.85',
-//     location: 'Ziks Avenue, Yaba',
-//     bedrooms: 2,
-//     bathrooms: 2,
-//     area: '1,200',
-//     type: 'Apartment',
-//     image: null, // Use null for placeholder
-//     zone: 'Yaba Zone',
-//     verified: true,
-//   },
-//   {
-//     id: 3,
-//     title: '2BR Apartment – Yaba',
-//     price: '2,500',
-//     ethPrice: '0.85',
-//     location: 'Ziks Avenue, Yaba',
-//     bedrooms: 2,
-//     bathrooms: 2,
-//     area: '1,200',
-//     type: 'Apartment',
-//     image: null, // Use null for placeholder
-//     zone: 'Yaba Zone',
-//     verified: true,
-//   },
-// ];
+const Erc721Icon = () => (
+  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <rect x="4" y="4" width="16" height="16" rx="2" strokeWidth="2" />
+    <path d="M12 8v8M8 12h8" strokeWidth="2" />
+  </svg>
+);
 
-// // Sample transaction data
-// const transactionData = [
-//   { id: 1, property: '3BR Surulere', status: 'In Progress' as const, amount: '0.75 ETH' },
-//   { id: 2, property: 'Shop Ikeja', status: 'Escrowed' as const, amount: '0.75 ETH' },
-//   { id: 3, property: '3BR Surulere', status: 'In Progress' as const, amount: '0.75 ETH' },
-//   { id: 4, property: 'Shop Ikeja', status: 'Escrowed' as const, amount: '0.75 ETH' },
-// ];
+const Erc1155Icon = () => (
+  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <rect x="4" y="4" width="16" height="6" strokeWidth="2" />
+    <rect x="4" y="12" width="16" height="6" strokeWidth="2" />
+  </svg>
+);
 
-// // Sample saved properties
-// const savedProperties = [
-//   { id: 1, title: '2BR Flat in Lekki – 0.8 ETH / $2,500' },
-//   { id: 2, title: 'Studio Apartment in Yaba – 7.50 ETH / $2,500' },
-//   { id: 3, title: 'Mini-flat in Ajah – 0.95 ETH / $2,500' },
-// ];
+const MemeIcon = () => (
+  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" strokeWidth="2" />
+    <path d="M8 8h8M8 16h8" strokeWidth="2" />
+  </svg>
+);
 
-// // Sample alerts
-// const alertsData = [
-//   { id: 1, message: 'New verified listings available in your area.' },
-//   { id: 2, message: 'Your transaction with HomeFinders is now Escrowed.' },
-//   { id: 3, message: 'Wallet top-up successful: +5 ETH.' },
-// ];
+const StableIcon = () => (
+  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path d="M12 4v16M8 8h8M8 16h8" strokeWidth="2" />
+    <circle cx="12" cy="12" r="10" strokeWidth="2" />
+  </svg>
+);
+
+const FreeIcon = () => (
+  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" strokeWidth="2" />
+  </svg>
+);
+
+const ClassicIcon = () => (
+  <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+      strokeWidth="2"
+    />
+  </svg>
+);
+
+const ProIcon = () => (
+  <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path d="M4 12l8-8 8 8-8 8-8-8z" strokeWidth="2" />
+  </svg>
+);
+
+const PremiumIcon = () => (
+  <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      d="M12 4c-4.42 0-8 1.79-8 4s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4zm-8 8v4h4v-4H4zm8 0v4h4v-4h-4zm8 0v4h4v-4h-4z"
+      strokeWidth="2"
+    />
+  </svg>
+);
+
+const TokenPlaceholderIcon = () => (
+  <svg className="w-16 h-16 text-purple-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" strokeWidth="2" />
+    <path d="M12 6v12M6 12h12" strokeWidth="2" />
+  </svg>
+);
+
+const AirdropPlaceholderIcon = () => (
+  <svg className="w-16 h-16 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      d="M12 2v6m0 4v10m-6-6h12M4 10l2 2m14-2l-2 2"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const FACTORY_CONTRACT_ADDRESS = '0x59F42c3eEcf829b34d8Ca846Dfc83D3cDC105C3F' as const;
+const ADMIN_CONTRACT_ADDRESS = '0x7e8541Ba29253C1722d366e3d08975B03f3Cc839' as const;
+const factoryABI = StrataForgeFactoryABI as Abi;
+const adminABI = StrataForgeAdminABI as Abi;
 
 const Dashboard = () => {
+  const { address, isConnected, isConnecting, connect, connectError } = useWallet();
+  const [tokens, setTokens] = useState<
+    { id: number; name: string; symbol: string; address: string; type: string }[]
+  >([]);
+  const [airdrops, setAirdrops] = useState<
+    { id: number; name: string; tokenAddress: string; status: string }[]
+  >([]);
+  const [subscription, setSubscription] = useState<{
+    plan: string;
+    tokensRemaining: number;
+    expiry: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string[]>([]);
+  const [userName, setUserName] = useState('Token Creator');
+
+  // Fetch subscription status
+  const { data: subData, error: subError } = useReadContract({
+    address: ADMIN_CONTRACT_ADDRESS,
+    abi: adminABI,
+    functionName: 'getSubscription',
+    args: [address],
+    query: { enabled: isConnected && !!address, retry: 3, retryDelay: 1000 },
+  });
+
+  // Fetch total token count
+  const { data: totalTokens, error: totalTokensError } = useReadContract({
+    address: FACTORY_CONTRACT_ADDRESS,
+    abi: factoryABI,
+    functionName: 'getTotalTokenCount',
+    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+  });
+
+  // Create array of token read calls
+  const tokenCalls = React.useMemo(() => {
+    if (!totalTokens || !isConnected) return [];
+    const count = Number(totalTokens);
+    return Array.from({ length: count }, (_, i) => ({
+      address: FACTORY_CONTRACT_ADDRESS,
+      abi: factoryABI,
+      functionName: 'getTokenById',
+      args: [i + 1],
+    }));
+  }, [totalTokens, isConnected]);
+
+  // Fetch all tokens
+  const { data: tokenData, error: tokenDataError } = useReadContracts({
+    contracts: tokenCalls,
+    query: { enabled: tokenCalls.length > 0, retry: 3, retryDelay: 1000 },
+  });
+
+  // Process subscription and token data
+  useEffect(() => {
+    if (!isConnected || !address) {
+      setUserName('Token Creator');
+      setLoading(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setUserName(`${address.slice(0, 6)}...${address.slice(-4)}`);
+
+      // Process subscription
+      if (subData) {
+        try {
+          const planNames = ['Free', 'Classic', 'Pro', 'Premium'];
+          const [tierIndex, expiry, tokensThisMonth] = subData as [bigint, bigint, bigint];
+          const planName = planNames[Number(tierIndex)] || 'Free';
+          const tokenLimits: { [key: string]: number } = {
+            Free: 2,
+            Classic: 50,
+            Pro: 100,
+            Premium: 500,
+          };
+          const maxTokens = tokenLimits[planName];
+          const remainingTokens = Math.max(0, maxTokens - Number(tokensThisMonth));
+
+          setSubscription({
+            plan: planName,
+            tokensRemaining: remainingTokens,
+            expiry: Number(expiry) * 1000,
+          });
+        } catch (subErr) {
+          console.warn(`Failed to process subscription for ${address}:`, subErr);
+          setSubscription({ plan: 'Free', tokensRemaining: 2, expiry: 0 });
+          setError((prev) => [...prev, 'Could not load subscription data']);
+        }
+      }
+
+      // Process tokens
+      if (tokenData && tokenData.length > 0) {
+        const userTokens = tokenData
+          .map((result, index) => {
+            if (result.status === 'success' && result.result) {
+              const token = result.result as { name: string; symbol: string; tokenAddress: string; creator: string };
+              if (
+                token.name &&
+                token.symbol &&
+                token.tokenAddress &&
+                token.creator &&
+                token.creator.toLowerCase() === address.toLowerCase()
+              ) {
+                let type = 'erc20';
+                if (token.name.toLowerCase().includes('nft')) type = 'erc721';
+                else if (token.name.toLowerCase().includes('meme') || token.name.toLowerCase().includes('doge'))
+                  type = 'meme';
+                else if (token.name.toLowerCase().includes('usd') || token.name.toLowerCase().includes('stable'))
+                  type = 'stable';
+                return {
+                  id: index + 1,
+                  name: token.name,
+                  symbol: token.symbol,
+                  address: token.tokenAddress,
+                  type,
+                };
+              }
+              console.warn(`Invalid token data for ID ${index + 1}:`, token);
+              return null;
+            }
+            console.error(`Failed to fetch token ${index + 1}:`, result);
+            return null;
+          })
+          .filter((token): token is NonNullable<typeof token> => token !== null);
+
+        setTokens(userTokens);
+      }
+
+      setAirdrops([]);
+      setLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [isConnected, address, subData, tokenData]);
+
+  // Handle errors
+  useEffect(() => {
+    const errors: string[] = [];
+    if (subError) {
+      console.error('Subscription error:', subError);
+      errors.push('Failed to load subscription data');
+    }
+    if (totalTokensError) {
+      console.error('Total tokens error:', totalTokensError);
+      errors.push('Failed to load token count');
+    }
+    if (tokenDataError) {
+      console.error('Token data error:', tokenDataError);
+      errors.push('Failed to load token details');
+    }
+    if (connectError) {
+      console.error('Wallet connection error:', connectError);
+      errors.push(`Wallet connection failed: ${connectError.message}`);
+    }
+    setError(errors);
+    setLoading(false);
+  }, [subError, totalTokensError, tokenDataError, connectError]);
+
+  // Background Shapes Component
+  const BackgroundShapes = () => (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      <div className="absolute top-20 left-10 w-32 h-32 border border-purple-500/10 rounded-full"></div>
+      <div className="absolute top-40 right-20 w-24 h-24 border border-blue-500/10 rotate-45"></div>
+      <div className="absolute bottom-32 left-20 w-40 h-40 border border-purple-400/8 rounded-2xl rotate-12"></div>
+      <div className="absolute top-1/3 left-1/4 w-16 h-16 border border-cyan-500/10 rotate-45"></div>
+      <div className="absolute bottom-1/4 right-1/3 w-28 h-28 border border-purple-300/8 rounded-full"></div>
+      <div className="absolute top-1/4 right-1/4">
+        <div className="grid grid-cols-4 gap-3">
+          {[...Array(16)].map((_, i) => (
+            <div key={i} className="w-1 h-1 bg-purple-500/10 rounded-full"></div>
+          ))}
+        </div>
+      </div>
+      <div className="absolute bottom-1/3 left-1/3">
+        <div className="grid grid-cols-3 gap-4">
+          {[...Array(9)].map((_, i) => (
+            <div key={i} className="w-1 h-1 bg-blue-500/10 rounded-full"></div>
+          ))}
+        </div>
+      </div>
+      <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 1200 800">
+        <path
+          d="M200,100 Q400,50 600,100 T1000,100"
+          stroke="rgba(147, 51, 234, 0.06)"
+          strokeWidth="1"
+          fill="none"
+        />
+        <path
+          d="M100,300 Q300,250 500,300 T900,300"
+          stroke="rgba(59, 130, 246, 0.06)"
+          strokeWidth="1"
+          fill="none"
+        />
+        <path
+          d="M300,500 Q500,450 700,500 T1100,500"
+          stroke="rgba(147, 51, 234, 0.08)"
+          strokeWidth="1"
+          fill="none"
+        />
+      </svg>
+      <div className="absolute top-2/3 right-10">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <polygon
+            points="40,10 65,25 65,55 40,70 15,55 15,25"
+            stroke="rgba(147, 51, 234, 0.08)"
+            strokeWidth="1"
+            fill="none"
+          />
+          <polygon
+            points="40,20 55,30 55,50 40,60 25,50 25,30"
+            stroke="rgba(59, 130, 246, 0.06)"
+            strokeWidth="1"
+            fill="none"
+          />
+        </svg>
+      </div>
+      <div className="absolute top-1/2 left-10">
+        <svg width="120" height="80" viewBox="0 0 120 80">
+          <circle cx="20" cy="20" r="2" fill="rgba(147, 51, 234, 0.1)" />
+          <circle cx="60" cy="15" r="2" fill="rgba(59, 130, 246, 0.1)" />
+          <circle cx="100" cy="25" r="2" fill="rgba(147, 51, 234, 0.1)" />
+          <circle cx="40" cy="50" r="2" fill="rgba(59, 130, 246, 0.1)" />
+          <circle cx="80" cy="55" r="2" fill="rgba(147, 51, 234, 0.1)" />
+          <line x1="20" y1="20" x2="60" y2="15" stroke="rgba(147, 51, 234, 0.06)" strokeWidth="1" />
+          <line x1="60" y1="15" x2="100" y2="25" stroke="rgba(59, 130, 246, 0.06)" strokeWidth="1" />
+          <line x1="20" y1="20" x2="40" y2="50" stroke="rgba(147, 51, 234, 0.06)" strokeWidth="1" />
+          <line x1="60" y1="15" x2="80" y2="55" stroke="rgba(59, 130, 246, 0.06)" strokeWidth="1" />
+          <line x1="40" y1="50" x2="80" y2="55" stroke="rgba(147, 51, 234, 0.06)" strokeWidth="1" />
+        </svg>
+      </div>
+      <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-500/3 to-transparent rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/3 to-transparent rounded-full blur-3xl"></div>
+      <div className="absolute top-1/2 right-10 w-48 h-48 bg-gradient-to-bl from-cyan-500/2 to-transparent rounded-full blur-2xl"></div>
+    </div>
+  );
+
+  // Token Card Component
+  const TokenCard = ({ token }: { token: { id: number; name: string; symbol: string; address: string; type: string } | null }) => {
+    if (!token) {
+      return (
+        <div className="bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-500/10">
+          <p className="text-red-400">Invalid token data</p>
+        </div>
+      );
+    }
+
+    const typeIcons: { [key: string]: React.ReactNode } = {
+      erc20: <Erc20Icon />,
+      erc721: <Erc721Icon />,
+      erc1155: <Erc1155Icon />,
+      meme: <MemeIcon />,
+      stable: <StableIcon />,
+    };
+    const typeLabels: { [key: string]: string } = {
+      erc20: 'ERC-20',
+      erc721: 'ERC-721',
+      erc1155: 'ERC-1155',
+      meme: 'Meme Coin',
+      stable: 'Stable Coin',
+    };
+    const icon = typeIcons[token.type] || <Erc20Icon />;
+    const label = typeLabels[token.type] || 'ERC-20';
+
+    return (
+      <div className="bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-purple-500/10 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
+        <div className="absolute top-0 right-0 w-20 h-20 opacity-5">
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth="1" fill="none" />
+            <circle cx="20" cy="20" r="8" stroke="currentColor" strokeWidth="1" fill="none" />
+          </svg>
+        </div>
+        <div className="flex items-center space-x-3 mb-4">
+          <span className="relative z-10">{icon}</span>
+          <h3 className="text-lg font-semibold text-white relative z-10">{token.name}</h3>
+        </div>
+        <p className="text-gray-400 relative z-10">Symbol: {token.symbol}</p>
+        <p className="text-gray-400 truncate relative z-10">Address: {token.address}</p>
+        <div className="mt-4 flex justify-between items-center relative z-10">
+          <span className="text-green-500 font-bold">{label}</span>
+          <Link
+            href={`/dashboard/token/${token.id}`}
+            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
+          >
+            View Details
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
+  // Airdrop Card Component
+  const AirdropCard = ({ airdrop }: { airdrop: { id: number; name: string; tokenAddress: string; status: string } }) => (
+    <div className="bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-green-500/10 relative overflow-hidden group hover:border-green-500/30 transition-all duration-300">
+      <div className="absolute top-0 right-0 w-20 h-20 opacity-5">
+        <svg viewBox="0 0 40 40" className="w-full h-full">
+          <circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth="1" fill="none" />
+          <circle cx="20" cy="20" r="8" stroke="currentColor" strokeWidth="1" fill="none" />
+        </svg>
+      </div>
+      <div className="flex items-center space-x-3 mb-4">
+        <span className="text-2xl">🪂</span>
+        <h3 className="text-lg font-semibold text-white relative z-10">{airdrop.name}</h3>
+      </div>
+      <p className="text-gray-400 relative z-10">Token: {airdrop.tokenAddress.slice(0, 6)}...{airdrop.tokenAddress.slice(-4)}</p>
+      <p className="text-gray-400 relative z-10">Status: {airdrop.status}</p>
+      <Link
+        href={`/dashboard/airdrop/${airdrop.id}`}
+        className="mt-4 inline-flex px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition relative z-10"
+      >
+        View Details
+      </Link>
+    </div>
+  );
+
+  // Subscription Card Component
+  const SubscriptionCard = () => {
+    const getPlanIcon = (plan: string) => {
+      const icons: { [key: string]: React.ReactNode } = {
+        Free: <FreeIcon />,
+        Classic: <ClassicIcon />,
+        Pro: <ProIcon />,
+        Premium: <PremiumIcon />,
+      };
+      return icons[plan] || <FreeIcon />;
+    };
+
+    const maxTokens: { [key: string]: number } = {
+      Free: 2,
+      Classic: 50,
+      Pro: 100,
+      Premium: 500,
+    };
+
+    return (
+      <div className="bg-gradient-to-br from-purple-600/20 to-blue-600/20 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-purple-500/20 relative overflow-hidden group hover:shadow-2xl transition-all duration-300">
+        <div className="absolute top-0 right-0 w-24 h-24 opacity-10">
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth="1" fill="none" />
+            <circle cx="20" cy="20" r="8" stroke="currentColor" strokeWidth="1" fill="none" />
+          </svg>
+        </div>
+        {subscription ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-gray-300 text-sm">Plan</p>
+                <div className="flex items-center space-x-2">
+                  {getPlanIcon(subscription.plan)}
+                  <p className="text-white font-medium">{subscription.plan}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-gray-300 text-sm">Tokens Remaining</p>
+                <p className="text-white font-medium">
+                  {subscription.tokensRemaining} / {maxTokens[subscription.plan] || 2}
+                </p>
+                <div className="w-full bg-gray-700/50 rounded-full h-2.5 mt-2">
+                  <div
+                    className="bg-gradient-to-r from-purple-500 to-blue-600 h-2.5 rounded-full"
+                    style={{
+                      width: `${Math.min(100, (subscription.tokensRemaining / (maxTokens[subscription.plan] || 2)) * 100)}%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+            <div className="mb-4">
+              <p className="text-gray-300 text-sm">Expiry</p>
+              <p className="text-white font-medium">
+                {subscription.expiry && subscription.expiry > 0
+                  ? new Date(subscription.expiry).toLocaleDateString()
+                  : subscription.plan === 'Free'
+                  ? 'No Expiry'
+                  : 'N/A'}
+              </p>
+            </div>
+            <Link
+              href="/dashboard/subscription"
+              className="inline-flex px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 relative z-10"
+            >
+              {subscription.plan === 'Free' ? 'Upgrade Plan' : 'Manage Subscription'}
+            </Link>
+          </>
+        ) : (
+          <p className="text-gray-400 relative z-10">Loading subscription data...</p>
+        )}
+      </div>
+    );
+  };
+
+  // Loading Component
+  const LoadingSpinner = () => (
+    <div className="flex items-center justify-center min-h-screen bg-[#1A0D23] relative">
+      <BackgroundShapes />
+      <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin relative z-10"></div>
+    </div>
+  );
+
+  // Wallet Connection Component
+  const WalletConnection = () => (
+    <div className="min-h-screen bg-[#1A0D23] flex items-center justify-center p-4 relative">
+      <BackgroundShapes />
+      <div className="bg-[#1E1425]/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-purple-500/20 p-8 text-center relative z-10">
+        <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
+        <p className="text-gray-300 mb-6">Connect your wallet to access the StrataForge dashboard</p>
+        {connectError && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300 text-sm">
+            {connectError.message.includes('storage')
+              ? 'Storage access is restricted. Please disable incognito mode or allow storage access.'
+              : `Connection failed: ${connectError.message}`}
+          </div>
+        )}
+        <button
+          onClick={connect}
+          disabled={isConnecting}
+          className={`px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition ${
+            isConnecting ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        >
+          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+        </button>
+      </div>
+    </div>
+  );
+
+  if (!isConnected) {
+    return <WalletConnection />;
+  }
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   return (
     <DashBoardLayout>
-      <div
-        className='welcome-section text-center mb-8 rounded-lg p-6'
-        style={{
-          background:
-            'radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)',
-        }}
-      >
-        <h1 className='font-poppins font-semibold text-3xl md:text-4xl leading-[170%] mb-2'>
-          Welcome back, Kemsguy <span className='text-yellow-400'>👋</span>
-        </h1>
-        <p className='font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]'>
-          Let&apos;s find you a verified home in Lagos – safe, trusted, and scam-free!
-        </p>
-      </div>
-
-      <div className='mb-10'>
-        <div className='flex justify-between items-center mb-6'>
-          <h2 className='font-poppins  font-semibold text-xl md:text-2xl'>Smart Recommendations</h2>
-          <button className='text-sm font-vietnam text-white hover:underline hover:caret-blue-400 flex items-center'>
-            View All
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              className='h-4 w-4 ml-1'
-              viewBox='0 0 20 20'
-              fill='currentColor'
-            >
+      <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
+        <BackgroundShapes />
+        <div
+          className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
+          style={{
+            background:
+              'radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)',
+          }}
+        >
+          <h1 className="font-poppins font-semibold text-3xl md:text-4xl leading-[170%] mb-2">
+            Welcome back, {userName} <span className="text-yellow-400">👋</span>
+          </h1>
+          <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
+            Create and manage your tokens and airdrops with StrataForge – secure and seamless!
+          </p>
+        </div>
+        {error.length > 0 && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3 relative z-10">
+            <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
-                fillRule='evenodd'
-                d='M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z'
-                clipRule='evenodd'
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-          </button>
-        </div>
-
-        {/* <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-          {propertyData.map((property) => (
-            <DashBoardPropertyCard key={property.id} property={property} />
-          ))}
-        </div> */}
-      </div>
-
-      {/* <div className='mb-10'>
-        <h2 className='font-poppins font-semibold text-xl md:text-2xl mb-6'>
-          Your Saved Properties
-        </h2>
-        <div className='space-y-2'>
-          {savedProperties.map((property) => (
-            <SavedPropertyItem key={property.id} property={property} />
-          ))}
-        </div>
-
-        <button className='mt-4 px-6 py-3 bg-gradient-to-r from-[hsl(var(--primary-from))] to-[hsl(var(--primary-to))] text-[hsl(var(--foreground))] rounded-3xl hover:opacity-90 transition text-sm font-medium'>
-          View All Saved Homes
-        </button>
-      </div> */}
-
-      {/* <div className='mb-10'>
-        <h2 className='font-poppins font-semibold text-xl md:text-2xl mb-6'>Active Transactions</h2>
-        <div className='bg-[hsl(var(--foreground)/0.05)] rounded-lg overflow-hidden border border-[hsl(var(--border))]'>
-          <div className='overflow-x-auto'>
-            <table className='min-w-full'>
-              <thead>
-                <tr className='bg-[hsl(var(--transaction-table-header-background)/1)] border-b border-[hsl(var(--border))]'>
-                  <th className='px-4 py-3 text-left text-xs font-medium text-[hsl(var(--foreground)/0.7)] uppercase tracking-wider'>
-                    Property
-                  </th>
-                  <th className='px-4 py-3 text-left text-xs font-medium text-[hsl(var(--foreground)/0.7)] uppercase tracking-wider'>
-                    Status
-                  </th>
-                  <th className='px-4 py-3 text-left text-xs font-medium text-[hsl(var(--foreground)/0.7)] uppercase tracking-wider'>
-                    Amount (ETH)
-                  </th>
-                  <th className='px-4 py-3 text-left text-xs font-medium text-[hsl(var(--foreground)/0.7)] uppercase tracking-wider'>
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactionData.map((transaction) => (
-                  <TransactionItem key={transaction.id} transaction={transaction} />
-                ))}
-              </tbody>
-            </table>
+            <p className="text-red-300 font-medium">{error.join(', ')}</p>
           </div>
+        )}
+        <div className="mb-10 relative z-10">
+          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6">Your Subscription</h2>
+          <SubscriptionCard />
         </div>
-      </div> */}
-
-      {/* <div className='mb-10'>
-        <h2 className='font-poppins font-semibold text-xl md:text-2xl mb-6'>
-          Alerts & Notifications
-        </h2>
-        <div className='space-y-2'>
-          {alertsData.map((alert) => (
-            <AlertItem key={alert.id} alert={alert} />
-          ))}
+        <div className="mb-10 relative z-10">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Tokens</h2>
+            <Link
+              href="/dashboard/create-token"
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
+            >
+              Create New Token
+            </Link>
+          </div>
+          {tokens.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tokens.map((token) => (
+                <TokenCard key={token.id} token={token} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-purple-500/10">
+              <div className="mb-4">
+                <TokenPlaceholderIcon />
+              </div>
+              <p className="text-gray-400 text-lg mb-4">You havent created any tokens yet.</p>
+              <Link
+                href="/dashboard/create-token"
+                className="inline-flex px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
+              >
+                Create Your First Token
+              </Link>
+            </div>
+          )}
         </div>
-      </div> */}
+        <div className="mb-10 relative z-10">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="font-poppins font-semibold text-xl md:text-2xl">Airdrops</h2>
+            <Link
+              href="/dashboard/airdrop"
+              className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition"
+            >
+              Create Airdrop
+            </Link>
+          </div>
+          {airdrops.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {airdrops.map((airdrop) => (
+                <AirdropCard key={airdrop.id} airdrop={airdrop} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-green-500/10">
+              <div className="mb-4">
+                <AirdropPlaceholderIcon />
+              </div>
+              <p className="text-gray-400 text-lg mb-4">No airdrops created yet. Start an airdrop to distribute your tokens!</p>
+              <Link
+                href="/dashboard/airdrop"
+                className="inline-flex px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition"
+              >
+                Create Your First Airdrop
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
     </DashBoardLayout>
   );
 };
