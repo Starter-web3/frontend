@@ -1,9 +1,8 @@
-// app/dashboard/Sidebar.tsx
 'use client';
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useWallet } from '../../contexts/WalletContext';
+import { useWallet } from '../../../contexts/WalletContext';
 
 interface SidebarLinkProps {
   href: string;
@@ -49,7 +48,6 @@ const DashboardSidebar = () => {
   const handleDisconnect = () => {
     try {
       disconnect();
-      // Clear walletconnect storage safely
       if (typeof window !== 'undefined') {
         localStorage.removeItem('walletconnect');
       }
@@ -105,7 +103,7 @@ const DashboardSidebar = () => {
           </div>
           <nav className='space-y-1 flex-grow'>
             <SidebarLink
-              href='/dashboard'
+              href="/dashboard/token-creator"
               icon={
                 <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
                   <path d='M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4z' />
@@ -113,10 +111,43 @@ const DashboardSidebar = () => {
                 </svg>
               }
               text='Dashboard'
-              active={currentPath === '/dashboard'}
+              active={currentPath === '/dashboard/token-creator'}
             />
             <SidebarLink
-              href='/dashboard/airdrop-listing/upload'
+              href='/dashboard/token-creator/manage-subscription'
+              icon={
+                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
+                  <path
+                    fillRule='evenodd'
+                    d='M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM2 9v5a2 2 0 002 2h12a2 2 0 002-2V9H2zm2 4a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              }
+              text='Manage Subscription'
+              active={currentPath === '/dashboard/token-creator/manage-subscription'}
+            />
+            <SidebarLink
+              href='/dashboard/token-creator/create-tokens'
+              icon={
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
+                  <path
+                    fillRule='evenodd'
+                    d='M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9V6a1 1 0 112 0v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              }
+              text='Create Tokens'
+              active={currentPath === '/dashboard/token-creator/create-tokens'}
+            />
+            <SidebarLink
+              href='/dashboard/token-creator/airdrop-listing/upload'
               icon={
                 <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
                   <path d='M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z' />
@@ -128,20 +159,20 @@ const DashboardSidebar = () => {
                 </svg>
               }
               text='Upload Whitelisted CSV'
-              active={currentPath === '/dashboard/airdrop-listing/upload'}
+              active={currentPath === '/dashboard/token-creator/airdrop-listing/upload'}
             />
             <SidebarLink
-              href='/dashboard/airdrop-listing/distribute'
+              href='/dashboard/token-creator/airdrop-listing/distribute'
               icon={
                 <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
                   <path d='M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z' />
                 </svg>
               }
               text='Distribute Airdrop'
-              active={currentPath === '/dashboard/airdrop-listing/distribute'}
+              active={currentPath === '/dashboard/token-creator/airdrop-listing/distribute'}
             />
             <SidebarLink
-              href='/dashboard/airdrop-listing/claim'
+              href='/dashboard/token-creator/airdrop-listing/claim'
               icon={
                 <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
                   <path d='M9 2a1 1 0 000 2h2a1 1 0 100-2H9z' />
@@ -153,7 +184,7 @@ const DashboardSidebar = () => {
                 </svg>
               }
               text='Claim Airdrop'
-              active={currentPath === '/dashboard/airdrop-listing/claim'}
+              active={currentPath === '/dashboard/token-creator/airdrop-listing/claim'}
             />
             <SidebarLink
               href='/dashboard/tokens'
