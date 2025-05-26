@@ -220,6 +220,19 @@ const CreateTokensPage = () => {
     }
   };
 
+  // Format date function
+  const formatCreatedDate = (timestamp: bigint) => {
+    const date = new Date(Number(timestamp) * 1000);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   // Create token
   const handleCreateToken = () => {
     const { tokenType, name, symbol, initialSupply, decimals, uri, maxWalletSize, maxTransactionAmount, collateralToken, collateralRatio, treasury } = formData;
@@ -317,7 +330,10 @@ const CreateTokensPage = () => {
         <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
         <p className="text-gray-300 mb-6">Connect your wallet to create tokens</p>
         <button
-          onClick={() => document.querySelector('appkit-button')?.click()}
+          onClick={() => {
+            const button = document.querySelector('appkit-button') as HTMLElement;
+            button?.click();
+          }}
           className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
         >
           Connect Wallet
@@ -554,15 +570,18 @@ const CreateTokensPage = () => {
                   key={index}
                   className="bg-[#1E1425]/80 backdrop-blur-md rounded-lg shadow-lg p-6 border border-purple-500/20"
                 >
-                  <h3 className="text-lg font-semibold text-white">{token.name}</h3>
-                  <p className="text-gray-400 text-sm">Symbol: {token.symbol}</p>
-                  <p className="text-gray-400 text-sm">Type: {tokenTypes.find(t => t.value === Number(token.tokenType))?.label || 'Unknown'}</p>
-                  <p className="text-gray-400 text-sm">Address: {token.tokenAddress.slice(0, 6)}...{token.tokenAddress.slice(-4)}</p>
-                  <p className="text-gray-400 text-sm">Supply: {Number(token.totalSupply)}</p>
-                  <p className="text-gray-400 text-sm">Created: {new Date(Number(token.createdAt) * 1000).toLocaleDateString()}</p>
+                  <h3 className="text-lg font-semibold text-white mb-2">{token.name}</h3>
+                  <div className="space-y-1 mb-4">
+                    <p className="text-gray-400 text-sm">Symbol: <span className="text-gray-300">{token.symbol}</span></p>
+                    <p className="text-gray-400 text-sm">Type: <span className="text-gray-300">{tokenTypes.find(t => t.value === Number(token.tokenType))?.label || 'Unknown'}</span></p>
+                    <p className="text-gray-400 text-sm">Address: <span className="text-gray-300 font-mono">{token.tokenAddress.slice(0, 6)}...{token.tokenAddress.slice(-4)}</span></p>
+                    <p className="text-gray-400 text-sm">Created: <span className="text-gray-300">{formatCreatedDate(token.createdAt)}</span></p>
+                  </div>
                   <button
-                    className="mt-4 w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg font-semibold hover:bg-gray-200 transition duration-300"
-                    onClick={() => window.location.href = `/dashboard/tokens/${token.tokenAddress}`}
+                    className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg font-semibold hover:opacity-90 transition duration-300"
+                    onClick={() => {
+                      window.location.href = `/dashboard/tokens/${token.tokenAddress}`;
+                    }}
                   >
                     Manage Token
                   </button>
@@ -572,7 +591,7 @@ const CreateTokensPage = () => {
           )}
         </div>
 
-        {isTxPending && (
+        {isTxPending && txHash && (
           <p className="text-yellow-400 text-sm relative z-10">
             Transaction pending:{' '}
             <a
