@@ -29,7 +29,7 @@ const ManageSubscription = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined);
-  const [isTxPending, setIsTxPending] = useState(false);
+  const [processingPlanIndex, setProcessingPlanIndex] = useState<number | null>(null); // Track which plan is processing
 
   // Wagmi write contract hook
   const { writeContract, error: writeError, isPending: isWritePending } = useWriteContract();
@@ -129,7 +129,7 @@ const ManageSubscription = () => {
     setError(errors.join(', '));
     if (!subLoading && !contractLoading && !priceLoading && !isTxConfirming) {
       setLoading(false);
-      setIsTxPending(false);
+      setProcessingPlanIndex(null); // Reset processing state when not loading
     }
   }, [subError, contractError, priceError, writeError, subLoading, contractLoading, priceLoading, isTxConfirming]);
 
@@ -137,11 +137,29 @@ const ManageSubscription = () => {
   useEffect(() => {
     if (isTxSuccess && txHash) {
       setTxHash(undefined);
-      setIsTxPending(false);
+      setProcessingPlanIndex(null); // Reset processing state on success
     }
   }, [isTxSuccess, txHash]);
 
-  // Convert USD to ETH
+  // Convert USD to ETH with buffer for gas fees
+  const usdToEthWithBuffer = (usdAmount: bigint) => {
+    if (!priceData || !priceData[1]) return { display: 'N/A', value: BigInt(0) };
+    
+    const ethPrice = Number(priceData[1]) / 1e8; // Chainlink returns price with 8 decimals
+    const usd = Number(usdAmount) / 1e8; // Fees are in 8 decimals
+    const ethAmount = usd / ethPrice;
+    
+    // Add 10% buffer for gas fees and price fluctuations
+    const ethWithBuffer = ethAmount * 1.1;
+    const ethWei = BigInt(Math.ceil(ethWithBuffer * 1e18)); // Convert to Wei
+    
+    return {
+      display: ethAmount.toFixed(6),
+      value: ethWei
+    };
+  };
+
+  // Convert USD to ETH (display only)
   const usdToEth = (usdAmount: bigint) => {
     if (!priceData || !priceData[1]) return 'N/A';
     const ethPrice = Number(priceData[1]) / 1e8; // Chainlink returns price with 8 decimals
@@ -151,17 +169,26 @@ const ManageSubscription = () => {
 
   // Purchase subscription
   const handlePurchaseSubscription = (tierIndex: number, fee: bigint) => {
-    setIsTxPending(true);
+    setProcessingPlanIndex(tierIndex); // Set only this plan as processing
+    
+    // Calculate the value to send (original fee + buffer for gas)
+    const ethDetails = usdToEthWithBuffer(fee);
+    
     writeContract({
       address: ADMIN_CONTRACT_ADDRESS,
       abi: adminABI,
       functionName: 'purchaseSubscription',
       args: [BigInt(tierIndex)],
-      value: fee,
+      value: ethDetails.value, // Send buffered amount
     }, {
       onSuccess: (hash) => setTxHash(hash),
-      onError: () => setIsTxPending(false),
+      onError: () => setProcessingPlanIndex(null), // Reset on error
     });
+  };
+
+  // Check if a specific plan is processing
+  const isPlanProcessing = (tierIndex: number) => {
+    return processingPlanIndex === tierIndex && (isWritePending || isTxConfirming);
   };
 
   // Plan data
@@ -406,14 +433,14 @@ const ManageSubscription = () => {
                 )}
                 <button
                   onClick={() => handlePurchaseSubscription(plan.tierIndex, plan.fee)}
-                  disabled={isWritePending || isTxPending || isTxConfirming || plan.tierIndex === currentTierIndex || plan.tierIndex < currentTierIndex || plan.fee === BigInt(0)}
+                  disabled={isPlanProcessing(plan.tierIndex) || plan.tierIndex === currentTierIndex || plan.tierIndex < currentTierIndex || plan.fee === BigInt(0)}
                   className={`w-full px-6 py-3 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 ${
                     plan.tierIndex === currentTierIndex || plan.fee === BigInt(0)
                       ? 'bg-gray-600 cursor-not-allowed'
                       : plan.tierIndex < currentTierIndex
                       ? 'bg-gray-600 cursor-not-allowed'
                       : 'bg-gradient-to-r from-purple-500 to-blue-600'
-                  } ${isWritePending || isTxPending || isTxConfirming ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } ${isPlanProcessing(plan.tierIndex) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {plan.tierIndex === currentTierIndex
                     ? 'Current Plan'
@@ -421,7 +448,7 @@ const ManageSubscription = () => {
                     ? 'Downgrade Not Allowed'
                     : plan.fee === BigInt(0) && plan.tierIndex !== 0
                     ? 'Loading Fee...'
-                    : isWritePending || isTxPending || isTxConfirming
+                    : isPlanProcessing(plan.tierIndex)
                     ? 'Processing...'
                     : 'Select Plan'}
                 </button>
@@ -430,7 +457,7 @@ const ManageSubscription = () => {
           </div>
         </div>
 
-        {isTxPending && <p className="text-yellow-400 text-sm relative z-10">Transaction pending: {txHash}</p>}
+        {processingPlanIndex !== null && <p className="text-yellow-400 text-sm relative z-10">Transaction pending: {txHash}</p>}
         {isTxSuccess && <p className="text-green-400 text-sm relative z-10">Subscription updated successfully!</p>}
       </div>
     </DashboardLayout>
