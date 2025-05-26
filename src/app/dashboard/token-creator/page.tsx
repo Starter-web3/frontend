@@ -51,7 +51,7 @@ const FreeIcon = () => (
 );
 
 const ClassicIcon = () => (
-  <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 Nowhere 24">
     <path
       d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
       strokeWidth="2"
@@ -61,14 +61,14 @@ const ClassicIcon = () => (
 
 const ProIcon = () => (
   <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path d="M4 12l8-8 8 8-8 8-8-8z" strokeWidth="2" />
+    <path d="M4 12l8-8 8 8-8 8-8-8-8z" strokeWidth="2" />
   </svg>
 );
 
 const PremiumIcon = () => (
-  <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24 24">
     <path
-      d="M12 4c-4.42 0-8 1.79-8 4s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4zm-8 8v4h4v-4H4zm8 0v4h4v-4h-4zm8 0v4h4v-4h-4z"
+      d="M12 4c-4.42 0-8 1.79-8-8 4s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4zm-8-8 8v4h4 v4H4zm8 0v4h4v-4h-4zm8 0v4h4h-4h-4z"
       strokeWidth="2"
     />
   </svg>
@@ -168,9 +168,9 @@ const Dashboard = () => {
           const planName = planNames[Number(tierIndex)] || 'Free';
           const tokenLimits: { [key: string]: number } = {
             Free: 2,
-            Classic: 50,
-            Pro: 100,
-            Premium: 500,
+            Classic: 5,
+            Pro: 10,
+            Premium: Infinity,
           };
           const maxTokens = tokenLimits[planName];
           const remainingTokens = Math.max(0, maxTokens - Number(tokensThisMonth));
@@ -425,9 +425,9 @@ const Dashboard = () => {
 
     const maxTokens: { [key: string]: number } = {
       Free: 2,
-      Classic: 50,
-      Pro: 100,
-      Premium: 500,
+      Classic: 5,
+      Pro: 10,
+      Premium: Infinity,
     };
 
     return (
@@ -451,16 +451,18 @@ const Dashboard = () => {
               <div>
                 <p className="text-gray-300 text-sm">Tokens Remaining</p>
                 <p className="text-white font-medium">
-                  {subscription.tokensRemaining} / {maxTokens[subscription.plan] || 2}
+                  {subscription.tokensRemaining} / {maxTokens[subscription.plan] === Infinity ? 'Unlimited' : maxTokens[subscription.plan] || 2}
                 </p>
-                <div className="w-full bg-gray-700/50 rounded-full h-2.5 mt-2">
-                  <div
-                    className="bg-gradient-to-r from-purple-500 to-blue-600 h-2.5 rounded-full"
-                    style={{
-                      width: `${Math.min(100, (subscription.tokensRemaining / (maxTokens[subscription.plan] || 2)) * 100)}%`,
-                    }}
-                  ></div>
-                </div>
+                {subscription.plan !== 'Premium' && (
+                  <div className="w-full bg-gray-700/50 rounded-full h-2.5 mt-2">
+                    <div
+                      className="bg-gradient-to-r from-purple-500 to-blue-600 h-2.5 rounded-full"
+                      style={{
+                        width: `${Math.min(100, (subscription.tokensRemaining / (maxTokens[subscription.plan] || 2)) * 100)}%`,
+                      }}
+                    ></div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="mb-4">

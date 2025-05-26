@@ -369,14 +369,15 @@ const CreateTokensPage = () => {
         <div className="mb-10 relative z-10">
           <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6">Create a New Token</h2>
           <div className="bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-purple-500/10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-gray-300 text-sm">Token Type</label>
+            {/* Token Type and Create Button Row */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <label className="text-gray-300 text-sm block mb-2">Token Type</label>
                 <select
                   name="tokenType"
                   value={formData.tokenType}
                   onChange={handleInputChange}
-                  className="w-full p-2 mt-1 bg-[#2A1B35] text-white rounded-lg border border-purple-500/20 focus:outline-none focus:border-purple-500"
+                  className="w-full h-12 p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/20 focus:outline-none focus:border-purple-500"
                 >
                   <option value="">Select Token Type</option>
                   {allowedTokenTypes.map((type) => (
@@ -386,150 +387,154 @@ const CreateTokensPage = () => {
                   ))}
                 </select>
               </div>
-              {formData.tokenType !== '' && (
-                <>
-                  {[0, 1, 3, 4].includes(Number(formData.tokenType)) && (
-                    <>
-                      <div>
-                        <label className="text-gray-300 text-sm">Token Name</label>
-                        <input
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
-                          placeholder="My Token"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-gray-300 text-sm">Token Symbol</label>
-                        <input
-                          type="text"
-                          name="symbol"
-                          value={formData.symbol}
-                          onChange={handleInputChange}
-                          className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
-                          placeholder="MTK"
-                        />
-                      </div>
-                    </>
-                  )}
-                  {[0, 3].includes(Number(formData.tokenType)) && (
-                    <>
-                      <div>
-                        <label className="text-gray-300 text-sm">Initial Supply</label>
-                        <input
-                          type="number"
-                          name="initialSupply"
-                          value={formData.initialSupply}
-                          onChange={handleInputChange}
-                          className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
-                          placeholder="1000000"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-gray-300 text-sm">Decimals</label>
-                        <input
-                          type="number"
-                          name="decimals"
-                          value={formData.decimals}
-                          onChange={handleInputChange}
-                          className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
-                          placeholder="18"
-                        />
-                      </div>
-                    </>
-                  )}
-                  {Number(formData.tokenType) === 2 && (
+              <div className="flex items-end">
+                <button
+                  onClick={handleCreateToken}
+                  disabled={isWritePending || isTxPending || isTxConfirming || !subscription?.tokensRemaining}
+                  className={`h-12 px-6 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 whitespace-nowrap ${isWritePending || isTxPending || isTxConfirming || !subscription?.tokensRemaining ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-purple-500 to-blue-600 hover:shadow-xl hover:scale-105'}`}
+                >
+                  {isWritePending || isTxPending || isTxConfirming
+                    ? 'Creating Token...'
+                    : !subscription?.tokensRemaining
+                    ? 'Token Limit Reached'
+                    : 'Create Token'}
+                </button>
+              </div>
+            </div>
+
+            {/* Additional Form Fields */}
+            {formData.tokenType !== '' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[0, 1, 3, 4].includes(Number(formData.tokenType)) && (
+                  <>
                     <div>
-                      <label className="text-gray-300 text-sm">URI</label>
+                      <label className="text-gray-300 text-sm">Token Name</label>
                       <input
                         type="text"
-                        name="uri"
-                        value={formData.uri}
+                        name="name"
+                        value={formData.name}
                         onChange={handleInputChange}
                         className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
-                        placeholder="https://example.com/metadata/{id}.json"
+                        placeholder="My Token"
                       />
                     </div>
-                  )}
-                  {Number(formData.tokenType) === 3 && (
-                    <>
-                      <div>
-                        <label className="text-gray-300 text-sm">Max Wallet Size</label>
-                        <input
-                          type="number"
-                          name="maxWalletSize"
-                          value={formData.maxWalletSize}
-                          onChange={handleInputChange}
-                          className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
-                          placeholder="1000000"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-gray-300 text-sm">Max Transaction Amount</label>
-                        <input
-                          type="number"
-                          name="maxTransactionAmount"
-                          value={formData.maxTransactionAmount}
-                          onChange={handleInputChange}
-                          className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
-                          placeholder="100000"
-                        />
-                      </div>
-                    </>
-                  )}
-                  {Number(formData.tokenType) === 4 && (
-                    <>
-                      <div>
-                        <label className="text-gray-300 text-sm">Collateral Token Address</label>
-                        <input
-                          type="text"
-                          name="collateralToken"
-                          value={formData.collateralToken}
-                          onChange={handleInputChange}
-                          className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
-                          placeholder="0x..."
-                        />
-                      </div>
-                      <div>
-                        <label className="text-gray-300 text-sm">Collateral Ratio</label>
-                        <input
-                          type="number"
-                          name="collateralRatio"
-                          value={formData.collateralRatio}
-                          onChange={handleInputChange}
-                          className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
-                          placeholder="10000"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-gray-300 text-sm">Treasury Address</label>
-                        <input
-                          type="text"
-                          name="treasury"
-                          value={formData.treasury}
-                          onChange={handleInputChange}
-                          className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
-                          placeholder="0x..."
-                        />
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-            <button
-              onClick={handleCreateToken}
-              disabled={isWritePending || isTxPending || isTxConfirming || !subscription?.tokensRemaining}
-              className={`w-full mt-4 px-4 py-3 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 ${isWritePending || isTxPending || isTxConfirming || !subscription?.tokensRemaining ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-purple-500 to-blue-600 hover:shadow-xl hover:scale-105'}`}
-            >
-              {isWritePending || isTxPending || isTxConfirming
-                ? 'Creating Token...'
-                : !subscription?.tokensRemaining
-                ? 'Token Limit Reached'
-                : 'Create Token'}
-            </button>
+                    <div>
+                      <label className="text-gray-300 text-sm">Token Symbol</label>
+                      <input
+                        type="text"
+                        name="symbol"
+                        value={formData.symbol}
+                        onChange={handleInputChange}
+                        className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
+                        placeholder="MTK"
+                      />
+                    </div>
+                  </>
+                )}
+                {[0, 3].includes(Number(formData.tokenType)) && (
+                  <>
+                    <div>
+                      <label className="text-gray-300 text-sm">Initial Supply</label>
+                      <input
+                        type="number"
+                        name="initialSupply"
+                        value={formData.initialSupply}
+                        onChange={handleInputChange}
+                        className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
+                        placeholder="1000000"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-gray-300 text-sm">Decimals</label>
+                      <input
+                        type="number"
+                        name="decimals"
+                        value={formData.decimals}
+                        onChange={handleInputChange}
+                        className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
+                        placeholder="18"
+                      />
+                    </div>
+                  </>
+                )}
+                {Number(formData.tokenType) === 2 && (
+                  <div>
+                    <label className="text-gray-300 text-sm">URI</label>
+                    <input
+                      type="text"
+                      name="uri"
+                      value={formData.uri}
+                      onChange={handleInputChange}
+                      className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
+                      placeholder="https://example.com/metadata/{id}.json"
+                    />
+                  </div>
+                )}
+                {Number(formData.tokenType) === 3 && (
+                  <>
+                    <div>
+                      <label className="text-gray-300 text-sm">Max Wallet Size</label>
+                      <input
+                        type="number"
+                        name="maxWalletSize"
+                        value={formData.maxWalletSize}
+                        onChange={handleInputChange}
+                        className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
+                        placeholder="1000000"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-gray-300 text-sm">Max Transaction Amount</label>
+                      <input
+                        type="number"
+                        name="maxTransactionAmount"
+                        value={formData.maxTransactionAmount}
+                        onChange={handleInputChange}
+                        className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
+                        placeholder="100000"
+                      />
+                    </div>
+                  </>
+                )}
+                {Number(formData.tokenType) === 4 && (
+                  <>
+                    <div>
+                      <label className="text-gray-300 text-sm">Collateral Token Address</label>
+                      <input
+                        type="text"
+                        name="collateralToken"
+                        value={formData.collateralToken}
+                        onChange={handleInputChange}
+                        className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
+                        placeholder="0x..."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-gray-300 text-sm">Collateral Ratio</label>
+                      <input
+                        type="number"
+                        name="collateralRatio"
+                        value={formData.collateralRatio}
+                        onChange={handleInputChange}
+                        className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
+                        placeholder="10000"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-gray-300 text-sm">Treasury Address</label>
+                      <input
+                        type="text"
+                        name="treasury"
+                        value={formData.treasury}
+                        onChange={handleInputChange}
+                        className="w-full p-3 bg-[#2A1B35] text-white rounded-lg border border-purple-500/10 focus:outline-none focus:border-purple-500 transition"
+                        placeholder="0x..."
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
