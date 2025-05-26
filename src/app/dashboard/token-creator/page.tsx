@@ -1,10 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useWallet } from '../../contexts/WalletContext';
+import { useWallet } from '../../../contexts/WalletContext';
 import { useReadContract, useReadContracts } from 'wagmi';
 import { Abi } from 'viem';
-import StrataForgeFactoryABI from '../../app/components/ABIs/StrataForgeFactoryABI.json';
-import StrataForgeAdminABI from '../../app/components/ABIs/StrataForgeAdminABI.json';
+import StrataForgeAdminABI from '../../../app/components/ABIs/StrataForgeAdminABI.json';
+import StrataForgeFactoryABI from '../../../app/components/ABIs/StrataForgeFactoryABI.json';
 import DashBoardLayout from './DashboardLayout';
 import Link from 'next/link';
 
@@ -120,7 +120,7 @@ const Dashboard = () => {
     abi: adminABI,
     functionName: 'getSubscription',
     args: [address],
-    query: { enabled: isConnected && !!address, retry: 3, retryDelay: 1000 },
+    query: { enabled: isConnected && !!address, retry: true, retryDelay: 1000 },
   });
 
   // Fetch total token count
@@ -377,10 +377,10 @@ const Dashboard = () => {
         <div className="mt-4 flex justify-between items-center relative z-10">
           <span className="text-green-500 font-bold">{label}</span>
           <Link
-            href={`/dashboard/token/${token.id}`}
+            href={`/dashboard/tokens/${token.address}`}
             className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
           >
-            View Details
+            Manage Token
           </Link>
         </div>
       </div>
@@ -474,7 +474,7 @@ const Dashboard = () => {
               </p>
             </div>
             <Link
-              href="/dashboard/subscription"
+              href="/dashboard/token-creator/manage-subscription"
               className="inline-flex px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 relative z-10"
             >
               {subscription.plan === 'Free' ? 'Upgrade Plan' : 'Manage Subscription'}
@@ -582,11 +582,11 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-purple-500/10">
+            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-purple-500/20">
               <div className="mb-4">
                 <TokenPlaceholderIcon />
               </div>
-              <p className="text-gray-400 text-lg mb-4">You havent created any tokens yet.</p>
+              <p className="text-gray-400 text-lg mb-4">You haven’t created any tokens yet.</p>
               <Link
                 href="/dashboard/create-token"
                 className="inline-flex px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
@@ -598,9 +598,9 @@ const Dashboard = () => {
         </div>
         <div className="mb-10 relative z-10">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="font-poppins font-semibold text-xl md:text-2xl">Airdrops</h2>
+            <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Airdrops</h2>
             <Link
-              href="/dashboard/airdrop"
+              href="/dashboard/token-creator/airdrop-listing/upload"
               className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition"
             >
               Create Airdrop
@@ -613,13 +613,13 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-green-500/10">
+            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-green-500/20">
               <div className="mb-4">
                 <AirdropPlaceholderIcon />
               </div>
               <p className="text-gray-400 text-lg mb-4">No airdrops created yet. Start an airdrop to distribute your tokens!</p>
               <Link
-                href="/dashboard/airdrop"
+                href="/dashboard/token-creator/airdrop-listing/upload"
                 className="inline-flex px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition"
               >
                 Create Your First Airdrop

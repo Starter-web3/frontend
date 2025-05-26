@@ -2,9 +2,9 @@
 'use client';
 import React, { useState, ReactNode } from 'react';
 import DashboardSidebar from './Sidebar';
-import DashboardHeader from './Header';
-import Footer from '../components/layout/Footer';
-import { useWallet } from '../../contexts/WalletContext';
+import DashboardHeader from '../Header';
+import Footer from '../../components/layout/Footer';
+import { useWallet } from '../../../contexts/WalletContext';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);

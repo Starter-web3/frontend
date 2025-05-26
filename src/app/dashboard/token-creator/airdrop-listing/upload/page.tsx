@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { Button } from '../../../../../components/ui/button';
+import { Button } from '../../../../../../components/ui/button';
 import {
   Card,
   CardContent,
@@ -10,7 +10,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../../../../../components/ui/card';
+} from '../../../../../../components/ui/card';
 import {
   Table,
   TableBody,
@@ -18,14 +18,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../../../../components/ui/table';
+} from '../../../../../../components/ui/table';
 import { ArrowLeft, Upload, FileText, Trash2, Plus, Coins } from 'lucide-react';
-import { Badge } from '../../../../../components/ui/badge';
-import { ScrollArea } from '../../../../../components/ui/scroll-area';
-import { Alert, AlertDescription } from '../../../../../components/ui/alert';
+import { Badge } from '../../../../../../components/ui/badge';
+import { ScrollArea } from '../../../../../../components/ui/scroll-area';
+import { Alert, AlertDescription } from '../../../../../../components/ui/alert';
 import DashBoardLayout from '../../DashboardLayout';
 // import WalletConnect from "@/components/WalletConnect";
-import { parseCSV, createMerkleTree, Recipient } from '../../../../lib/merkle';
+import { parseCSV, createMerkleTree, Recipient } from '../../../../../lib/merkle';
 
 type RecipientFile = {
   id: string;

@@ -41,7 +41,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ href, icon, text, active, onC
 };
 
 const TraderSidebar = () => {
-  const { isConnected, disconnect } = useWallet(); // Removed unused 'address' to fix ESLint error
+  const { isConnected, disconnect } = useWallet();
   const pathname = usePathname();
   const currentPath = pathname || '/dashboard/token-trader';
 
@@ -91,7 +91,7 @@ const TraderSidebar = () => {
 
           <nav className='space-y-1 flex-grow'>
             <SidebarLink
-              href='/dashboard/token-trader/token-details'
+              href='/dashboard/token-trader'
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
@@ -107,7 +107,7 @@ const TraderSidebar = () => {
                 </svg>
               }
               text='Token Details'
-              active={currentPath === '/dashboard/token-trader/token-details'}
+              active={currentPath === '/dashboard/token-trader'}
             />
             <SidebarLink
               href='/dashboard/token-trader/marketplace'
@@ -142,6 +142,28 @@ const TraderSidebar = () => {
               }
               text='Airdrops'
               active={currentPath === '/dashboard/token-trader/airdrop'}
+            />
+            <SidebarLink
+              href='/dashboard/token-creator/airdrop-listing/claim'
+              icon={
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
+                  <path
+                    d='M9 2a1 1 0 000 2h2a1 1 0 100-2H9z'
+                  />
+                  <path
+                    fillRule='evenodd'
+                    d='M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              }
+              text='Claim Airdrop'
+              active={currentPath === '/dashboard/token-creator/airdrop-listing/claim'}
             />
             <SidebarLink
               href='/dashboard/token-trader/portfolio'

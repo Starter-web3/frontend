@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { ethers } from 'ethers';
-import { Button } from '../../../../../components/ui/button';
+import { Button } from '../../../../../../components/ui/button';
 import {
   Card,
   CardContent,
@@ -12,31 +12,31 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../../../../../components/ui/card';
-import { Input } from '../../../../../components/ui/input';
-import { Label } from '../../../../../components/ui/label';
+} from '../../../../../../components/ui/card';
+import { Input } from '../../../../../../components/ui/input';
+import { Label } from '../../../../../../components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../../components/ui/select';
-import { Switch } from '../../../../../components/ui/switch';
-import { Alert, AlertDescription } from '../../../../../components/ui/alert';
+} from '../../../../../../components/ui/select';
+import { Switch } from '../../../../../../components/ui/switch';
+import { Alert, AlertDescription } from '../../../../../../components/ui/alert';
 import { ArrowLeft, Coins, Calendar, Info } from 'lucide-react';
-import { Badge } from '../../../../../components/ui/badge';
-import { Separator } from '../../../../../components/ui/separator';
+import { Badge } from '../../../../../../components/ui/badge';
+import { Separator } from '../../../../../../components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '../../../../../components/ui/tooltip';
+} from '../../../../../../components/ui/tooltip';
 import DashBoardLayout from '../../DashboardLayout';
-import AirdropFactoryABI from '../../../../lib/contracts/AirdropFactory.json';
-import WebCoinABI from '../../../../lib/contracts/WebCoin.json';
-import { createMerkleTree, Recipient } from '../../../../lib/merkle';
+import AirdropFactoryABI from '../../../../../lib/contracts/AirdropFactory.json';
+import WebCoinABI from '../../../../../lib/contracts/WebCoin.json';
+import { createMerkleTree, Recipient } from '../../../../../lib/merkle';
 
 type RecipientFile = {
   id: string;
