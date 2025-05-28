@@ -143,7 +143,7 @@ const TokenTraderDashboard = () => {
     query: { enabled: airdropCalls.length > 0 },
   });
 
-  // Process token and airdrop data
+  // Process token data separately
   useEffect(() => {
     if (!isConnected || !address || !isMounted) {
       setUserName('Token Trader');
@@ -186,10 +186,17 @@ const TokenTraderDashboard = () => {
       setTokens(allTokens);
     }
 
+    setLoading(false);
+  }, [isConnected, address, tokenData, isMounted]);
+
+  // Process airdrops separately to avoid dependency on tokens state
+  useEffect(() => {
+    if (!isConnected || !address || !isMounted) return;
+
     // Process airdrops from getCreatorAirdrops
     if (airdropData && airdropData.length > 0) {
       const allAirdrops = airdropData
-        .flatMap((result) => { // Fix: Removed unused '_' parameter
+        .flatMap((result) => {
           if (result.status === 'success' && result.result) {
             const airdropList = result.result as {
               distributorAddress: string;
@@ -200,10 +207,11 @@ const TokenTraderDashboard = () => {
               dropAmount: bigint;
             }[];
             return airdropList.map((airdrop, airdropIndex) => {
-              const token = tokens.find((t) => t.address === airdrop.tokenAddress);
+              // Find token by address instead of relying on tokens state
+              const tokenName = tokens.find((t) => t.address === airdrop.tokenAddress)?.name;
               return {
                 id: airdropIndex + 1,
-                name: token ? `${token.name} Airdrop` : `Airdrop ${airdropIndex + 1}`,
+                name: tokenName ? `${tokenName} Airdrop` : `Airdrop ${airdropIndex + 1}`,
                 tokenAddress: airdrop.tokenAddress,
                 status: airdrop.startTime <= BigInt(Math.floor(Date.now() / 1000)) ? 'Active' : 'Pending',
                 tasks: [], // Placeholder: Add tasks if supported by contract
@@ -217,9 +225,7 @@ const TokenTraderDashboard = () => {
 
       setAirdrops(allAirdrops);
     }
-
-    setLoading(false);
-  }, [isConnected, address, tokenData, airdropData, isMounted, tokens]);
+  }, [isConnected, address, airdropData, isMounted, tokens]);
 
   // Handle errors
   useEffect(() => {
@@ -312,8 +318,8 @@ const TokenTraderDashboard = () => {
     </div>
   );
 
-  // Token Card Component
-  const TokenCard = ({ token }: { token: Token }) => {
+  // Token Card Component - Optimized for better performance
+  const TokenCard = React.memo(({ token }: { token: Token }) => {
     const typeIcons: { [key: string]: React.ReactNode } = {
       erc20: <Erc20Icon />,
       erc721: <Erc721Icon />,
@@ -361,27 +367,27 @@ const TokenTraderDashboard = () => {
             <span className="text-purple-300 text-xs font-bold">{label}</span>
           </div>
         </div>
-        <div className="mb-6">
+        <div className="mb-2">
           <p className="text-gray-500 text-xs font-medium mb-1">Token Address</p>
           <p className="text-gray-300 text-sm font-mono bg-black/20 px-3 py-2 rounded-md truncate">
             {token.address}
           </p>
         </div>
-        {isExpanded && (
-          <div className="mb-6 bg-black/20 p-4 rounded-lg transition-all duration-300">
-            <p className="text-gray-500 text-xs font-medium mb-2">Token Details</p>
-            <div className="space-y-2">
-              <div>
-                <p className="text-gray-400 text-sm">Deployer:</p>
-                <p className="text-gray-300 text-sm font-mono truncate">{token.creator || 'Unknown'}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">Token Type:</p>
-                <p className="text-gray-300 text-sm">{label}</p>
-              </div>
+        <div className={`mb-0 bg-black/20 p-4 rounded-lg transition-all duration-300 overflow-hidden ${
+          isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 p-0'
+        }`}>
+          <p className="text-gray-500 text-xs font-medium mb-2">Token Details</p>
+          <div className="space-y-2">
+            <div>
+              <p className="text-gray-400 text-sm">Deployer:</p>
+              <p className="text-gray-300 text-sm font-mono truncate">{token.creator || 'Unknown'}</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Token Type:</p>
+              <p className="text-gray-300 text-sm">{label}</p>
             </div>
           </div>
-        )}
+        </div>
         <div className="space-y-2">
           <button
             onClick={toggleDetails}
@@ -389,16 +395,12 @@ const TokenTraderDashboard = () => {
           >
             {isExpanded ? '▼ Hide Details' : '▶ View Details'}
           </button>
-          <Link
-            href={`/dashboard/token-trader/trade/${token.address}`}
-            className="w-full px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-sm font-medium rounded-lg transition-all duration-200 text-center block"
-          >
-            Trade
-          </Link>
         </div>
       </div>
     );
-  };
+  });
+
+  TokenCard.displayName = 'TokenCard';
 
   // Airdrop Card Component
   const AirdropCard = ({ airdrop }: { airdrop: Airdrop }) => (
@@ -530,7 +532,7 @@ const TokenTraderDashboard = () => {
             </Link>
           </div>
           {tokens.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
               {tokens.map((token) => (
                 <TokenCard key={token.id} token={token} />
               ))}
@@ -551,7 +553,7 @@ const TokenTraderDashboard = () => {
           )}
         </div>
 
-        <div className="mb-12 relative z-10">
+         <div className="mb-12 relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <h2 className="text-2xl font-bold text-white">Airdrops</h2>
             <Link
