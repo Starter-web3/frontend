@@ -6,6 +6,7 @@ import { Abi, isAddress } from 'viem';
 import StrataForgeAdminABI from '../../../../app/components/ABIs/StrataForgeAdminABI.json';
 import StrataForgeFactoryABI from '../../../../app/components/ABIs/StrataForgeFactoryABI.json';
 import DashboardLayout from '../DashboardLayout';
+import { useRouter } from 'next/navigation';
 
 const ADMIN_CONTRACT_ADDRESS = '0x7e8541Ba29253C1722d366e3d08975B03f3Cc839' as const;
 const FACTORY_CONTRACT_ADDRESS = '0x59F42c3eEcf829b34d8Ca846Dfc83D3cDC105C3F' as const;
@@ -30,15 +31,16 @@ interface WagmiContractResult {
 }
 
 const tokenTypes = [
-  { value: 0, label: 'ERC20', tiers: ['Free', 'Classic', 'Pro', 'Premium'] },
-  { value: 1, label: 'ERC721', tiers: ['Free', 'Classic', 'Pro', 'Premium'] },
-  { value: 2, label: 'ERC1155', tiers: ['Pro', 'Premium'] },
+  { value: 0, label: 'ERC-20', tiers: ['Free', 'Classic', 'Pro', 'Premium'] },
+  { value: 1, label: 'ERC-721', tiers: ['Free', 'Classic', 'Pro', 'Premium'] },
+  { value: 2, label: 'ERC-1155', tiers: ['Pro', 'Premium'] },
   { value: 3, label: 'Memecoin', tiers: ['Premium'] },
   { value: 4, label: 'Stablecoin', tiers: ['Premium'] },
 ];
 
 const CreateTokensPage = () => {
   const { address, isConnected } = useWallet();
+  const router = useRouter();
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [tokensLoading, setTokensLoading] = useState(false);
@@ -218,19 +220,6 @@ const CreateTokensPage = () => {
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value });
     }
-  };
-
-  // Format date function
-  const formatCreatedDate = (timestamp: bigint) => {
-    const date = new Date(Number(timestamp) * 1000);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
   };
 
   // Create token
@@ -564,27 +553,52 @@ const CreateTokensPage = () => {
           ) : createdTokens.length === 0 ? (
             <p className="text-gray-400">No tokens created yet.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {createdTokens.map((token, index) => (
                 <div
                   key={index}
-                  className="bg-[#1E1425]/80 backdrop-blur-md rounded-lg shadow-lg p-6 border border-purple-500/20"
+                  className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-purple-500/30 transition-all duration-300 min-w-[250px] max-w-[350px] w-full"
                 >
-                  <h3 className="text-lg font-semibold text-white mb-2">{token.name}</h3>
-                  <div className="space-y-1 mb-4">
-                    <p className="text-gray-400 text-sm">Symbol: <span className="text-gray-300">{token.symbol}</span></p>
-                    <p className="text-gray-400 text-sm">Type: <span className="text-gray-300">{tokenTypes.find(t => t.value === Number(token.tokenType))?.label || 'Unknown'}</span></p>
-                    <p className="text-gray-400 text-sm">Address: <span className="text-gray-300 font-mono">{token.tokenAddress.slice(0, 6)}...{token.tokenAddress.slice(-4)}</span></p>
-                    <p className="text-gray-400 text-sm">Created: <span className="text-gray-300">{formatCreatedDate(token.createdAt)}</span></p>
+                  <div className="flex flex-col space-y-4">
+                    {/* Token Name */}
+                    <div className="truncate">
+                      <p className="text-white font-semibold text-lg" title={token.name}>{token.name}</p>
+                    </div>
+                    {/* Token Symbol */}
+                    <div>
+                      <p className="text-gray-400 text-sm">
+                        Symbol: <span className="text-white font-medium">{token.symbol}</span>
+                      </p>
+                    </div>
+                    {/* Token Address */}
+                    <div className="truncate">
+                      <p className="text-gray-400 text-sm">
+                        Address: <span className="text-white font-mono text-xs" title={token.tokenAddress}>{token.tokenAddress}</span>
+                      </p>
+                    </div>
+                    {/* Token Type and Button */}
+                    <div className="flex items-center justify-between pt-2 gap-2">
+                      <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full border border-green-500/30 truncate max-w-[100px]">
+                        {tokenTypes.find(t => t.value === Number(token.tokenType))?.label || 'Unknown'}
+                      </span>
+                      <button
+                        className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition duration-300 whitespace-nowrap"
+                        onClick={() => {
+                          router.push(`/dashboard/token-creator/create-tokens/manage-token/${token.tokenAddress}`); // Updated path
+                        }}
+                      >
+                        Manage Token
+                      </button>
+                      {/* Alternative using Link (commented out):
+                      <Link
+                        href={`/dashboard/token-creator/manage-token/${token.tokenAddress}`}
+                        className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition duration-300 whitespace-nowrap"
+                      >
+                        Manage Token
+                      </Link>
+                      */}
+                    </div>
                   </div>
-                  <button
-                    className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg font-semibold hover:opacity-90 transition duration-300"
-                    onClick={() => {
-                      window.location.href = `/dashboard/tokens/${token.tokenAddress}`;
-                    }}
-                  >
-                    Manage Token
-                  </button>
                 </div>
               ))}
             </div>
