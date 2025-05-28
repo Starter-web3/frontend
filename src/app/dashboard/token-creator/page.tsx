@@ -390,7 +390,7 @@ const Dashboard = () => {
         <div className="mt-4 flex justify-between items-center relative z-10">
           <span className="text-green-500 font-bold">{label}</span>
           <Link
-            href={`/dashboard/token-creator/create-tokens/manage-token/${token.address}`} // Updated path
+            href={`/dashboard/token-creator/create-tokens/manage-token/${token.id}`}
             className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
           >
             Manage Token
