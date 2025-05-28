@@ -389,12 +389,12 @@ const TokenTraderDashboard = () => {
           >
             {isExpanded ? '▼ Hide Details' : '▶ View Details'}
           </button>
-          <Link
+          {/* <Link
             href={`/dashboard/token-trader/trade/${token.address}`}
             className="w-full px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-sm font-medium rounded-lg transition-all duration-200 text-center block"
           >
             Trade
-          </Link>
+          </Link> */}
         </div>
       </div>
     );
