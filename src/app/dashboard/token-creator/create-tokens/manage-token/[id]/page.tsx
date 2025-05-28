@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useReadContract, useWriteContract, useAccount } from 'wagmi';
 import { Abi, isAddress } from 'viem';
-import DashboardLayout from '../../DashboardLayout';
-import StrataForgeERC20ImplementationABI from '../../../../components/ABIs/StrataForgeERC20ImplementationABI.json';
-import StrataForgeERC721ImplementationABI from '../../../../components/ABIs/StrataForgeERC721ImplementationABI.json';
-import StrataForgeERC1155ImplementationABI from '../../../../components/ABIs/StrataForgeERC1155ImplementationABI.json';
-import StrataForgeMemecoinImplementationABI from '../../../../components/ABIs/StrataForgeMemecoinImplementationABI.json';
-import StrataForgeStablecoinImplementationABI from '../../../../components/ABIs/StrataForgeStablecoinImplementationABI.json';
+import DashboardLayout from '../../../DashboardLayout';
+import StrataForgeERC20ImplementationABI from '../../../../../components/ABIs/StrataForgeERC20ImplementationABI.json';
+import StrataForgeERC721ImplementationABI from '../../../../../components/ABIs/StrataForgeERC721ImplementationABI.json';
+import StrataForgeERC1155ImplementationABI from '../../../../../components/ABIs/StrataForgeERC1155ImplementationABI.json';
+import StrataForgeMemecoinImplementationABI from '../../../../../components/ABIs/StrataForgeMemecoinImplementationABI.json';
+import StrataForgeStablecoinImplementationABI from '../../../../../components/ABIs/StrataForgeStablecoinImplementationABI.json';
+import StrataForgeFactoryABI from '../../../../../components/ABIs/StrataForgeFactoryABI.json';
 
 // Background Shapes Component
 const BackgroundShapes = () => (
@@ -30,8 +31,15 @@ interface TokenDetails {
   decimals?: number;
 }
 
+interface TokenInfo {
+  tokenAddress: string;
+  tokenType: bigint;
+}
+
+const FACTORY_CONTRACT_ADDRESS = '0x59F42c3eEcf829b34d8Ca846Dfc83D3cDC105C3F' as const;
+
 const ManageToken = () => {
-  const { address: tokenAddress } = useParams<{ address: string }>();
+  const { id: tokenId } = useParams<{ id: string }>();
   const { address: account } = useAccount();
   const [tokenType, setTokenType] = useState<'erc20' | 'erc721' | 'erc1155' | 'meme' | 'stable' | null>(null);
   const [tokenDetails, setTokenDetails] = useState<TokenDetails | null>(null);
@@ -43,6 +51,33 @@ const ManageToken = () => {
   const [loading, setLoading] = useState(true);
   const { writeContract, isPending, error: writeError } = useWriteContract();
 
+  // Fetch TokenInfo from factory
+  const { data: tokenInfo, error: tokenInfoError, isLoading: tokenInfoLoading } = useReadContract({
+    address: FACTORY_CONTRACT_ADDRESS,
+    abi: StrataForgeFactoryABI as Abi,
+    functionName: 'getTokenById',
+    args: [BigInt(tokenId || '0')],
+    query: { enabled: !!tokenId && !isNaN(Number(tokenId)) },
+  });
+
+  // Extract tokenAddress and type from TokenInfo
+  const tokenAddress = tokenInfo ? (tokenInfo as TokenInfo).tokenAddress : null;
+  const factoryTokenType = tokenInfo ? Number((tokenInfo as TokenInfo).tokenType) : null;
+
+  // Map factory token type to local token type
+  useEffect(() => {
+    if (factoryTokenType !== null) {
+      const typeMap: { [key: number]: 'erc20' | 'erc721' | 'erc1155' | 'meme' | 'stable' } = {
+        0: 'erc20',
+        1: 'erc721',
+        2: 'erc1155',
+        3: 'meme',
+        4: 'stable',
+      };
+      setTokenType(typeMap[factoryTokenType] || null);
+    }
+  }, [factoryTokenType]);
+
   // ABIs for different token types
   const tokenABIs: Record<string, Abi> = {
     erc20: StrataForgeERC20ImplementationABI as Abi,
@@ -52,13 +87,13 @@ const ManageToken = () => {
     stable: StrataForgeStablecoinImplementationABI as Abi,
   };
 
-  // Hook calls for token type detection
+  // Hook calls for token type detection (fallback if factory type fails)
   const erc721InterfaceCheck = useReadContract({
     address: tokenAddress as `0x${string}`,
     abi: tokenABIs.erc721,
     functionName: 'supportsInterface',
     args: ['0x80ac58cd'],
-    query: { enabled: !!tokenAddress && isAddress(tokenAddress) },
+    query: { enabled: !!tokenAddress && isAddress(tokenAddress) && !tokenType },
   });
 
   const erc1155InterfaceCheck = useReadContract({
@@ -66,37 +101,33 @@ const ManageToken = () => {
     abi: tokenABIs.erc1155,
     functionName: 'supportsInterface',
     args: ['0xd9b67a26'],
-    query: { enabled: !!tokenAddress && isAddress(tokenAddress) },
+    query: { enabled: !!tokenAddress && isAddress(tokenAddress) && !tokenType },
   });
 
   const memeMaxWalletCheck = useReadContract({
     address: tokenAddress as `0x${string}`,
     abi: tokenABIs.meme,
     functionName: 'maxWalletSize',
-    query: { enabled: !!tokenAddress && isAddress(tokenAddress) },
+    query: { enabled: !!tokenAddress && isAddress(tokenAddress) && !tokenType },
   });
 
   const stableCollateralCheck = useReadContract({
     address: tokenAddress as `0x${string}`,
     abi: tokenABIs.stable,
     functionName: 'collateralToken',
-    query: { enabled: !!tokenAddress && isAddress(tokenAddress) },
+    query: { enabled: !!tokenAddress && isAddress(tokenAddress) && !tokenType },
   });
 
   const erc20DecimalsCheck = useReadContract({
     address: tokenAddress as `0x${string}`,
     abi: tokenABIs.erc20,
     functionName: 'decimals',
-    query: { enabled: !!tokenAddress && isAddress(tokenAddress) },
+    query: { enabled: !!tokenAddress && isAddress(tokenAddress) && !tokenType },
   });
 
-  // Detect token type
+  // Detect token type (fallback if not set by factory)
   useEffect(() => {
-    if (!tokenAddress || !isAddress(tokenAddress)) {
-      setError('Invalid token address');
-      setLoading(false);
-      return;
-    }
+    if (tokenType || !tokenAddress || !isAddress(tokenAddress)) return;
 
     const detectTokenType = () => {
       try {
@@ -140,12 +171,13 @@ const ManageToken = () => {
         setError('Failed to detect token type');
         console.error(err);
       } finally {
-        setLoading(false);
+        if (!tokenType) setLoading(false);
       }
     };
 
     detectTokenType();
   }, [
+    tokenType,
     tokenAddress,
     erc721InterfaceCheck.data,
     erc721InterfaceCheck.isLoading,
@@ -211,6 +243,7 @@ const ManageToken = () => {
     }
 
     setIsOwner(Boolean(owner && account && owner.toLowerCase() === account.toLowerCase()));
+    setLoading(false);
   }, [
     tokenType,
     tokenAddress,
@@ -221,6 +254,18 @@ const ManageToken = () => {
     ownerQuery.data,
   ]);
 
+  // Handle errors from tokenInfo
+  useEffect(() => {
+    if (tokenInfoError) {
+      setError('Invalid token ID or token not found');
+      setLoading(false);
+    }
+    if (tokenId && isNaN(Number(tokenId))) {
+      setError('Invalid token ID format');
+      setLoading(false);
+    }
+  }, [tokenInfoError, tokenId]);
+
   // Read functions to display
   const readFunctions: Record<string, { name: string; label: string; args?: unknown[] }[]> = {
     erc20: [
@@ -229,17 +274,28 @@ const ManageToken = () => {
       { name: 'decimals', label: 'Decimals' },
       { name: 'totalSupply', label: 'Total Supply' },
       { name: 'balanceOf', label: 'Your Balance', args: [account] },
+      { name: 'allowance', label: 'Allowance for Spender', args: [account, ''] }, // Spender address input needed
       { name: 'paused', label: 'Paused' },
+      { name: 'owner', label: 'Owner' },
     ],
     erc721: [
       { name: 'name', label: 'Name' },
       { name: 'symbol', label: 'Symbol' },
       { name: 'balanceOf', label: 'Your Balance', args: [account] },
+      { name: 'ownerOf', label: 'Owner of Token ID', args: ['1'] }, // Token ID input
+      { name: 'tokenURI', label: 'Token URI', args: ['1'] }, // Token ID input
+      { name: 'getApproved', label: 'Approved Address for Token ID', args: ['1'] }, // Token ID input
+      { name: 'isApprovedForAll', label: 'Operator Approval', args: [account, ''] }, // Operator address input
       { name: 'paused', label: 'Paused' },
+      { name: 'owner', label: 'Owner' },
     ],
     erc1155: [
-      { name: 'balanceOf', label: 'Balance Of Token ID 1', args: [account, '1'] },
+      { name: 'balanceOf', label: 'Balance of Token ID', args: [account, '1'] }, // Token ID input
+      { name: 'uri', label: 'URI for Token ID', args: ['1'] }, // Token ID input
+      { name: 'isApprovedForAll', label: 'Operator Approval', args: [account, ''] }, // Operator address input
       { name: 'paused', label: 'Paused' },
+      { name: 'owner', label: 'Owner' },
+      // Note: balanceOfBatch requires dynamic array inputs, handled separately if needed
     ],
     meme: [
       { name: 'name', label: 'Name' },
@@ -247,9 +303,12 @@ const ManageToken = () => {
       { name: 'decimals', label: 'Decimals' },
       { name: 'totalSupply', label: 'Total Supply' },
       { name: 'balanceOf', label: 'Your Balance', args: [account] },
+      { name: 'allowance', label: 'Allowance for Spender', args: [account, ''] }, // Spender address input
       { name: 'maxWalletSize', label: 'Max Wallet Size' },
       { name: 'maxTransactionAmount', label: 'Max Transaction Amount' },
+      { name: 'isExcludedFromLimits', label: 'Excluded from Limits', args: [account] },
       { name: 'paused', label: 'Paused' },
+      { name: 'owner', label: 'Owner' },
     ],
     stable: [
       { name: 'name', label: 'Name' },
@@ -257,10 +316,15 @@ const ManageToken = () => {
       { name: 'decimals', label: 'Decimals' },
       { name: 'totalSupply', label: 'Total Supply' },
       { name: 'balanceOf', label: 'Your Balance', args: [account] },
+      { name: 'allowance', label: 'Allowance for Spender', args: [account, ''] }, // Spender address input
       { name: 'collateralToken', label: 'Collateral Token' },
       { name: 'collateralRatio', label: 'Collateral Ratio' },
+      { name: 'treasury', label: 'Treasury' },
+      { name: 'mintFee', label: 'Mint Fee' },
+      { name: 'redeemFee', label: 'Redeem Fee' },
       { name: 'collateralDeposited', label: 'Your Collateral Deposited', args: [account] },
       { name: 'paused', label: 'Paused' },
+      { name: 'owner', label: 'Owner' },
     ],
   };
 
@@ -287,6 +351,31 @@ const ManageToken = () => {
         ],
       },
       {
+        name: 'transferFrom',
+        args: ['from', 'to', 'amount'],
+        inputs: [
+          { label: 'From Address', type: 'address' },
+          { label: 'To Address', type: 'address' },
+          { label: 'Amount', type: 'number' },
+        ],
+      },
+      {
+        name: 'increaseAllowance',
+        args: ['spender', 'addedValue'],
+        inputs: [
+          { label: 'Spender Address', type: 'address' },
+          { label: 'Added Value', type: 'number' },
+        ],
+      },
+      {
+        name: 'decreaseAllowance',
+        args: ['spender', 'subtractedValue'],
+        inputs: [
+          { label: 'Spender Address', type: 'address' },
+          { label: 'Subtracted Value', type: 'number' },
+        ],
+      },
+      {
         name: 'mint',
         args: ['to', 'amount'],
         inputs: [
@@ -295,9 +384,35 @@ const ManageToken = () => {
         ],
         ownerOnly: true,
       },
-      { name: 'burn', args: ['amount'], inputs: [{ label: 'Amount', type: 'number' }] },
-      { name: 'pause', args: [], inputs: [], ownerOnly: true },
-      { name: 'unpause', args: [], inputs: [], ownerOnly: true },
+      {
+        name: 'burn',
+        args: ['amount'],
+        inputs: [{ label: 'Amount', type: 'number' }],
+      },
+      {
+        name: 'pause',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'unpause',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'renounceOwnership',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'transferOwnership',
+        args: ['newOwner'],
+        inputs: [{ label: 'New Owner Address', type: 'address' }],
+        ownerOnly: true,
+      },
     ],
     erc721: [
       {
@@ -322,6 +437,31 @@ const ManageToken = () => {
         ownerOnly: true,
       },
       {
+        name: 'approve',
+        args: ['to', 'tokenId'],
+        inputs: [
+          { label: 'To Address', type: 'address' },
+          { label: 'Token ID', type: 'number' },
+        ],
+      },
+      {
+        name: 'setApprovalForAll',
+        args: ['operator', 'approved'],
+        inputs: [
+          { label: 'Operator Address', type: 'address' },
+          { label: 'Approved', type: 'checkbox' },
+        ],
+      },
+      {
+        name: 'transferFrom',
+        args: ['from', 'to', 'tokenId'],
+        inputs: [
+          { label: 'From Address', type: 'address' },
+          { label: 'To Address', type: 'address' },
+          { label: 'Token ID', type: 'number' },
+        ],
+      },
+      {
         name: 'safeTransferFrom',
         args: ['from', 'to', 'tokenId'],
         inputs: [
@@ -330,8 +470,40 @@ const ManageToken = () => {
           { label: 'Token ID', type: 'number' },
         ],
       },
-      { name: 'pause', args: [], inputs: [], ownerOnly: true },
-      { name: 'unpause', args: [], inputs: [], ownerOnly: true },
+      {
+        name: 'safeTransferFrom',
+        args: ['from', 'to', 'tokenId', 'data'],
+        inputs: [
+          { label: 'From Address', type: 'address' },
+          { label: 'To Address', type: 'address' },
+          { label: 'Token ID', type: 'number' },
+          { label: 'Data', type: 'text', default: '0x' },
+        ],
+      },
+      {
+        name: 'pause',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'unpause',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'renounceOwnership',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'transferOwnership',
+        args: ['newOwner'],
+        inputs: [{ label: 'New Owner Address', type: 'address' }],
+        ownerOnly: true,
+      },
     ],
     erc1155: [
       {
@@ -348,7 +520,7 @@ const ManageToken = () => {
       {
         name: 'setURI',
         args: ['newuri'],
-        inputs: [{ label: 'URI', type: 'text' }],
+        inputs: [{ label: 'New URI', type: 'text' }],
         ownerOnly: true,
       },
       {
@@ -361,6 +533,14 @@ const ManageToken = () => {
         ownerOnly: true,
       },
       {
+        name: 'setApprovalForAll',
+        args: ['operator', 'approved'],
+        inputs: [
+          { label: 'Operator Address', type: 'address' },
+          { label: 'Approved', type: 'checkbox' },
+        ],
+      },
+      {
         name: 'safeTransferFrom',
         args: ['from', 'to', 'id', 'amount', 'data'],
         inputs: [
@@ -371,8 +551,41 @@ const ManageToken = () => {
           { label: 'Data', type: 'text', default: '0x' },
         ],
       },
-      { name: 'pause', args: [], inputs: [], ownerOnly: true },
-      { name: 'unpause', args: [], inputs: [], ownerOnly: true },
+      {
+        name: 'safeBatchTransferFrom',
+        args: ['from', 'to', 'ids', 'amounts', 'data'],
+        inputs: [
+          { label: 'From Address', type: 'address' },
+          { label: 'To Address', type: 'address' },
+          { label: 'Token IDs (comma-separated)', type: 'text' },
+          { label: 'Amounts (comma-separated)', type: 'text' },
+          { label: 'Data', type: 'text', default: '0x' },
+        ],
+      },
+      {
+        name: 'pause',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'unpause',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'renounceOwnership',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'transferOwnership',
+        args: ['newOwner'],
+        inputs: [{ label: 'New Owner Address', type: 'address' }],
+        ownerOnly: true,
+      },
     ],
     meme: [
       {
@@ -392,6 +605,31 @@ const ManageToken = () => {
         ],
       },
       {
+        name: 'transferFrom',
+        args: ['from', 'to', 'amount'],
+        inputs: [
+          { label: 'From Address', type: 'address' },
+          { label: 'To Address', type: 'address' },
+          { label: 'Amount', type: 'number' },
+        ],
+      },
+      {
+        name: 'increaseAllowance',
+        args: ['spender', 'addedValue'],
+        inputs: [
+          { label: 'Spender Address', type: 'address' },
+          { label: 'Added Value', type: 'number' },
+        ],
+      },
+      {
+        name: 'decreaseAllowance',
+        args: ['spender', 'amount'],
+        inputs: [
+          { label: 'Spender Address', type: 'address' },
+          { label: 'Amount', type: 'number' },
+        ],
+      },
+      {
         name: 'mint',
         args: ['to', 'amount'],
         inputs: [
@@ -400,7 +638,11 @@ const ManageToken = () => {
         ],
         ownerOnly: true,
       },
-      { name: 'burn', args: ['amount'], inputs: [{ label: 'Amount', type: 'number' }] },
+      {
+        name: 'burn',
+        args: ['amount'],
+        inputs: [{ label: 'Amount', type: 'number' }],
+      },
       {
         name: 'setMaxWalletSize',
         args: ['amount'],
@@ -422,8 +664,30 @@ const ManageToken = () => {
         ],
         ownerOnly: true,
       },
-      { name: 'pause', args: [], inputs: [], ownerOnly: true },
-      { name: 'unpause', args: [], inputs: [], ownerOnly: true },
+      {
+        name: 'pause',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'unpause',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'renounceOwnership',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'transferOwnership',
+        args: ['newOwner'],
+        inputs: [{ label: 'New Owner Address', type: 'address' }],
+        ownerOnly: true,
+      },
     ],
     stable: [
       {
@@ -443,6 +707,31 @@ const ManageToken = () => {
         ],
       },
       {
+        name: 'transferFrom',
+        args: ['from', 'to', 'amount'],
+        inputs: [
+          { label: 'From Address', type: 'address' },
+          { label: 'To Address', type: 'address' },
+          { label: 'Amount', type: 'number' },
+        ],
+      },
+      {
+        name: 'increaseAllowance',
+        args: ['spender', 'addedValue'],
+        inputs: [
+          { label: 'Spender Address', type: 'address' },
+          { label: 'Added Value', type: 'number' },
+        ],
+      },
+      {
+        name: 'decreaseAllowance',
+        args: ['spender', 'subtractedValue'],
+        inputs: [
+          { label: 'Spender Address', type: 'address' },
+          { label: 'Subtracted Value', type: 'number' },
+        ],
+      },
+      {
         name: 'mint',
         args: ['collateralAmount'],
         inputs: [{ label: 'Collateral Amount', type: 'number' }],
@@ -452,7 +741,11 @@ const ManageToken = () => {
         args: ['tokenAmount'],
         inputs: [{ label: 'Token Amount', type: 'number' }],
       },
-      { name: 'burn', args: ['amount'], inputs: [{ label: 'Amount', type: 'number' }] },
+      {
+        name: 'burn',
+        args: ['amount'],
+        inputs: [{ label: 'Amount', type: 'number' }],
+      },
       {
         name: 'setCollateralRatio',
         args: ['_collateralRatio'],
@@ -474,8 +767,30 @@ const ManageToken = () => {
         inputs: [{ label: 'Treasury Address', type: 'address' }],
         ownerOnly: true,
       },
-      { name: 'pause', args: [], inputs: [], ownerOnly: true },
-      { name: 'unpause', args: [], inputs: [], ownerOnly: true },
+      {
+        name: 'pause',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'unpause',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'renounceOwnership',
+        args: [],
+        inputs: [],
+        ownerOnly: true,
+      },
+      {
+        name: 'transferOwnership',
+        args: ['newOwner'],
+        inputs: [{ label: 'New Owner Address', type: 'address' }],
+        ownerOnly: true,
+      },
     ],
   };
 
@@ -499,20 +814,28 @@ const ManageToken = () => {
       const args = action.args.map((arg: string) => {
         const value = formInputs[arg];
         if (value === undefined) throw new Error(`Missing ${arg}`);
-        if (arg.includes('address') && !isAddress(value)) throw new Error(`Invalid address for ${arg}`);
-        if (
-          arg.includes('amount') ||
-          arg.includes('id') ||
-          arg.includes('fee') ||
-          arg.includes('ratio') ||
-          arg.includes('tokenId')
-        ) {
+        if (arg.includes('address') || arg.includes('to') || arg.includes('from') || arg.includes('spender') || arg.includes('operator') || arg.includes('account') || arg.includes('treasury') || arg.includes('newOwner')) {
+          if (!isAddress(value)) throw new Error(`Invalid address for ${arg}`);
+          return value;
+        }
+        if (arg.includes('amount') || arg.includes('id') || arg.includes('tokenId') || arg.includes('fee') || arg.includes('ratio') || arg.includes('addedValue') || arg.includes('subtractedValue') || arg.includes('collateralAmount') || arg.includes('tokenAmount')) {
           const num = Number(value);
           if (isNaN(num) || num <= 0) throw new Error(`Invalid number for ${arg}`);
           return BigInt(num);
         }
-        if (arg === 'excluded') return value === 'true';
-        return value;
+        if (arg === 'ids' || arg === 'amounts') {
+          // Parse comma-separated values for arrays
+          const values = value.split(',').map(v => {
+            const num = Number(v.trim());
+            if (isNaN(num) || num <= 0) throw new Error(`Invalid number in ${arg}`);
+            return BigInt(num);
+          });
+          return values;
+        }
+        if (arg === 'approved' || arg === 'excluded') {
+          return value === 'true';
+        }
+        return value; // For uri, data, etc.
       });
 
       await writeContract({
@@ -541,17 +864,34 @@ const ManageToken = () => {
 
   // Render read function result
   const ReadCard = ({ func }: { func: { name: string; label: string; args?: unknown[] } }) => {
+    // Handle dynamic args for functions requiring user input (e.g., allowance, ownerOf)
+    const dynamicArgs: (string | unknown)[] = (func.args || []).map(arg => {
+      if (typeof arg === 'string' && arg === '') {
+        return formInputs[func.name] || '';
+      }
+      return arg;
+    });
+
     const { data, error: readError } = useReadContract({
       address: tokenAddress as `0x${string}`,
       abi: tokenABIs[tokenType!],
       functionName: func.name,
-      args: func.args,
-      query: { enabled: !!tokenType && !!tokenAddress },
+      args: dynamicArgs,
+      query: { enabled: !!tokenType && !!tokenAddress && (!func.args || dynamicArgs.every(arg => arg !== '')) },
     });
 
     return (
       <div className="bg-[#1E1425]/80 rounded-xl p-4 border border-purple-500/20">
-        <p className="text-gray-700 text-sm font-medium">{func.label}</p>
+        <p className="text-gray-300 text-sm font-medium">{func.label}</p>
+        {func.args?.some(arg => arg === '') && (
+          <input
+            type="text"
+            placeholder={`Enter ${func.name} parameter`}
+            value={formInputs[func.name] || ''}
+            onChange={(e) => handleInputChange(func.name, e.target.value)}
+            className="w-full p-2 mt-1 bg-[#2A1F36] border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        )}
         <p className="text-white text-lg mt-1 truncate">
           {readError ? 'Error fetching data' : data?.toString() || 'Loading...'}
         </p>
@@ -620,7 +960,7 @@ const ManageToken = () => {
     );
   };
 
-  if (loading) {
+  if (loading || tokenInfoLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen bg-[#1A0D23] relative">
@@ -631,7 +971,7 @@ const ManageToken = () => {
     );
   }
 
-  if (error || !tokenType || !tokenDetails) {
+  if (error || !tokenType || !tokenDetails || !tokenAddress) {
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
@@ -650,8 +990,9 @@ const ManageToken = () => {
         <BackgroundShapes />
         <div className="mb-8 relative z-10">
           <h1 className="font-poppins font-semibold text-3xl md:text-4xl text-white mb-2">
-            Manage Token: {tokenDetails.name} ({tokenDetails.symbol})
+            {tokenDetails.name} ({tokenDetails.symbol})
           </h1>
+          <p className="text-gray-400">Token ID: {tokenId}</p>
           <p className="text-gray-400">Address: {tokenAddress}</p>
           <p className="text-gray-400">Type: {tokenType.toUpperCase()}</p>
         </div>
