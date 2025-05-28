@@ -51,7 +51,7 @@ const FreeIcon = () => (
 );
 
 const ClassicIcon = () => (
-  <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 Nowhere 24">
+  <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path
       d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
       strokeWidth="2"
@@ -61,14 +61,14 @@ const ClassicIcon = () => (
 
 const ProIcon = () => (
   <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path d="M4 12l8-8 8 8-8 8-8-8-8z" strokeWidth="2" />
+    <path d="M4 12l8-8 8 8-8 8-8-8z" strokeWidth="2" />
   </svg>
 );
 
 const PremiumIcon = () => (
-  <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24 24">
+  <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path
-      d="M12 4c-4.42 0-8 1.79-8-8 4s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4zm-8-8 8v4h4 v4H4zm8 0v4h4v-4h-4zm8 0v4h4h-4h-4z"
+      d="M12 4c-4.42 0-8 1.79-8 4s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4zm-8 8v4h4v-4H4zm8 0v4h4v-4h-4zm8 0v4h4v-4h-4z"
       strokeWidth="2"
     />
   </svg>
@@ -255,6 +255,19 @@ const Dashboard = () => {
     setLoading(false);
   }, [subError, totalTokensError, tokenDataError, connectError]);
 
+  // Handler for airdrop button clicks
+  const handleAirdropClick = (e: React.MouseEvent) => {
+    if (!isConnected) {
+      e.preventDefault();
+      alert('Please connect your wallet to access airdrop features.');
+      return;
+    }
+    if (subscription?.plan !== 'Premium') {
+      e.preventDefault();
+      alert('This feature is only available for Premium subscribers. Please upgrade your plan.');
+    }
+  };
+
   // Background Shapes Component
   const BackgroundShapes = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -377,7 +390,7 @@ const Dashboard = () => {
         <div className="mt-4 flex justify-between items-center relative z-10">
           <span className="text-green-500 font-bold">{label}</span>
           <Link
-            href={`/dashboard/tokens/${token.address}`}
+            href={`/dashboard/token-creator/create-tokens/manage-token/${token.address}`} // Updated path
             className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
           >
             Manage Token
@@ -560,7 +573,7 @@ const Dashboard = () => {
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p className="text-red-300 font-medium">{error.join(', ')}</p>
+            <p className="text-red-500 font-medium">{error.join(', ')}</p>
           </div>
         )}
         <div className="mb-10 relative z-10">
@@ -571,7 +584,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center mb-6">
             <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Tokens</h2>
             <Link
-              href="/dashboard/create-token"
+              href="/dashboard/token-creator/create-tokens"
               className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
             >
               Create New Token
@@ -590,7 +603,7 @@ const Dashboard = () => {
               </div>
               <p className="text-gray-400 text-lg mb-4">You haven’t created any tokens yet.</p>
               <Link
-                href="/dashboard/create-token"
+                href="/dashboard/token-creator/create-token"
                 className="inline-flex px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
               >
                 Create Your First Token
@@ -603,7 +616,12 @@ const Dashboard = () => {
             <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Airdrops</h2>
             <Link
               href="/dashboard/token-creator/airdrop-listing/upload"
-              className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition"
+              className={`px-4 py-2 rounded-xl text-white transition ${
+                subscription?.plan === 'Premium'
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
+                  : 'bg-gray-600 cursor-not-allowed'
+              }`}
+              onClick={handleAirdropClick}
             >
               Create Airdrop
             </Link>
@@ -622,7 +640,12 @@ const Dashboard = () => {
               <p className="text-gray-400 text-lg mb-4">No airdrops created yet. Start an airdrop to distribute your tokens!</p>
               <Link
                 href="/dashboard/token-creator/airdrop-listing/upload"
-                className="inline-flex px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition"
+                className={`inline-flex px-6 py-3 rounded-xl text-white transition ${
+                  subscription?.plan === 'Premium'
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
+                    : 'bg-gray-600 cursor-not-allowed'
+                }`}
+                onClick={handleAirdropClick}
               >
                 Create Your First Airdrop
               </Link>

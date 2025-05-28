@@ -3,12 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useReadContract, useWriteContract, useAccount } from 'wagmi';
 import { Abi, isAddress } from 'viem';
-import DashBoardLayout from '../../../../src/app/dashboard/token-creator/DashboardLayout';
-import StrataForgeERC20ImplementationABI from '../../../app/components/ABIs/StrataForgeERC20ImplementationABI.json';
-import StrataForgeERC721ImplementationABI from '../../../app/components/ABIs/StrataForgeERC721ImplementationABI.json';
-import StrataForgeERC1155ImplementationABI from '../../../app/components/ABIs/StrataForgeERC1155ImplementationABI.json';
-import StrataForgeMemecoinImplementationABI from '../../../app/components/ABIs/StrataForgeMemecoinImplementationABI.json';
-import StrataForgeStablecoinImplementationABI from '../../../app/components/ABIs/StrataForgeStablecoinImplementationABI.json';
+import DashboardLayout from '../../DashboardLayout';
+import StrataForgeERC20ImplementationABI from '../../../../components/ABIs/StrataForgeERC20ImplementationABI.json';
+import StrataForgeERC721ImplementationABI from '../../../../components/ABIs/StrataForgeERC721ImplementationABI.json';
+import StrataForgeERC1155ImplementationABI from '../../../../components/ABIs/StrataForgeERC1155ImplementationABI.json';
+import StrataForgeMemecoinImplementationABI from '../../../../components/ABIs/StrataForgeMemecoinImplementationABI.json';
+import StrataForgeStablecoinImplementationABI from '../../../../components/ABIs/StrataForgeStablecoinImplementationABI.json';
 
 // Background Shapes Component
 const BackgroundShapes = () => (
@@ -622,30 +622,30 @@ const ManageToken = () => {
 
   if (loading) {
     return (
-      <DashBoardLayout>
+      <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen bg-[#1A0D23] relative">
           <BackgroundShapes />
           <div className="w-16 h-16 border-4 border-gray-200 border-t-purple-600 rounded-full animate-spin relative z-10"></div>
         </div>
-      </DashBoardLayout>
+      </DashboardLayout>
     );
   }
 
   if (error || !tokenType || !tokenDetails) {
     return (
-      <DashBoardLayout>
+      <DashboardLayout>
         <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
           <BackgroundShapes />
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3 relative z-10">
             <p className="text-red-300 font-medium">{error || 'Failed to load token data'}</p>
           </div>
         </div>
-      </DashBoardLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <DashBoardLayout>
+    <DashboardLayout>
       <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
         <BackgroundShapes />
         <div className="mb-8 relative z-10">
@@ -684,7 +684,7 @@ const ManageToken = () => {
         </div>
         <WriteModal />
       </div>
-    </DashBoardLayout>
+    </DashboardLayout>
   );
 };
 
