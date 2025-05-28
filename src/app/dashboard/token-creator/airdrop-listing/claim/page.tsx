@@ -5,20 +5,20 @@ import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { ethers } from 'ethers';
 
-import { Button } from '../../../../../components/ui/button';
+import { Button } from '../../../../../../components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '../../../../../components/ui/card';
-import { Input } from '../../../../../components/ui/input';
-import { Label } from '../../../../../components/ui/label';
-import { Alert, AlertDescription } from '../../../../../components/ui/alert';
+} from '../../../../../../components/ui/card';
+import { Input } from '../../../../../../components/ui/input';
+import { Label } from '../../../../../../components/ui/label';
+import { Alert, AlertDescription } from '../../../../../../components/ui/alert';
 import { ArrowLeft, Coins } from 'lucide-react';
 import DashBoardLayout from '../../DashboardLayout';
-import MerkleDistributorABI from '../../../../lib/contracts/MerkleDistributor.json';
+import MerkleDistributorABI from '../../../../../lib/contracts/MerkleDistributor.json';
 
 // Add MerkleDistributor ABI with merkleRoot function
 const ExtendedMerkleDistributorABI = [

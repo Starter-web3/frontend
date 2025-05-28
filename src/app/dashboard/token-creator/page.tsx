@@ -1,10 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useWallet } from '../../contexts/WalletContext';
+import { useWallet } from '../../../contexts/WalletContext';
 import { useReadContract, useReadContracts } from 'wagmi';
 import { Abi } from 'viem';
-import StrataForgeFactoryABI from '../../app/components/ABIs/StrataForgeFactoryABI.json';
-import StrataForgeAdminABI from '../../app/components/ABIs/StrataForgeAdminABI.json';
+import StrataForgeAdminABI from '../../../app/components/ABIs/StrataForgeAdminABI.json';
+import StrataForgeFactoryABI from '../../../app/components/ABIs/StrataForgeFactoryABI.json';
 import DashBoardLayout from './DashboardLayout';
 import Link from 'next/link';
 
@@ -120,7 +120,7 @@ const Dashboard = () => {
     abi: adminABI,
     functionName: 'getSubscription',
     args: [address],
-    query: { enabled: isConnected && !!address, retry: 3, retryDelay: 1000 },
+    query: { enabled: isConnected && !!address, retry: true, retryDelay: 1000 },
   });
 
   // Fetch total token count
@@ -168,9 +168,9 @@ const Dashboard = () => {
           const planName = planNames[Number(tierIndex)] || 'Free';
           const tokenLimits: { [key: string]: number } = {
             Free: 2,
-            Classic: 50,
-            Pro: 100,
-            Premium: 500,
+            Classic: 5,
+            Pro: 10,
+            Premium: Infinity,
           };
           const maxTokens = tokenLimits[planName];
           const remainingTokens = Math.max(0, maxTokens - Number(tokensThisMonth));
@@ -254,6 +254,19 @@ const Dashboard = () => {
     setError(errors);
     setLoading(false);
   }, [subError, totalTokensError, tokenDataError, connectError]);
+
+  // Handler for airdrop button clicks
+  const handleAirdropClick = (e: React.MouseEvent) => {
+    if (!isConnected) {
+      e.preventDefault();
+      alert('Please connect your wallet to access airdrop features.');
+      return;
+    }
+    if (subscription?.plan !== 'Premium') {
+      e.preventDefault();
+      alert('This feature is only available for Premium subscribers. Please upgrade your plan.');
+    }
+  };
 
   // Background Shapes Component
   const BackgroundShapes = () => (
@@ -377,10 +390,10 @@ const Dashboard = () => {
         <div className="mt-4 flex justify-between items-center relative z-10">
           <span className="text-green-500 font-bold">{label}</span>
           <Link
-            href={`/dashboard/token/${token.id}`}
+            href={`/dashboard/token-creator/create-tokens/manage-token/${token.address}`} // Updated path
             className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
           >
-            View Details
+            Manage Token
           </Link>
         </div>
       </div>
@@ -425,9 +438,9 @@ const Dashboard = () => {
 
     const maxTokens: { [key: string]: number } = {
       Free: 2,
-      Classic: 50,
-      Pro: 100,
-      Premium: 500,
+      Classic: 5,
+      Pro: 10,
+      Premium: Infinity,
     };
 
     return (
@@ -451,16 +464,18 @@ const Dashboard = () => {
               <div>
                 <p className="text-gray-300 text-sm">Tokens Remaining</p>
                 <p className="text-white font-medium">
-                  {subscription.tokensRemaining} / {maxTokens[subscription.plan] || 2}
+                  {subscription.tokensRemaining} / {maxTokens[subscription.plan] === Infinity ? 'Unlimited' : maxTokens[subscription.plan] || 2}
                 </p>
-                <div className="w-full bg-gray-700/50 rounded-full h-2.5 mt-2">
-                  <div
-                    className="bg-gradient-to-r from-purple-500 to-blue-600 h-2.5 rounded-full"
-                    style={{
-                      width: `${Math.min(100, (subscription.tokensRemaining / (maxTokens[subscription.plan] || 2)) * 100)}%`,
-                    }}
-                  ></div>
-                </div>
+                {subscription.plan !== 'Premium' && (
+                  <div className="w-full bg-gray-700/50 rounded-full h-2.5 mt-2">
+                    <div
+                      className="bg-gradient-to-r from-purple-500 to-blue-600 h-2.5 rounded-full"
+                      style={{
+                        width: `${Math.min(100, (subscription.tokensRemaining / (maxTokens[subscription.plan] || 2)) * 100)}%`,
+                      }}
+                    ></div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="mb-4">
@@ -474,7 +489,7 @@ const Dashboard = () => {
               </p>
             </div>
             <Link
-              href="/dashboard/subscription"
+              href="/dashboard/token-creator/manage-subscription"
               className="inline-flex px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 relative z-10"
             >
               {subscription.plan === 'Free' ? 'Upgrade Plan' : 'Manage Subscription'}
@@ -558,7 +573,7 @@ const Dashboard = () => {
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p className="text-red-300 font-medium">{error.join(', ')}</p>
+            <p className="text-red-500 font-medium">{error.join(', ')}</p>
           </div>
         )}
         <div className="mb-10 relative z-10">
@@ -569,7 +584,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center mb-6">
             <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Tokens</h2>
             <Link
-              href="/dashboard/create-token"
+              href="/dashboard/token-creator/create-tokens"
               className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
             >
               Create New Token
@@ -582,13 +597,13 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-purple-500/10">
+            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-purple-500/20">
               <div className="mb-4">
                 <TokenPlaceholderIcon />
               </div>
-              <p className="text-gray-400 text-lg mb-4">You havent created any tokens yet.</p>
+              <p className="text-gray-400 text-lg mb-4">You haven’t created any tokens yet.</p>
               <Link
-                href="/dashboard/create-token"
+                href="/dashboard/token-creator/create-token"
                 className="inline-flex px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
               >
                 Create Your First Token
@@ -598,10 +613,15 @@ const Dashboard = () => {
         </div>
         <div className="mb-10 relative z-10">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="font-poppins font-semibold text-xl md:text-2xl">Airdrops</h2>
+            <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Airdrops</h2>
             <Link
-              href="/dashboard/airdrop"
-              className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition"
+              href="/dashboard/token-creator/airdrop-listing/upload"
+              className={`px-4 py-2 rounded-xl text-white transition ${
+                subscription?.plan === 'Premium'
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
+                  : 'bg-gray-600 cursor-not-allowed'
+              }`}
+              onClick={handleAirdropClick}
             >
               Create Airdrop
             </Link>
@@ -613,14 +633,19 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-green-500/10">
+            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-green-500/20">
               <div className="mb-4">
                 <AirdropPlaceholderIcon />
               </div>
               <p className="text-gray-400 text-lg mb-4">No airdrops created yet. Start an airdrop to distribute your tokens!</p>
               <Link
-                href="/dashboard/airdrop"
-                className="inline-flex px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition"
+                href="/dashboard/token-creator/airdrop-listing/upload"
+                className={`inline-flex px-6 py-3 rounded-xl text-white transition ${
+                  subscription?.plan === 'Premium'
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
+                    : 'bg-gray-600 cursor-not-allowed'
+                }`}
+                onClick={handleAirdropClick}
               >
                 Create Your First Airdrop
               </Link>

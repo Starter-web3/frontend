@@ -1,9 +1,14 @@
-// app/dashboard/Sidebar.tsx
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useWallet } from '../../contexts/WalletContext';
+import { useWallet } from '../../../contexts/WalletContext';
+import { useReadContract } from 'wagmi';
+import { Abi } from 'viem';
+import StrataForgeAdminABI from '../../../app/components/ABIs/StrataForgeAdminABI.json';
+
+const ADMIN_CONTRACT_ADDRESS = '0x7e8541Ba29253C1722d366e3d08975B03f3Cc839' as const;
+const adminABI = StrataForgeAdminABI as Abi;
 
 interface SidebarLinkProps {
   href: string;
@@ -42,14 +47,54 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ href, icon, text, active, onC
 };
 
 const DashboardSidebar = () => {
-  const { isConnected, disconnect, connect } = useWallet();
+  const { isConnected, disconnect, connect, address } = useWallet();
   const pathname = usePathname();
   const currentPath = pathname || '/dashboard';
+  const [isAirdropOpen, setIsAirdropOpen] = useState(false);
+  const [subscription, setSubscription] = useState<{
+    plan: string;
+    tokensRemaining: number;
+    expiry: number;
+  } | null>(null);
+
+  // Fetch subscription status
+  const { data: subData } = useReadContract({
+    address: ADMIN_CONTRACT_ADDRESS,
+    abi: adminABI,
+    functionName: 'getSubscription',
+    args: [address],
+    query: { enabled: isConnected && !!address, retry: 3, retryDelay: 1000 },
+  });
+
+  // Process subscription data
+  useEffect(() => {
+    if (!isConnected || !address || !subData) {
+      setSubscription(null);
+      return;
+    }
+
+    const planNames = ['Free', 'Classic', 'Pro', 'Premium'];
+    const [tierIndex, expiry, tokensThisMonth] = subData as [bigint, bigint, bigint];
+    const planName = planNames[Number(tierIndex)] || 'Free';
+    const tokenLimits: { [key: string]: number } = {
+      Free: 2,
+      Classic: 5,
+      Pro: 10,
+      Premium: Infinity,
+    };
+    const maxTokens = tokenLimits[planName];
+    const remainingTokens = Math.max(0, maxTokens - Number(tokensThisMonth));
+
+    setSubscription({
+      plan: planName,
+      tokensRemaining: remainingTokens,
+      expiry: Number(expiry) * 1000,
+    });
+  }, [isConnected, address, subData]);
 
   const handleDisconnect = () => {
     try {
       disconnect();
-      // Clear walletconnect storage safely
       if (typeof window !== 'undefined') {
         localStorage.removeItem('walletconnect');
       }
@@ -65,6 +110,18 @@ const DashboardSidebar = () => {
     } catch (error) {
       console.error('Connect error:', error);
     }
+  };
+
+  const handleAirdropClick = () => {
+    if (!isConnected) {
+      alert('Please connect your wallet to access airdrop features.');
+      return;
+    }
+    if (subscription?.plan !== 'Premium') {
+      alert('This feature is only available for Premium subscribers. Please upgrade your plan.');
+      return;
+    }
+    setIsAirdropOpen(!isAirdropOpen);
   };
 
   return (
@@ -105,7 +162,7 @@ const DashboardSidebar = () => {
           </div>
           <nav className='space-y-1 flex-grow'>
             <SidebarLink
-              href='/dashboard'
+              href="/dashboard/token-creator"
               icon={
                 <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
                   <path d='M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4z' />
@@ -113,48 +170,117 @@ const DashboardSidebar = () => {
                 </svg>
               }
               text='Dashboard'
-              active={currentPath === '/dashboard'}
+              active={currentPath === '/dashboard/token-creator'}
             />
             <SidebarLink
-              href='/dashboard/airdrop-listing/upload'
+              href='/dashboard/token-creator/manage-subscription'
               icon={
                 <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
-                  <path d='M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z' />
                   <path
                     fillRule='evenodd'
-                    d='M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z'
+                    d='M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM2 9v5a2 2 0 002 2h12a2 2 0 002-2V9H2zm2 4a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z'
                     clipRule='evenodd'
                   />
                 </svg>
               }
-              text='Upload Whitelisted CSV'
-              active={currentPath === '/dashboard/airdrop-listing/upload'}
+              text='Manage Subscription'
+              active={currentPath === '/dashboard/token-creator/manage-subscription'}
             />
             <SidebarLink
-              href='/dashboard/airdrop-listing/distribute'
+              href='/dashboard/token-creator/create-tokens'
               icon={
-                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
-                  <path d='M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z' />
-                </svg>
-              }
-              text='Distribute Airdrop'
-              active={currentPath === '/dashboard/airdrop-listing/distribute'}
-            />
-            <SidebarLink
-              href='/dashboard/airdrop-listing/claim'
-              icon={
-                <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
-                  <path d='M9 2a1 1 0 000 2h2a1 1 0 100-2H9z' />
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-5 w-5'
+                  viewBox='0 0 20 20'
+                  fill='currentColor'
+                >
                   <path
                     fillRule='evenodd'
-                    d='M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z'
+                    d='M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9V6a1 1 0 112 0v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3z'
                     clipRule='evenodd'
                   />
                 </svg>
               }
-              text='Claim Airdrop'
-              active={currentPath === '/dashboard/airdrop-listing/claim'}
+              text='Create Tokens'
+              active={currentPath === '/dashboard/token-creator/create-tokens'}
             />
+            <div>
+              <button
+                onClick={handleAirdropClick}
+                className={`w-full flex items-center px-4 py-3 ${
+                  isAirdropOpen || currentPath.startsWith('/dashboard/token-creator/airdrop-listing')
+                    ? 'bg-[hsl(var(--foreground)/0.1)]'
+                    : 'hover:bg-[hsl(var(--foreground)/0.05)]'
+                } transition-colors rounded-lg my-1 text-left`}
+              >
+                <div className='w-6 h-6 mr-3 flex items-center justify-center'>
+                  <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
+                    <path
+                      fillRule='evenodd'
+                      d='M10 2v6m0 4v6m-6-6h12M4 10l2 2m8-2l-2 2'
+                      stroke='currentColor'
+                      strokeWidth='2'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                    />
+                  </svg>
+                </div>
+                <span className='font-inter font-normal text-base leading-[25px]'>Create Airdrop</span>
+                <svg
+                  className={`ml-auto h-5 w-5 transform ${isAirdropOpen ? 'rotate-180' : ''}`}
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                </svg>
+              </button>
+              {isAirdropOpen && subscription?.plan === 'Premium' && (
+                <div className='ml-6 space-y-1'>
+                  <SidebarLink
+                    href='/dashboard/token-creator/airdrop-listing/upload'
+                    icon={
+                      <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
+                        <path d='M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z' />
+                        <path
+                          fillRule='evenodd'
+                          d='M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z'
+                          clipRule='evenodd'
+                        />
+                      </svg>
+                    }
+                    text='Upload Whitelisted CSV'
+                    active={currentPath === '/dashboard/token-creator/airdrop-listing/upload'}
+                  />
+                  <SidebarLink
+                    href='/dashboard/token-creator/airdrop-listing/distribute'
+                    icon={
+                      <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
+                        <path d='M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894 l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z' />
+                      </svg>
+                    }
+                    text='Distribute Airdrop'
+                    active={currentPath === '/dashboard/token-creator/airdrop-listing/distribute'}
+                  />
+                  <SidebarLink
+                    href='/dashboard/token-creator/airdrop-listing/claim'
+                    icon={
+                      <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor'>
+                        <path d='M9 2a1 1 0 000 2h2a1 1 0 100-2H9z' />
+                        <path
+                          fillRule='evenodd'
+                          d='M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z'
+                          clipRule='evenodd'
+                        />
+                      </svg>
+                    }
+                    text='Claim Airdrop'
+                    active={currentPath === '/dashboard/token-creator/airdrop-listing/claim'}
+                  />
+                </div>
+              )}
+            </div>
             <SidebarLink
               href='/dashboard/tokens'
               icon={
