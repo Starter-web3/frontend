@@ -266,15 +266,14 @@ const ManageToken = () => {
     }
   }, [tokenInfoError, tokenId]);
 
-  // Read functions to display
-  const readFunctions: Record<string, { name: string; label: string; args?: unknown[] }[]> = {
+  // Static read functions (reliable, no input required)
+  const staticReadFunctions: Record<string, { name: string; label: string; args?: unknown[] }[]> = {
     erc20: [
       { name: 'name', label: 'Name' },
       { name: 'symbol', label: 'Symbol' },
       { name: 'decimals', label: 'Decimals' },
       { name: 'totalSupply', label: 'Total Supply' },
       { name: 'balanceOf', label: 'Your Balance', args: [account] },
-      { name: 'allowance', label: 'Allowance for Spender', args: [account, ''] }, // Spender address input needed
       { name: 'paused', label: 'Paused' },
       { name: 'owner', label: 'Owner' },
     ],
@@ -282,20 +281,12 @@ const ManageToken = () => {
       { name: 'name', label: 'Name' },
       { name: 'symbol', label: 'Symbol' },
       { name: 'balanceOf', label: 'Your Balance', args: [account] },
-      { name: 'ownerOf', label: 'Owner of Token ID', args: ['1'] }, // Token ID input
-      { name: 'tokenURI', label: 'Token URI', args: ['1'] }, // Token ID input
-      { name: 'getApproved', label: 'Approved Address for Token ID', args: ['1'] }, // Token ID input
-      { name: 'isApprovedForAll', label: 'Operator Approval', args: [account, ''] }, // Operator address input
       { name: 'paused', label: 'Paused' },
       { name: 'owner', label: 'Owner' },
     ],
     erc1155: [
-      { name: 'balanceOf', label: 'Balance of Token ID', args: [account, '1'] }, // Token ID input
-      { name: 'uri', label: 'URI for Token ID', args: ['1'] }, // Token ID input
-      { name: 'isApprovedForAll', label: 'Operator Approval', args: [account, ''] }, // Operator address input
       { name: 'paused', label: 'Paused' },
       { name: 'owner', label: 'Owner' },
-      // Note: balanceOfBatch requires dynamic array inputs, handled separately if needed
     ],
     meme: [
       { name: 'name', label: 'Name' },
@@ -303,7 +294,6 @@ const ManageToken = () => {
       { name: 'decimals', label: 'Decimals' },
       { name: 'totalSupply', label: 'Total Supply' },
       { name: 'balanceOf', label: 'Your Balance', args: [account] },
-      { name: 'allowance', label: 'Allowance for Spender', args: [account, ''] }, // Spender address input
       { name: 'maxWalletSize', label: 'Max Wallet Size' },
       { name: 'maxTransactionAmount', label: 'Max Transaction Amount' },
       { name: 'isExcludedFromLimits', label: 'Excluded from Limits', args: [account] },
@@ -316,7 +306,6 @@ const ManageToken = () => {
       { name: 'decimals', label: 'Decimals' },
       { name: 'totalSupply', label: 'Total Supply' },
       { name: 'balanceOf', label: 'Your Balance', args: [account] },
-      { name: 'allowance', label: 'Allowance for Spender', args: [account, ''] }, // Spender address input
       { name: 'collateralToken', label: 'Collateral Token' },
       { name: 'collateralRatio', label: 'Collateral Ratio' },
       { name: 'treasury', label: 'Treasury' },
@@ -328,7 +317,71 @@ const ManageToken = () => {
     ],
   };
 
-  // Write functions with input requirements
+  // Query read functions (require user input)
+  const queryReadFunctions: Record<string, { name: string; label: string; inputLabels: string[] }[]> = {
+    erc20: [
+      {
+        name: 'allowance',
+        label: 'Allowance for Spender',
+        inputLabels: ['Owner Address', 'Spender Address'],
+      },
+    ],
+    erc721: [
+      {
+        name: 'ownerOf',
+        label: 'Owner of Token ID',
+        inputLabels: ['Token ID'],
+      },
+      {
+        name: 'tokenURI',
+        label: 'Token URI',
+        inputLabels: ['Token ID'],
+      },
+      {
+        name: 'getApproved',
+        label: 'Approved Address for Token ID',
+        inputLabels: ['Token ID'],
+      },
+      {
+        name: 'isApprovedForAll',
+        label: 'Operator Approval',
+        inputLabels: ['Owner Address', 'Operator Address'],
+      },
+    ],
+    erc1155: [
+      {
+        name: 'balanceOf',
+        label: 'Balance of Token ID',
+        inputLabels: ['Account Address', 'Token ID'],
+      },
+      {
+        name: 'uri',
+        label: 'URI for Token ID',
+        inputLabels: ['Token ID'],
+      },
+      {
+        name: 'isApprovedForAll',
+        label: 'Operator Approval',
+        inputLabels: ['Owner Address', 'Operator Address'],
+      },
+    ],
+    meme: [
+      {
+        name: 'allowance',
+        label: 'Allowance for Spender',
+        inputLabels: ['Owner Address', 'Spender Address'],
+      },
+    ],
+    stable: [
+      {
+        name: 'allowance',
+        label: 'Allowance for Spender',
+        inputLabels: ['Owner Address', 'Spender Address'],
+      },
+    ],
+  };
+
+  // Write functions with input requirements (unchanged)
   const writeFunctions: Record<
     string,
     { name: string; args: string[]; inputs: { label: string; type: string; default?: string }[]; ownerOnly?: boolean }[]
@@ -623,10 +676,10 @@ const ManageToken = () => {
       },
       {
         name: 'decreaseAllowance',
-        args: ['spender', 'amount'],
+        args: ['spender', 'subtractedValue'],
         inputs: [
           { label: 'Spender Address', type: 'address' },
-          { label: 'Amount', type: 'number' },
+          { label: 'Subtracted Value', type: 'number' },
         ],
       },
       {
@@ -863,11 +916,19 @@ const ManageToken = () => {
   };
 
   // Render read function result
-  const ReadCard = ({ func }: { func: { name: string; label: string; args?: unknown[] } }) => {
-    // Handle dynamic args for functions requiring user input (e.g., allowance, ownerOf)
-    const dynamicArgs: (string | unknown)[] = (func.args || []).map(arg => {
-      if (typeof arg === 'string' && arg === '') {
-        return formInputs[func.name] || '';
+  const ReadCard = ({
+    func,
+    isQuery = false,
+    inputLabels = [],
+  }: {
+    func: { name: string; label: string; args?: unknown[] };
+    isQuery?: boolean;
+    inputLabels?: string[];
+  }) => {
+    // Handle dynamic args for functions
+    const dynamicArgs: (string | unknown)[] = (func.args || []).map((arg, index) => {
+      if (typeof arg === 'string' && arg === '' && isQuery) {
+        return formInputs[`${func.name}_${inputLabels[index]}`] || '';
       }
       return arg;
     });
@@ -877,23 +938,25 @@ const ManageToken = () => {
       abi: tokenABIs[tokenType!],
       functionName: func.name,
       args: dynamicArgs,
-      query: { enabled: !!tokenType && !!tokenAddress && (!func.args || dynamicArgs.every(arg => arg !== '')) },
+      query: { enabled: !!tokenType && !!tokenAddress && (!isQuery || dynamicArgs.every(arg => arg !== '')) },
     });
 
     return (
       <div className="bg-[#1E1425]/80 rounded-xl p-4 border border-purple-500/20">
         <p className="text-gray-300 text-sm font-medium">{func.label}</p>
-        {func.args?.some(arg => arg === '') && (
-          <input
-            type="text"
-            placeholder={`Enter ${func.name} parameter`}
-            value={formInputs[func.name] || ''}
-            onChange={(e) => handleInputChange(func.name, e.target.value)}
-            className="w-full p-2 mt-1 bg-[#2A1F36] border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
-        )}
+        {isQuery &&
+          inputLabels.map((label, index) => (
+            <input
+              key={index}
+              type={label.includes('ID') ? 'number' : 'text'}
+              placeholder={`Enter ${label}`}
+              value={formInputs[`${func.name}_${label}`] || ''}
+              onChange={(e) => handleInputChange(`${func.name}_${label}`, e.target.value)}
+              className="w-full p-2 mt-1 bg-[#2A1F36] border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          ))}
         <p className="text-white text-lg mt-1 truncate">
-          {readError ? 'Error fetching data' : data?.toString() || 'Loading...'}
+          {readError ? 'Error fetching data' : data?.toString() || 'Enter parameters to query'}
         </p>
       </div>
     );
@@ -1000,7 +1063,7 @@ const ManageToken = () => {
         <div className="mb-10 relative z-10">
           <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6 text-white">Token Information</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {readFunctions[tokenType].map(func => (
+            {staticReadFunctions[tokenType].map(func => (
               <ReadCard key={func.name} func={func} />
             ))}
           </div>
@@ -1023,6 +1086,21 @@ const ManageToken = () => {
               ))}
           </div>
         </div>
+
+        <div className="mb-10 relative z-10">
+          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6 text-white">Query Token Data</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {queryReadFunctions[tokenType].map(func => (
+              <ReadCard
+                key={func.name}
+                func={{ name: func.name, label: func.label }}
+                isQuery={true}
+                inputLabels={func.inputLabels}
+              />
+            ))}
+          </div>
+        </div>
+
         <WriteModal />
       </div>
     </DashboardLayout>
