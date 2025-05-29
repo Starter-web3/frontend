@@ -6,7 +6,6 @@ import { Abi } from 'viem';
 import StrataForgeFactoryABI from '../../../app/components/ABIs/StrataForgeFactoryABI.json';
 import TraderDashboardLayout from './TraderDashboardLayout';
 import Link from 'next/link';
-import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 
 // SVG Icons for Token Types
 const Erc20Icon = () => (
@@ -487,38 +486,37 @@ const TokenTraderDashboard = () => {
   }
 
   return (
-    <ProtectedRoute requiredRole="user">
-      <TraderDashboardLayout>
-        <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
-          <BackgroundShapes />
-          <div
-            className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
-            style={{
-              background:
-                'radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)',
-            }}
-          >
-            <h1 className="font-poppins font-semibold text-3xl md:text-4xl leading-[170%] mb-2">
-              Welcome back, {userName} <span className="text-yellow-400">👋</span>
-            </h1>
-            <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
-              Discover tokens, claim airdrops, and trade on the StrataForge marketplace
-            </p>
-          </div>
+    <TraderDashboardLayout>
+      <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
+        <BackgroundShapes />
+        <div
+          className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
+          style={{
+            background:
+              'radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)',
+          }}
+        >
+          <h1 className="font-poppins font-semibold text-3xl md:text-4xl leading-[170%] mb-2">
+            Welcome back, {userName} <span className="text-yellow-400">👋</span>
+          </h1>
+          <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
+            Discover tokens, claim airdrops, and trade on the StrataForge marketplace
+          </p>
+        </div>
 
-          {error && (
-            <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3 relative z-10">
-              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="text-red-300 font-medium">{error}</p>
-            </div>
-          )}
+        {error && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3 relative z-10">
+            <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p className="text-red-300 font-medium">{error}</p>
+          </div>
+        )}
 
         <div className="mb-12 relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
