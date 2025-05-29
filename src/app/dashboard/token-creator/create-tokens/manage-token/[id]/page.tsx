@@ -11,17 +11,17 @@ import StrataForgeMemecoinImplementationABI from '../../../../../components/ABIs
 import StrataForgeStablecoinImplementationABI from '../../../../../components/ABIs/StrataForgeStablecoinImplementationABI.json';
 import StrataForgeFactoryABI from '../../../../../components/ABIs/StrataForgeFactoryABI.json';
 
-// Background Shapes Component
+// Background Shapes Component (Restored and Enhanced)
 const BackgroundShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-    <div className="absolute top-20 left-10 w-32 h-32 border border-purple-500/10 rounded-full"></div>
-    <div className="absolute top-40 right-20 w-24 h-24 border border-blue-500/10 rotate-45"></div>
-    <div className="absolute bottom-32 left-20 w-40 h-40 border border-purple-400/8 rounded-2xl rotate-12"></div>
-    <div className="absolute top-1/3 left-1/4 w-16 h-16 border border-cyan-500/10 rotate-45"></div>
-    <div className="absolute bottom-1/4 right-1/3 w-28 h-28 border border-purple-300/8 rounded-full"></div>
-    <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-500/3 to-transparent rounded-full blur-3xl"></div>
-    <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/3 to-transparent rounded-full blur-2xl"></div>
-    <div className="absolute top-1/2 right-10 w-48 h-48 bg-gradient-to-bl from-cyan-500/2 to-transparent rounded-full blur-2xl"></div>
+    <div className="absolute top-20 left-10 w-32 h-32 border-2 border-purple-500/20 rounded-full animate-pulse"></div>
+    <div className="absolute top-40 right-20 w-24 h-24 border-2 border-blue-500/20 rotate-45 animate-pulse delay-200"></div>
+    <div className="absolute bottom-32 left-20 w-40 h-40 border-2 border-purple-400/15 rounded-2xl rotate-12 animate-pulse delay-400"></div>
+    <div className="absolute top-1/3 left-1/4 w-16 h-16 border-2 border-cyan-500/20 rotate-45 animate-pulse delay-600"></div>
+    <div className="absolute bottom-1/4 right-1/3 w-28 h-28 border-2 border-purple-300/15 rounded-full animate-pulse delay-800"></div>
+    <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-500/15 to-transparent rounded-full blur-xl animate-pulse delay-1000"></div>
+    <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/15 to-transparent rounded-full blur-xl animate-pulse delay-1200"></div>
+    <div className="absolute top-1/2 right-10 w-48 h-48 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-full blur-xl animate-pulse delay-1400"></div>
   </div>
 );
 
@@ -381,7 +381,7 @@ const ManageToken = () => {
     ],
   };
 
-  // Write functions with input requirements (unchanged)
+  // Write functions with input requirements
   const writeFunctions: Record<
     string,
     { name: string; args: string[]; inputs: { label: string; type: string; default?: string }[]; ownerOnly?: boolean }[]
@@ -848,17 +848,19 @@ const ManageToken = () => {
   };
 
   // Handle modal form input changes
-  const handleInputChange = (key: string, value: string | boolean) => {
+  const handleInputChange = (key: string, value: string) => {
     setFormInputs(prev => ({
       ...prev,
-      [key]: typeof value === 'boolean' ? value.toString() : value,
+      [key]: value,
     }));
   };
 
   // Execute write function
   const handleWrite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!modalAction || !tokenType || !tokenAddress || !account) return;
+    if (!modalAction || !tokenType || !tokenAddress || !account) {
+      return;
+    }
 
     const action = writeFunctions[tokenType].find((f: { name: string }) => f.name === modalAction);
     if (!action) return;
@@ -925,6 +927,8 @@ const ManageToken = () => {
     isQuery?: boolean;
     inputLabels?: string[];
   }) => {
+    const [isQueryTriggered, setIsQueryTriggered] = useState(false);
+
     // Handle dynamic args for functions
     const dynamicArgs: (string | unknown)[] = (func.args || []).map((arg, index) => {
       if (typeof arg === 'string' && arg === '' && isQuery) {
@@ -933,30 +937,54 @@ const ManageToken = () => {
       return arg;
     });
 
-    const { data, error: readError } = useReadContract({
+    // Reset query trigger when inputs change
+    useEffect(() => {
+      if (isQuery) {
+        setIsQueryTriggered(false);
+      }
+    }, [dynamicArgs, isQuery]);
+
+    const { data, error: readError, isLoading } = useReadContract({
       address: tokenAddress as `0x${string}`,
       abi: tokenABIs[tokenType!],
       functionName: func.name,
       args: dynamicArgs,
-      query: { enabled: !!tokenType && !!tokenAddress && (!isQuery || dynamicArgs.every(arg => arg !== '')) },
+      query: {
+        enabled: !!tokenType && !!tokenAddress && (!isQuery || (isQueryTriggered && dynamicArgs.every(arg => arg !== ''))),
+      },
     });
 
     return (
-      <div className="bg-[#1E1425]/80 rounded-xl p-4 border border-purple-500/20">
+      <div className="bg-[#1E1425]/80 rounded-xl p-4">
         <p className="text-gray-300 text-sm font-medium">{func.label}</p>
-        {isQuery &&
-          inputLabels.map((label, index) => (
-            <input
-              key={index}
-              type={label.includes('ID') ? 'number' : 'text'}
-              placeholder={`Enter ${label}`}
-              value={formInputs[`${func.name}_${label}`] || ''}
-              onChange={(e) => handleInputChange(`${func.name}_${label}`, e.target.value)}
-              className="w-full p-2 mt-1 bg-[#2A1F36] border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          ))}
-        <p className="text-white text-lg mt-1 truncate">
-          {readError ? 'Error fetching data' : data?.toString() || 'Enter parameters to query'}
+        {isQuery && (
+          <div className="mt-2 space-y-2">
+            {inputLabels.map((label, index) => (
+              <input
+                key={index}
+                type={label.includes('ID') ? 'number' : 'text'}
+                placeholder={`Enter ${label}`}
+                value={formInputs[`${func.name}_${label}`] || ''}
+                onChange={(e) => handleInputChange(`${func.name}_${label}`, e.target.value)}
+                className="w-full p-2 bg-[#2A1F36] border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            ))}
+            <button
+              type="button"
+              onClick={() => setIsQueryTriggered(true)}
+              disabled={dynamicArgs.some(arg => arg === '')}
+              className="w-full px-3 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            >
+              Query
+            </button>
+          </div>
+        )}
+        <p className="text-white text-lg mt-2 truncate">
+          {readError
+            ? 'Error fetching data'
+            : isLoading
+            ? 'Loading...'
+            : data?.toString() || 'No data'}
         </p>
       </div>
     );
@@ -981,7 +1009,9 @@ const ManageToken = () => {
                   <input
                     type="checkbox"
                     checked={formInputs[input.label] === 'true'}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(input.label, e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleInputChange(input.label, e.target.checked.toString())
+                    }
                     className="mt-1 rounded border-gray-600 text-purple-600 focus:ring-purple-500"
                   />
                 ) : (
@@ -1026,7 +1056,7 @@ const ManageToken = () => {
   if (loading || tokenInfoLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-screen bg-[#1A0D23] relative">
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#1A0D23] to-[#2A1F36] relative">
           <BackgroundShapes />
           <div className="w-16 h-16 border-4 border-gray-200 border-t-purple-600 rounded-full animate-spin relative z-10"></div>
         </div>
@@ -1037,7 +1067,7 @@ const ManageToken = () => {
   if (error || !tokenType || !tokenDetails || !tokenAddress) {
     return (
       <DashboardLayout>
-        <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
+        <div className="min-h-screen bg-gradient-to-br from-[#1A0D23] to-[#2A1F36] p-4 md:p-8 relative">
           <BackgroundShapes />
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3 relative z-10">
             <p className="text-red-300 font-medium">{error || 'Failed to load token data'}</p>
@@ -1049,28 +1079,35 @@ const ManageToken = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
+      <div className="min-h-screen bg-gradient-to-br from-[#1A0D23] to-[#2A1F36] p-6 md:p-10 relative">
         <BackgroundShapes />
-        <div className="mb-8 relative z-10">
-          <h1 className="font-poppins font-semibold text-3xl md:text-4xl text-white mb-2">
+        {/* Token Header */}
+        <div className="mb-12 relative z-10 max-w-4xl mx-auto">
+          <h1 className="font-poppins font-bold text-4xl md:text-5xl text-white mb-4">
             {tokenDetails.name} ({tokenDetails.symbol})
           </h1>
-          <p className="text-gray-400">Token ID: {tokenId}</p>
-          <p className="text-gray-400">Address: {tokenAddress}</p>
-          <p className="text-gray-400">Type: {tokenType.toUpperCase()}</p>
-        </div>
-
-        <div className="mb-10 relative z-10">
-          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6 text-white">Token Information</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {staticReadFunctions[tokenType].map(func => (
-              <ReadCard key={func.name} func={func} />
-            ))}
+          <div className="bg-[#2A1F36]/50 p-4 rounded-xl">
+            <p className="text-gray-300 text-lg">Token ID: {tokenId}</p>
+            <p className="text-gray-300 text-lg">Address: {tokenAddress}</p>
+            <p className="text-gray-300 text-lg">Type: {tokenType.toUpperCase()}</p>
           </div>
         </div>
 
-        <div className="mb-10 relative z-10">
-          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6 text-white">Token Actions</h2>
+        {/* Token Information Section */}
+        <div className="mb-12 relative z-10 max-w-6xl mx-auto">
+          <h2 className="font-poppins font-semibold text-2xl md:text-3xl text-white mb-6">Token Information</h2>
+          <div className="bg-gradient-to-r from-[#2A1F36]/80 to-[#1E1425]/80 rounded-2xl p-6 shadow-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {staticReadFunctions[tokenType].map(func => (
+                <ReadCard key={func.name} func={func} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Token Actions Section */}
+        <div className="mb-12 relative z-10 max-w-6xl mx-auto">
+          <h2 className="font-poppins font-semibold text-2xl md:text-3xl text-white mb-6">Token Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {writeFunctions[tokenType]
               .filter(action => !action.ownerOnly || isOwner)
@@ -1079,7 +1116,7 @@ const ManageToken = () => {
                   key={action.name}
                   onClick={() => openModal(action.name)}
                   disabled={isPending}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition-opacity duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-4 bg-[#1E1425]/80 border border-purple-500/20 rounded-xl text-white text-lg font-medium hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-blue-600/20 hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {action.name}
                 </button>
@@ -1087,13 +1124,14 @@ const ManageToken = () => {
           </div>
         </div>
 
-        <div className="mb-10 relative z-10">
-          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6 text-white">Query Token Data</h2>
+        {/* Query Token Data Section */}
+        <div className="mb-12 relative z-10 max-w-6xl mx-auto">
+          <h2 className="font-poppins font-semibold text-2xl md:text-3xl text-white mb-6">Query Token Data</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {queryReadFunctions[tokenType].map(func => (
               <ReadCard
                 key={func.name}
-                func={{ name: func.name, label: func.label }}
+                func={{ name: func.name, label: func.label, args: func.inputLabels.map(() => '') }}
                 isQuery={true}
                 inputLabels={func.inputLabels}
               />
