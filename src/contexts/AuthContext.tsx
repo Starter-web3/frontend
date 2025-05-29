@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
-import { useRouter } from 'next/navigation';
 
 // Define your API URL
 const API_URL = 'https://strataforge.buyinbytes.com/api';
@@ -20,6 +19,19 @@ type User = {
   // Add other user properties as needed
 };
 
+interface AuthData {
+  token: string;
+  user: User;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+type LoginResponse = ApiResponse<AuthData>;
+
 // Define the type for the auth context
 type AuthContextType = {
   user: User | null;
@@ -32,26 +44,31 @@ type AuthContextType = {
     name: string;
     email: string;
     role?: string;
-  }) => Promise<any>;
+  }) => Promise<LoginResponse>;
   verifyEmail: (verificationData: {
     email: string;
     otp: string;
-  }) => Promise<any>;
-  resendOtp: (email: string) => Promise<any>;
-  login: (credentials: { walletAddress: string }) => Promise<any>;
-  // getProfile: () => Promise<User>;
-  // updateProfile: (profileData: Partial<User>) => Promise<any>;
-  //logout: () => void;
+  }) => Promise<LoginResponse>;
+  resendOtp: (email: string) => Promise<ApiResponse<{ message: string }>>;
+  login: (credentials: { walletAddress: string }) => Promise<LoginResponse>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+interface AuthError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<string>('');
-  const router = useRouter();
 
   // Initialize axios with token if it exists
   useEffect(() => {
@@ -69,58 +86,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const token = localStorage.getItem('token');
       const storedRole = localStorage.getItem('role');
 
-      if (token) {
-        // Profile endpoint not ready yet - just set stored role if available
-        // getProfile().catch(() => {
-        //   // If profile fetch fails, token might be invalid
-        //   if (typeof window !== 'undefined') {
-        //     localStorage.removeItem('token');
-        //     localStorage.removeItem('role');
-        //   }
-        //   setUser(null);
-        //   setRole('');
-        // });
-
-        if (storedRole) {
-          setRole(storedRole);
-        }
+      if (token && storedRole) {
+        setRole(storedRole);
       }
     }
   }, []);
 
-  // Helper function to handle auth response
-  const handleAuthResponse = (responseData: any) => {
-    const { token, user: userData } = responseData.data;
-
-    if (typeof window !== 'undefined') {
-      // Store auth data
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', userData.role || 'user');
-      // Set token for future requests
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
-
-    setUser(userData);
-    setRole(userData.role || 'user');
-    setError(null);
-
-    return { token, userData };
-  };
-
   // Login user
-  const login = async (credentials: { walletAddress: string }) => {
+  const login = async (credentials: { walletAddress: string }): Promise<LoginResponse> => {
     setLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, credentials);
-      
-      // Extract data from response
-      const { token, user: userData } = response.data.data;
+      const response = await axios.post<LoginResponse>(`${API_URL}/auth/login`, credentials);
+      const loginResponse = response.data;
+      console.log('Full login response:', response);
+      console.log('Login response data:', loginResponse);
+      console.log('Login response structure:', {
+        success: loginResponse.success,
+        message: loginResponse.message,
+        hasData: loginResponse.data !== undefined,
+        fullStructure: JSON.stringify(loginResponse, null, 2)
+      });
+
+      if (!loginResponse.success || !loginResponse.data) {
+        console.error('Invalid response format:', loginResponse);
+        throw new Error('Invalid response format: missing success or data');
+      }
+
+      const { token, user: userData } = loginResponse.data;
+
+      if (!token || !userData) {
+        console.error('Invalid response format:', loginResponse);
+        throw new Error('Invalid response format: missing token or user data');
+      }
 
       // Store auth data
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', token);
         localStorage.setItem('role', userData.role || 'user');
-        // Set token for future requests
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       }
 
@@ -128,15 +130,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setRole(userData.role || 'user');
       setError(null);
       
-      return response.data;
-    } catch (err: any) {
-      // Clear any existing auth data on error
+      return loginResponse;
+    } catch (error: unknown) {
+      const err = error as AuthError;
+      console.error('Login error:', err);
+      console.error('Login error response:', err.response);
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         delete axios.defaults.headers.common['Authorization'];
       }
-      setError(err.response?.data?.message || err.message);
+      setError(err.response?.data?.message || err.message || 'Authentication failed');
       throw err;
     } finally {
       setLoading(false);
@@ -149,17 +153,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     name: string;
     email: string;
     role?: string;
-  }) => {
+  }): Promise<LoginResponse> => {
     setLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/register`, {
+      const response = await axios.post<LoginResponse>(`${API_URL}/auth/register`, {
         walletAddress: userData.walletAddress,
         name: userData.name,
         email: userData.email,
         role: userData.role || 'user'
       });
 
-      // Store email for verification
       if (typeof window !== 'undefined') {
         localStorage.setItem('registrationEmail', userData.email);
         localStorage.setItem('userRole', userData.role || 'user');
@@ -167,8 +170,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setError(null);
       return response.data;
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message);
+    } catch (error: unknown) {
+      const err = error as AuthError;
+      setError(err.response?.data?.message || err.message || 'Registration failed');
       throw err;
     } finally {
       setLoading(false);
@@ -179,23 +183,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const verifyEmail = async (verificationData: {
     email: string;
     otp: string;
-  }) => {
+  }): Promise<LoginResponse> => {
     setLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/verify-email`, verificationData);
-      const userData = response.data.data.user;
-      const token = response.data.data.token;
+      const response = await axios.post<LoginResponse>(
+        `${API_URL}/auth/verify-email`,
+        verificationData
+      );
+      
+      const authData = response.data.data;
 
-      // After successful verification, store auth data
+      if (!authData) {
+        throw new Error('Invalid response format: auth data is undefined');
+      }
+
+      const { token, user: userData } = authData;
+
+      if (!token || !userData) {
+        throw new Error('Invalid response format: missing token or user data');
+      }
+
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', token);
         const userRole = userData.role || localStorage.getItem('userRole') || 'user';
         localStorage.setItem('role', userRole);
         
-        // Set token for future requests
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
-        // Clean up temporary data
         localStorage.removeItem('registrationEmail');
         localStorage.removeItem('userRole');
       }
@@ -205,8 +219,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setError(null);
 
       return response.data;
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message);
+    } catch (error: unknown) {
+      const err = error as AuthError;
+      setError(err.response?.data?.message || err.message || 'Verification failed');
       throw err;
     } finally {
       setLoading(false);
@@ -214,113 +229,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Resend OTP
-  const resendOtp = async (email: string) => {
+  const resendOtp = async (email: string): Promise<ApiResponse<{ message: string }>> => {
     setLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/resend-otp`, { email });
+      const response = await axios.post<ApiResponse<{ message: string }>>(`${API_URL}/auth/resend-otp`, { email });
       setError(null);
       return response.data;
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message);
+    } catch (error: unknown) {
+      const err = error as AuthError;
+      setError(err.response?.data?.message || err.message || 'Failed to resend OTP');
       throw err;
     } finally {
       setLoading(false);
     }
   };
-
-  // Get user profile - COMMENTED OUT UNTIL ENDPOINT IS READY
-  // const getProfile = async (): Promise<User> => {
-  //   setLoading(true);
-  //   try {
-  //     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-  //     if (!token) {
-  //       throw new Error('No authentication token found');
-  //     }
-
-  //     const response = await axios.get(`${API_URL}/auth/me`, {
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //     });
-
-  //     const userData = response.data.data.user;
-  //     setUser(userData);
-  //     setRole(userData.role || 'user');
-
-  //     if (typeof window !== 'undefined') {
-  //       localStorage.setItem('role', userData.role || 'user');
-  //     }
-
-  //     setError(null);
-  //     return userData;
-  //   } catch (err: any) {
-  //     setError(err.response?.data?.message || err.message);
-
-  //     // If unauthorized, clear token and user
-  //     if (err.response?.status === 401) {
-  //       if (typeof window !== 'undefined') {
-  //         localStorage.removeItem('token');
-  //         localStorage.removeItem('role');
-  //       }
-  //       setUser(null);
-  //       setRole('');
-  //     }
-
-  //     throw err;
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // Update user profile - COMMENTED OUT UNTIL ENDPOINT IS READY
-  // const updateProfile = async (profileData: Partial<User>) => {
-  //   setLoading(true);
-  //   try {
-  //     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-  //     if (!token) {
-  //       throw new Error('No authentication token found');
-  //     }
-
-  //     const response = await axios.put(`${API_URL}/auth/me`, profileData, {
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //     });
-
-  //     const updatedUser = response.data.data.user;
-  //     setUser(updatedUser);
-
-  //     // Update role if it changed
-  //     if (updatedUser.role && updatedUser.role !== role) {
-  //       setRole(updatedUser.role);
-  //       if (typeof window !== 'undefined') {
-  //         localStorage.setItem('role', updatedUser.role);
-  //       }
-  //     }
-
-  //     setError(null);
-  //     return response.data;
-  //   } catch (err: any) {
-  //     setError(err.response?.data?.message || err.message);
-  //     throw err;
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-//   // Logout user
-//   const logout = () => {
-//     if (typeof window !== 'undefined') {
-//       localStorage.removeItem('token');
-//       localStorage.removeItem('role');
-//     }
-
-//     setUser(null);
-//     setRole('');
-//     router.push('/login');
-//   };
 
   return (
     <AuthContext.Provider
@@ -334,9 +256,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         verifyEmail,
         resendOtp,
         login,
-        // getProfile,
-        // updateProfile,
-        //logout,
       }}
     >
       {children}

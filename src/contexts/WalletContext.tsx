@@ -7,6 +7,31 @@ import { baseSepolia } from '../lib/wagmi-config';
 import { useAuth } from './AuthContext';
 import { usePathname } from 'next/navigation';
 
+// Define the type for the user
+type User = {
+  id: string;
+  walletAddress?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  verificationStatus?: string;
+  phoneNumber?: string;
+  createdAt?: string;
+};
+
+interface AuthData {
+  token: string;
+  user: User;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+type LoginResponse = ApiResponse<AuthData>;
+
 interface WalletContextType {
   address: `0x${string}` | undefined;
   caipAddress: string | undefined;
@@ -36,47 +61,86 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const pathname = usePathname();
 
+  // Check for existing token and wallet connection on mount
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('role');
+      const storedWalletAddress = localStorage.getItem(WALLET_ADDRESS_KEY);
+      
+      console.log('Checking auth status:', {
+        token,
+        role,
+        storedWalletAddress,
+        currentAddress: address,
+        isConnected
+      });
+
+      if (token && role && storedWalletAddress && address && isConnected) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, [address, isConnected]);
+
   // Effect to handle wallet connection/disconnection and auth check
   useEffect(() => {
     const handleWalletConnection = async () => {
-      console.log('Wallet state changed:', { address, caipAddress, isConnected });
-      
-      if (address && isConnected) {
-        // Store wallet address when connected
-        localStorage.setItem(WALLET_ADDRESS_KEY, address);
-        console.log('Stored wallet address:', address);
+      try {
+        console.log('Wallet state changed:', { address, caipAddress, isConnected });
+        
+        if (address && isConnected) {
+          localStorage.setItem(WALLET_ADDRESS_KEY, address);
+          console.log('Stored wallet address:', address);
 
-        // Don't attempt login on registration or email verification pages
-        if (!pathname?.includes('registration') && !pathname?.includes('verification')) {
-          try {
-            // Try to login with the connected wallet address
-            const response = await login({ walletAddress: address });
-            
-            // If we get here, login was successful (user is registered)
-            if (response?.data?.token) {
-              setIsAuthenticated(true);
-              console.log('Login successful, user is registered');
+          // Only attempt login if we're not on registration or verification pages
+          // and we don't already have a valid token
+          const token = localStorage.getItem('token');
+          const role = localStorage.getItem('role');
+
+          if (!pathname?.includes('registration') && !pathname?.includes('verification') && (!token || !role)) {
+            try {
+              const response = await login({ walletAddress: address });
+              console.log('Login response:', response);
+              console.log('Response structure:', {
+                success: response.success,
+                message: response.message,
+                hasData: response.data !== undefined,
+                fullStructure: JSON.stringify(response, null, 2)
+              });
+              
+              if (response.success && response.data?.token) {
+                setIsAuthenticated(true);
+                console.log('Login successful, user is registered');
+              } else {
+                console.log('Login response missing token:', response);
+                setIsAuthenticated(false);
+              }
+            } catch (error: unknown) {
+              const err = error as { response?: { data?: unknown }; message?: string };
+              console.log('Login failed:', err?.response?.data || err);
+              setIsAuthenticated(false);
+              localStorage.removeItem('token');
+              localStorage.removeItem('role');
             }
-          } catch (error: any) {
-            console.log('Login failed:', error?.response?.data || error);
-            setIsAuthenticated(false);
-            // Clean up any existing auth data
-            localStorage.removeItem('token');
-            localStorage.removeItem('role');
           }
+        } else if (!isConnected) {
+          localStorage.removeItem(WALLET_ADDRESS_KEY);
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          setIsAuthenticated(false);
+          console.log('Wallet disconnected, cleared auth data');
         }
-      } else if (!isConnected) {
-        // Remove wallet address and auth data when disconnected
-        localStorage.removeItem(WALLET_ADDRESS_KEY);
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        setIsAuthenticated(false);
-        console.log('Wallet disconnected, cleared auth data');
+      } catch (error) {
+        console.error('Error in wallet connection handler:', error);
       }
     };
 
     handleWalletConnection();
-  }, [address, isConnected, login, pathname]);
+  }, [address, isConnected, login, pathname, caipAddress]);
 
   // Function to connect wallet using AppKit
   const connect = async () => {
@@ -89,6 +153,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       if (appkitButton) {
         // Trigger click on the appkit-button element
         (appkitButton as HTMLElement).click();
+        console.log('AppKit button clicked');
       } else {
         throw new Error('AppKit button not found in the DOM');
       }
@@ -103,11 +168,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   // Function to disconnect wallet
   const disconnect = () => {
-    wagmiDisconnect();
-    setIsAuthenticated(false);
-    localStorage.removeItem(WALLET_ADDRESS_KEY);
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
+    try {
+      wagmiDisconnect();
+      setIsAuthenticated(false);
+      localStorage.removeItem(WALLET_ADDRESS_KEY);
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      console.log('Wallet disconnected successfully');
+    } catch (error) {
+      console.error('Error disconnecting wallet:', error);
+    }
   };
 
   // Function to sign a message

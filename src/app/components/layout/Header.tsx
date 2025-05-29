@@ -76,6 +76,16 @@ const Header: React.FC<HeaderProps> = () => {
   const pathname = usePathname();
   const { isAuthenticated } = useWallet();
 
+  // Add logging to track authentication state
+  useEffect(() => {
+    console.log('Header - Auth state:', {
+      isAuthenticated,
+      token: localStorage.getItem('token'),
+      role: localStorage.getItem('role'),
+      pathname
+    });
+  }, [isAuthenticated, pathname]);
+
   if (
     pathname?.startsWith('/dashboard') ||
     pathname?.startsWith('/token-creation') ||
@@ -110,16 +120,19 @@ const Header: React.FC<HeaderProps> = () => {
 
             <nav className='hidden md:block'>
               <ul className='flex space-x-8'>
-                {navItems.filter(item => item !== 'Dashboard').map((item) => (
-                  <li key={item}>
-                    <Link
-                      href={item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
-                      className='text-white hover:text-gray-300 transition'
-                    >
-                      {item}
-                    </Link>
-                  </li>
-                ))}
+                {navItems.map((item: string) => {
+                  if (item === 'Dashboard') return null;
+                  return (
+                    <li key={item}>
+                      <Link
+                        href={item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
+                        className='text-white hover:text-gray-300 transition'
+                      >
+                        {item}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </nav>
 
@@ -128,7 +141,7 @@ const Header: React.FC<HeaderProps> = () => {
               {isAuthenticated && (
                 <Link
                   href="/dashboard"
-                  className='text-xs md:text-sm px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-gradient-to-r from-[hsl(var(--primary-from))] to-[hsl(var(--primary-to))] hover:opacity-90 transition'
+                  className='text-xs md:text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-[#C44DFF] to-[#0AACE6] text-white hover:opacity-90 transition'
                 >
                   Dashboard
                 </Link>

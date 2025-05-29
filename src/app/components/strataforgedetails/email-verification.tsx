@@ -74,14 +74,13 @@ export default function StratforgeEmailVerification() {
         otp: otpString,
       });
       
-      // Only redirect after successful verification and auth data is set
-      if (response?.data?.token) {
-        // Small delay to ensure auth state is properly set
+      if (response?.data?.data?.token) {
         setTimeout(() => {
           router.push('/');
         }, 100);
       }
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       setError(err.response?.data?.message || err.message || 'Verification failed');
       // Clear OTP on error for security
       setOtp(['', '', '', '', '', '']);
@@ -100,7 +99,8 @@ export default function StratforgeEmailVerification() {
       setResendDisabled(true);
       setCountdown(30); // 30 seconds cooldown
       setError(null); // Clear any previous errors
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       setError(err.response?.data?.message || err.message || 'Failed to resend OTP');
     }
   };
@@ -189,16 +189,18 @@ export default function StratforgeEmailVerification() {
           </button>
 
           {/* Resend OTP */}
-          <div className='text-center'>
+          <div className="text-center">
             <button
-              type='button'
+              type="button"
               onClick={handleResendOtp}
               disabled={resendDisabled}
-              className='text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-500 disabled:cursor-not-allowed'
+              className="text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-500 disabled:cursor-not-allowed"
             >
-              {resendDisabled
-                ? `Resend code in ${countdown}s`
-                : "Didn't receive the code? Resend"}
+              {resendDisabled ? (
+                `Resend code in ${countdown}s`
+              ) : (
+                <span>Didn't receive the code? Resend</span>
+              )}
             </button>
           </div>
         </form>

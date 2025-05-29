@@ -9,17 +9,13 @@ import { useAuth } from '../../../contexts/AuthContext';
 export default function StratforgeUserRegistration() {
   const router = useRouter();
   const { address: connectedWalletAddress, isConnected } = useWallet();
-  const { register, loading, error: authError, setError: setAuthError } = useAuth();
+  const { register } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Clear auth errors when component mounts
-  useEffect(() => {
-    setAuthError(null);
-  }, [setAuthError]);
 
   // Get role from localStorage on component mount
   useEffect(() => {
@@ -49,8 +45,10 @@ export default function StratforgeUserRegistration() {
       if (response?.data) {
         router.push('/email-verification');
       }
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       setError(err.response?.data?.message || err.message || 'Registration failed');
+      setLoading(false);
     }
   };
 
