@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../../../../contexts/WalletContext';
 import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { Abi, isAddress } from 'viem';
+import { Abi, isAddress, decodeEventLog } from 'viem';
 import StrataForgeAdminABI from '../../../../app/components/ABIs/StrataForgeAdminABI.json';
 import StrataForgeFactoryABI from '../../../../app/components/ABIs/StrataForgeFactoryABI.json';
 import DashboardLayout from '../DashboardLayout';
@@ -15,6 +15,7 @@ const factoryABI = StrataForgeFactoryABI as Abi;
 
 // Type definitions
 interface TokenData {
+  id?: number;
   tokenAddress: string;
   name: string;
   symbol: string;
@@ -28,6 +29,20 @@ interface WagmiContractResult {
   status: 'success' | 'failure';
   result?: unknown;
   error?: Error;
+}
+
+interface LogEntry {
+  data: `0x${string}`;
+  topics: `0x${string}`[];
+}
+
+interface TransactionReceipt {
+  logs: LogEntry[];
+}
+
+interface DecodedEventArgs {
+  tokenId?: bigint;
+  [key: string]: unknown;
 }
 
 const tokenTypes = [
@@ -63,7 +78,7 @@ const CreateTokensPage = () => {
 
   // Wagmi hooks
   const { writeContract, error: writeError, isPending: isWritePending } = useWriteContract();
-  const { isLoading: isTxConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
+  const { isLoading: isTxConfirming, isSuccess: isTxSuccess, data: txReceipt } = useWaitForTransactionReceipt({
     hash: txHash,
   });
 
@@ -118,11 +133,13 @@ const CreateTokensPage = () => {
     if (tokenData) {
       const tokens = tokenData
         ?.filter((result: WagmiContractResult) => result.status === 'success' && result.result)
-        .map((result: WagmiContractResult) => {
+        .map((result: WagmiContractResult, index) => {
           const token = result.result as TokenData;
-          return token.creator.toLowerCase() === address?.toLowerCase() ? token : null;
+          return token.creator.toLowerCase() === address?.toLowerCase()
+            ? { ...token, id: index + 1 }
+            : null;
         })
-        .filter((token): token is NonNullable<typeof token> => token !== null) || [];
+        .filter((token): token is NonNullable<typeof token> & { id: number } => token !== null) || [];
       setCreatedTokens(tokens);
       setTokensLoading(false);
       setLoading(false);
@@ -182,7 +199,28 @@ const CreateTokensPage = () => {
 
   // Handle transaction success
   useEffect(() => {
-    if (isTxSuccess && txHash) {
+    if (isTxSuccess && txHash && txReceipt) {
+      // Process the transaction receipt to find TokenCreated event
+      const receipt = txReceipt as TransactionReceipt;
+      const tokenCreatedEvent = receipt.logs
+        .map((log: LogEntry) => {
+          try {
+            const decoded = decodeEventLog({
+              abi: factoryABI,
+              data: log.data,
+              topics: [...log.topics] as [`0x${string}`, ...`0x${string}`[]],
+            });
+            return decoded.args as unknown as DecodedEventArgs;
+          } catch {
+            return null;
+          }
+        })
+        .find((event: DecodedEventArgs | null) => event && event.tokenId);
+
+      if (tokenCreatedEvent && tokenCreatedEvent.tokenId) {
+        router.push(`/dashboard/token-creator/create-tokens/manage-token/${tokenCreatedEvent.tokenId}`);
+      }
+
       setTxHash(undefined);
       setIsTxPending(false);
       setFormData({
@@ -199,7 +237,7 @@ const CreateTokensPage = () => {
         treasury: '',
       });
     }
-  }, [isTxSuccess, txHash]);
+  }, [isTxSuccess, txHash, txReceipt, router]);
 
   // Form input handler
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -281,7 +319,9 @@ const CreateTokensPage = () => {
       functionName,
       args,
     }, {
-      onSuccess: (hash: `0x${string}`) => setTxHash(hash),
+      onSuccess: (hash: `0x${string}`) => {
+        setTxHash(hash);
+      },
       onError: () => setIsTxPending(false),
     });
   };
@@ -295,7 +335,7 @@ const CreateTokensPage = () => {
       <div className="absolute top-1/3 left-1/4 w-16 h-16 border border-cyan-500/10 rotate-45"></div>
       <div className="absolute bottom-1/4 right-1/3 w-28 h-28 border border-purple-300/8 rounded-full"></div>
       <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-500/3 to-transparent rounded-full blur-3xl"></div>
-      <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/3 to-transparent rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/3 to-transparent rounded-full blur-2xl"></div>
     </div>
   );
 
@@ -526,7 +566,7 @@ const CreateTokensPage = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-gray-300 text-sm">Treasury Address</label>
+                      <label className="text-gray-300 text-sm">Treasury</label>
                       <input
                         type="text"
                         name="treasury"
@@ -553,50 +593,40 @@ const CreateTokensPage = () => {
           ) : createdTokens.length === 0 ? (
             <p className="text-gray-400">No tokens created yet.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="flex flex-wrap gap-6">
               {createdTokens.map((token, index) => (
                 <div
                   key={index}
-                  className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-purple-500/30 transition-all duration-300 min-w-[250px] max-w-[350px] w-full"
+                  className="backdrop-blur-sm bg-white/10 rounded-xl p-6 shadow-lg border border-purple-500/20 hover:bg-white/15 transition-all duration-300 min-w-[250px] max-w-[350px] w-full"
                 >
                   <div className="flex flex-col space-y-4">
-                    {/* Token Name */}
                     <div className="truncate">
                       <p className="text-white font-semibold text-lg" title={token.name}>{token.name}</p>
                     </div>
-                    {/* Token Symbol */}
                     <div>
                       <p className="text-gray-400 text-sm">
                         Symbol: <span className="text-white font-medium">{token.symbol}</span>
                       </p>
                     </div>
-                    {/* Token Address */}
                     <div className="truncate">
                       <p className="text-gray-400 text-sm">
                         Address: <span className="text-white font-mono text-xs" title={token.tokenAddress}>{token.tokenAddress}</span>
                       </p>
                     </div>
-                    {/* Token Type and Button */}
-                    <div className="flex items-center justify-between pt-2 gap-2">
-                      <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full border border-green-500/30 truncate max-w-[100px]">
+                    <div className="pt-2">
+                      <span className="inline-flex px-4 py-1 bg-blue-500/20 text-blue-400 text-xs font-medium rounded-full truncate max-w-[100px] mb-4">
                         {tokenTypes.find(t => t.value === Number(token.tokenType))?.label || 'Unknown'}
                       </span>
-                      <button
-                        className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition duration-300 whitespace-nowrap"
-                        onClick={() => {
-                          router.push(`/dashboard/token-creator/create-tokens/manage-token/${token.tokenAddress}`); // Updated path
-                        }}
-                      >
-                        Manage Token
-                      </button>
-                      {/* Alternative using Link (commented out):
-                      <Link
-                        href={`/dashboard/token-creator/manage-token/${token.tokenAddress}`}
-                        className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition duration-300 whitespace-nowrap"
-                      >
-                        Manage Token
-                      </Link>
-                      */}
+                      <div className="w-full">
+                        <button
+                          className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition duration-300"
+                          onClick={() => {
+                            router.push(`/dashboard/token-creator/create-tokens/manage-token/${token.id}`);
+                          }}
+                        >
+                          Manage Token
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -607,7 +637,7 @@ const CreateTokensPage = () => {
 
         {isTxPending && txHash && (
           <p className="text-yellow-400 text-sm relative z-10">
-            Transaction pending:{' '}
+            Transaction pending: {' '}
             <a
               href={`https://etherscan.io/tx/${txHash}`}
               target="_blank"
