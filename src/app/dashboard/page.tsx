@@ -96,7 +96,7 @@ const Dashboard = () => {
 
       <div className='mb-10'>
         <div className='flex justify-between items-center mb-6'>
-          <h2 className='font-poppins  font-semibold text-xl md:text-2xl'>Smart Recommendations</h2>
+          <h2 className='font-poppins font-semibold text-xl md:text-2xl'>Smart Recommendations</h2>
           <button className='text-sm font-vietnam text-white hover:underline hover:caret-blue-400 flex items-center'>
             View All
             <svg
@@ -113,13 +113,15 @@ const Dashboard = () => {
             </svg>
           </button>
         </div>
+      </div>
 
-        {/* <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+      {/* <div className='mb-10'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
           {propertyData.map((property) => (
             <DashBoardPropertyCard key={property.id} property={property} />
           ))}
-        </div> */}
-      </div>
+        </div>
+      </div> */}
 
       {/* <div className='mb-10'>
         <h2 className='font-poppins font-semibold text-xl md:text-2xl mb-6'>

@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useWallet } from '../../../contexts/WalletContext';
 
 type HeaderProps = Record<string, never>;
 
@@ -73,6 +74,7 @@ const Header: React.FC<HeaderProps> = () => {
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const pathname = usePathname();
+  const { isAuthenticated } = useWallet();
 
   if (
     pathname?.startsWith('/dashboard') ||
@@ -81,6 +83,11 @@ const Header: React.FC<HeaderProps> = () => {
     pathname?.startsWith('/access-denied')
   ) {
     return null;
+  }
+
+  const navItems = ['Home', 'Features', 'Listings', 'About us'];
+  if (isAuthenticated) {
+    navItems.push('Dashboard');
   }
 
   return (
@@ -103,7 +110,7 @@ const Header: React.FC<HeaderProps> = () => {
 
             <nav className='hidden md:block'>
               <ul className='flex space-x-8'>
-                {['Home', 'Features', 'Listings', 'About us'].map((item) => (
+                {navItems.filter(item => item !== 'Dashboard').map((item) => (
                   <li key={item}>
                     <Link
                       href={item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
@@ -116,7 +123,19 @@ const Header: React.FC<HeaderProps> = () => {
               </ul>
             </nav>
 
-            <div>
+            <div className='hidden md:flex items-center gap-4'>
+              <appkit-button />
+              {isAuthenticated && (
+                <Link
+                  href="/dashboard"
+                  className='text-xs md:text-sm px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-gradient-to-r from-[hsl(var(--primary-from))] to-[hsl(var(--primary-to))] hover:opacity-90 transition'
+                >
+                  Dashboard
+                </Link>
+              )}
+            </div>
+
+            <div className='md:hidden'>
               <appkit-button />
             </div>
 
@@ -149,11 +168,13 @@ const Header: React.FC<HeaderProps> = () => {
         {isMobileMenuOpen && (
           <div className='md:hidden bg-black/20 backdrop-blur-sm rounded-b-lg'>
             <div className='px-2 pt-2 pb-3 space-y-1 sm:px-3'>
-              {['Home', 'Features', 'Listings', 'About us'].map((item) => (
+              {navItems.map((item) => (
                 <Link
                   key={item}
                   href={item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
-                  className='block px-3 py-2 text-white hover:bg-indigo-600 rounded-md'
+                  className={`block px-3 py-2 text-white hover:bg-indigo-600 rounded-md ${
+                    item === 'Dashboard' ? 'bg-gradient-to-r from-blue-500 to-purple-500' : ''
+                  }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item}

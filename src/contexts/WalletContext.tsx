@@ -4,12 +4,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useDisconnect, useSignMessage } from 'wagmi';
 import { baseSepolia } from '../lib/wagmi-config';
+import { useAuth } from './AuthContext';
+import { usePathname } from 'next/navigation';
 
 interface WalletContextType {
   address: `0x${string}` | undefined;
   caipAddress: string | undefined;
   isConnected: boolean;
   isConnecting: boolean;
+  isAuthenticated: boolean;
   connect: () => void;
   disconnect: () => void;
   connectError: Error | null;
@@ -27,23 +30,53 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const { address, caipAddress, isConnected } = useAppKitAccount();
   const { disconnect: wagmiDisconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
+  const { login } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectError, setConnectError] = useState<Error | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const pathname = usePathname();
 
-  // Effect to store/remove wallet address in localStorage
+  // Effect to handle wallet connection/disconnection and auth check
   useEffect(() => {
-    console.log('Wallet state changed:', { address, caipAddress, isConnected });
-    
-    if (address && isConnected) {
-      // Store wallet address when connected
-      localStorage.setItem(WALLET_ADDRESS_KEY, address);
-      console.log('Stored wallet address:', address);
-    } else if (!isConnected) {
-      // Remove wallet address when disconnected
-      localStorage.removeItem(WALLET_ADDRESS_KEY);
-      console.log('Removed wallet address from storage');
-    }
-  }, [address, isConnected]);
+    const handleWalletConnection = async () => {
+      console.log('Wallet state changed:', { address, caipAddress, isConnected });
+      
+      if (address && isConnected) {
+        // Store wallet address when connected
+        localStorage.setItem(WALLET_ADDRESS_KEY, address);
+        console.log('Stored wallet address:', address);
+
+        // Don't attempt login on registration or email verification pages
+        if (!pathname?.includes('registration') && !pathname?.includes('verification')) {
+          try {
+            // Try to login with the connected wallet address
+            const response = await login({ walletAddress: address });
+            
+            // If we get here, login was successful (user is registered)
+            if (response?.data?.token) {
+              setIsAuthenticated(true);
+              console.log('Login successful, user is registered');
+            }
+          } catch (error: any) {
+            console.log('Login failed:', error?.response?.data || error);
+            setIsAuthenticated(false);
+            // Clean up any existing auth data
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+          }
+        }
+      } else if (!isConnected) {
+        // Remove wallet address and auth data when disconnected
+        localStorage.removeItem(WALLET_ADDRESS_KEY);
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        setIsAuthenticated(false);
+        console.log('Wallet disconnected, cleared auth data');
+      }
+    };
+
+    handleWalletConnection();
+  }, [address, isConnected, login, pathname]);
 
   // Function to connect wallet using AppKit
   const connect = async () => {
@@ -62,6 +95,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Wallet connection error:', error);
       setConnectError(error instanceof Error ? error : new Error('Failed to connect wallet'));
+      setIsAuthenticated(false);
     } finally {
       setIsConnecting(false);
     }
@@ -70,7 +104,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   // Function to disconnect wallet
   const disconnect = () => {
     wagmiDisconnect();
-    // Address will be removed from localStorage automatically via useEffect
+    setIsAuthenticated(false);
+    localStorage.removeItem(WALLET_ADDRESS_KEY);
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
   };
 
   // Function to sign a message
@@ -90,6 +127,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         caipAddress,
         isConnected,
         isConnecting,
+        isAuthenticated,
         connect,
         disconnect,
         connectError,

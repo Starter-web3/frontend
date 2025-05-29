@@ -1,17 +1,33 @@
 'use client';
-import React, { useState, ReactNode } from 'react';
+import React, { useState, ReactNode, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardSidebar from './Sidebar';
 import DashboardHeader from './Header';
 import Footer from '../components/layout/Footer';
 import { useWallet } from '../../contexts/WalletContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { isConnected } = useWallet(); // Get connection status
+  const { isConnected, isAuthenticated } = useWallet();
+  const { user } = useAuth();
+  const router = useRouter();
+
+  // Protect dashboard route
+  useEffect(() => {
+    if (!isConnected || !isAuthenticated || !user) {
+      router.push('/');
+    }
+  }, [isConnected, isAuthenticated, user, router]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  // If not authenticated, render nothing while redirecting
+  if (!isConnected || !isAuthenticated || !user) {
+    return null;
+  }
 
   return (
     <>
@@ -36,16 +52,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className='flex-1 flex flex-col min-h-screen'>
           <DashboardHeader toggleSidebar={toggleSidebar} isConnected={isConnected} />
           <main className='flex-1 p-4 md:p-8 overflow-auto'>
-            {!isConnected ? (
-              <div className='text-center p-8'>
-                <p>Please connect your wallet to access the dashboard</p>
-                <button onClick={() => document.querySelector('appkit-button')?.click()}>
-                  Connect Wallet
-                </button>
-              </div>
-            ) : (
-              children
-            )}
+            {children}
           </main>
         </div>
       </div>
