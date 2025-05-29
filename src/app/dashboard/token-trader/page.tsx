@@ -6,6 +6,7 @@ import { Abi } from 'viem';
 import StrataForgeFactoryABI from '../../../app/components/ABIs/StrataForgeFactoryABI.json';
 import TraderDashboardLayout from './TraderDashboardLayout';
 import Link from 'next/link';
+import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 
 // SVG Icons for Token Types
 const Erc20Icon = () => (
@@ -484,109 +485,111 @@ const TokenTraderDashboard = () => {
   }
 
   return (
-    <TraderDashboardLayout>
-      <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
-        <BackgroundShapes />
-        <div
-          className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
-          style={{
-            background:
-              'radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)',
-          }}
-        >
-          <h1 className="font-poppins font-semibold text-3xl md:text-4xl leading-[170%] mb-2">
-            Welcome back, {userName} <span className="text-yellow-400">👋</span>
-          </h1>
-          <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
-            Discover tokens, claim airdrops, and trade on the StrataForge marketplace
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3 relative z-10">
-            <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <p className="text-red-300 font-medium">{error}</p>
+    <ProtectedRoute requiredRole="user">
+      <TraderDashboardLayout>
+        <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
+          <BackgroundShapes />
+          <div
+            className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
+            style={{
+              background:
+                'radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)',
+            }}
+          >
+            <h1 className="font-poppins font-semibold text-3xl md:text-4xl leading-[170%] mb-2">
+              Welcome back, {userName} <span className="text-yellow-400">👋</span>
+            </h1>
+            <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
+              Discover tokens, claim airdrops, and trade on the StrataForge marketplace
+            </p>
           </div>
-        )}
 
-        <div className="mb-12 relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-            <h2 className="text-2xl font-bold text-white">Discover Tokens</h2>
-            <Link
-              href="/dashboard/marketplace"
-              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200 font-medium text-sm"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          {error && (
+            <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3 relative z-10">
+              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
-              Visit Marketplace
-            </Link>
-          </div>
-          {tokens.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tokens.map((token) => (
-                <TokenCard key={token.id} token={token} />
-              ))}
+              <p className="text-red-300 font-medium">{error}</p>
             </div>
-          ) : (
-            <div className="text-center py-16 bg-white/[0.02] rounded-xl border border-white/10">
-              <div className="mb-4">
-                <TokenPlaceholderIcon />
-              </div>
-              <p className="text-gray-400 text-lg mb-6">No tokens available to discover yet</p>
+          )}
+
+          <div className="mb-12 relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+              <h2 className="text-2xl font-bold text-white">Discover Tokens</h2>
               <Link
                 href="/dashboard/marketplace"
-                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200 font-medium"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200 font-medium text-sm"
               >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
                 Visit Marketplace
               </Link>
             </div>
-          )}
-        </div>
-
-        <div className="mb-12 relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-            <h2 className="text-2xl font-bold text-white">Airdrops</h2>
-            <Link
-              href="/dashboard/airdrops"
-              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 font-medium text-sm"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-              View All Airdrops
-            </Link>
-          </div>
-          {airdrops.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {airdrops.map((airdrop) => (
-                <AirdropCard key={airdrop.id} airdrop={airdrop} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-white/[0.02] rounded-xl border border-white/10">
-              <div className="mb-4">
-                <AirdropPlaceholderIcon />
+            {tokens.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {tokens.map((token) => (
+                  <TokenCard key={token.id} token={token} />
+                ))}
               </div>
-              <p className="text-gray-400 text-lg mb-6">No airdrops available yet. Check back soon!</p>
+            ) : (
+              <div className="text-center py-16 bg-white/[0.02] rounded-xl border border-white/10">
+                <div className="mb-4">
+                  <TokenPlaceholderIcon />
+                </div>
+                <p className="text-gray-400 text-lg mb-6">No tokens available to discover yet</p>
+                <Link
+                  href="/dashboard/marketplace"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200 font-medium"
+                >
+                  Visit Marketplace
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <div className="mb-12 relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+              <h2 className="text-2xl font-bold text-white">Airdrops</h2>
               <Link
                 href="/dashboard/airdrops"
-                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 font-medium"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 font-medium text-sm"
               >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
                 View All Airdrops
               </Link>
             </div>
-          )}
+            {airdrops.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {airdrops.map((airdrop) => (
+                  <AirdropCard key={airdrop.id} airdrop={airdrop} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-white/[0.02] rounded-xl border border-white/10">
+                <div className="mb-4">
+                  <AirdropPlaceholderIcon />
+                </div>
+                <p className="text-gray-400 text-lg mb-6">No airdrops available yet. Check back soon!</p>
+                <Link
+                  href="/dashboard/airdrops"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 font-medium"
+                >
+                  View All Airdrops
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </TraderDashboardLayout>
+      </TraderDashboardLayout>
+    </ProtectedRoute>
   );
 };
 

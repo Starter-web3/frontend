@@ -96,33 +96,46 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem(WALLET_ADDRESS_KEY, address);
           console.log('Stored wallet address:', address);
 
-          // Only attempt login if we're not on registration or verification pages
-          // and we don't already have a valid token
+          // Check if we have a token and role already
           const token = localStorage.getItem('token');
           const role = localStorage.getItem('role');
 
-          if (!pathname?.includes('registration') && !pathname?.includes('verification') && (!token || !role)) {
-            try {
-              const response = await login({ walletAddress: address });
-              console.log('Login response:', response);
-              console.log('Response structure:', {
-                success: response.success,
-                message: response.message,
-                hasData: response.data !== undefined,
-                fullStructure: JSON.stringify(response, null, 2)
-              });
-              
-              if (response.success && response.data?.token) {
-                setIsAuthenticated(true);
-                console.log('Login successful, user is registered');
-              } else {
-                console.log('Login response missing token:', response);
-                setIsAuthenticated(false);
-              }
-            } catch (error: unknown) {
-              const err = error as { response?: { data?: unknown }; message?: string };
-              console.log('Login failed:', err?.response?.data || err);
+          // If we have both token and role, we're already authenticated
+          if (token && role) {
+            setIsAuthenticated(true);
+            console.log('User already authenticated with token and role');
+            return;
+          }
+
+          // Don't attempt login on registration or verification pages
+          if (pathname?.includes('registration') || pathname?.includes('verification')) {
+            console.log('Skipping login on registration/verification pages');
+            return;
+          }
+
+          try {
+            const response = await login({ walletAddress: address });
+            console.log('Login response:', response);
+            
+            if (response.success && response.data?.token) {
+              setIsAuthenticated(true);
+              console.log('Login successful, user is authenticated');
+            } else {
+              console.log('Login unsuccessful:', response.message);
               setIsAuthenticated(false);
+              
+              // If user is not found and we're not on registration page, redirect to registration
+              if (response.message?.includes('not found') && !pathname?.includes('registration')) {
+                window.location.href = '/user-registration';
+              }
+            }
+          } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown }; message?: string };
+            console.log('Login failed:', err?.response?.data || err);
+            setIsAuthenticated(false);
+            
+            // Only clear token and role if it's not a "user not found" error
+            if (!err.message?.includes('not found')) {
               localStorage.removeItem('token');
               localStorage.removeItem('role');
             }

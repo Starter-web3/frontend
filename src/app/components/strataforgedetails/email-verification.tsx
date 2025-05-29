@@ -6,12 +6,14 @@ import { useAuth } from '../../../contexts/AuthContext';
 
 export default function StratforgeEmailVerification() {
   const router = useRouter();
-  const { verifyEmail, resendOtp, loading, error: authError } = useAuth();
+  const { verifyEmail, resendOtp, error: authError } = useAuth();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [email, setEmail] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
     // Get email from localStorage (saved during registration)
@@ -60,7 +62,7 @@ export default function StratforgeEmailVerification() {
     e.preventDefault();
     setError(null);
 
-    if (loading) return; // Prevent multiple submissions
+    if (verifyLoading) return; // Prevent multiple submissions
 
     const otpString = otp.join('');
     if (otpString.length !== 6) {
@@ -68,13 +70,14 @@ export default function StratforgeEmailVerification() {
       return;
     }
 
+    setVerifyLoading(true);
     try {
       const response = await verifyEmail({
         email,
         otp: otpString,
       });
       
-      if (response?.data?.data?.token) {
+      if (response.success && response.data?.token) {
         setTimeout(() => {
           router.push('/');
         }, 100);
@@ -84,6 +87,8 @@ export default function StratforgeEmailVerification() {
       setError(err.response?.data?.message || err.message || 'Verification failed');
       // Clear OTP on error for security
       setOtp(['', '', '', '', '', '']);
+    } finally {
+      setVerifyLoading(false);
     }
   };
 
@@ -94,6 +99,7 @@ export default function StratforgeEmailVerification() {
       return;
     }
 
+    setResendLoading(true);
     try {
       await resendOtp(email);
       setResendDisabled(true);
@@ -102,6 +108,8 @@ export default function StratforgeEmailVerification() {
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } }; message?: string };
       setError(err.response?.data?.message || err.message || 'Failed to resend OTP');
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -145,7 +153,7 @@ export default function StratforgeEmailVerification() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className='space-y-6'>
+        <form onSubmit={handleSubmit}>
           {/* OTP Input */}
           <div>
             <label className='block text-sm font-medium text-gray-300 mb-3 text-center'>
@@ -172,10 +180,10 @@ export default function StratforgeEmailVerification() {
           {/* Verify Button */}
           <button
             type='submit'
-            disabled={loading || otp.join('').length !== 6}
-            className='w-full py-3 text-white font-medium bg-gradient-to-r from-blue-500 to-purple-500 rounded-md hover:from-blue-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-[#1a0e2e] disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center'
+            disabled={verifyLoading || otp.join('').length !== 6}
+            className='w-full py-3 mt-6 text-white font-medium bg-gradient-to-r from-blue-500 to-purple-500 rounded-md hover:from-blue-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-[#1a0e2e] disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center'
           >
-            {loading ? (
+            {verifyLoading ? (
               <>
                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -189,14 +197,22 @@ export default function StratforgeEmailVerification() {
           </button>
 
           {/* Resend OTP */}
-          <div className="text-center">
+          <div className="text-center mt-4">
             <button
               type="button"
               onClick={handleResendOtp}
-              disabled={resendDisabled}
-              className="text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+              disabled={resendDisabled || resendLoading}
+              className="text-sm text-blue-400 hover:text-blue-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center mx-auto"
             >
-              {resendDisabled ? (
+              {resendLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Resending...
+                </>
+              ) : resendDisabled ? (
                 `Resend code in ${countdown}s`
               ) : (
                 <span>Didn't receive the code? Resend</span>

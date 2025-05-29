@@ -75,16 +75,30 @@ const Header: React.FC<HeaderProps> = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const pathname = usePathname();
   const { isAuthenticated } = useWallet();
+  const [dashboardPath, setDashboardPath] = useState('/dashboard');
 
-  // Add logging to track authentication state
+  // Add effect to determine the correct dashboard path based on role
+  useEffect(() => {
+    const userRole = localStorage.getItem('role');
+    if (userRole === 'owner') {
+      setDashboardPath('/dashboard/token-creator');
+    } else if (userRole === 'user') {
+      setDashboardPath('/dashboard/token-trader');
+    } else {
+      setDashboardPath('/dashboard');
+    }
+  }, [isAuthenticated]);
+
+  // Add logging to track authentication state and role
   useEffect(() => {
     console.log('Header - Auth state:', {
       isAuthenticated,
       token: localStorage.getItem('token'),
       role: localStorage.getItem('role'),
+      dashboardPath,
       pathname
     });
-  }, [isAuthenticated, pathname]);
+  }, [isAuthenticated, pathname, dashboardPath]);
 
   if (
     pathname?.startsWith('/dashboard') ||
@@ -96,9 +110,6 @@ const Header: React.FC<HeaderProps> = () => {
   }
 
   const navItems = ['Home', 'Features', 'Listings', 'About us'];
-  if (isAuthenticated) {
-    navItems.push('Dashboard');
-  }
 
   return (
     <header className='fixed top-2 left-6 right-6 z-30'>
@@ -118,29 +129,28 @@ const Header: React.FC<HeaderProps> = () => {
               </Link>
             </div>
 
+            {/* Desktop Navigation */}
             <nav className='hidden md:block'>
               <ul className='flex space-x-8'>
-                {navItems.map((item: string) => {
-                  if (item === 'Dashboard') return null;
-                  return (
-                    <li key={item}>
-                      <Link
-                        href={item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
-                        className='text-white hover:text-gray-300 transition'
-                      >
-                        {item}
-                      </Link>
-                    </li>
-                  );
-                })}
+                {navItems.map((item: string) => (
+                  <li key={item}>
+                    <Link
+                      href={item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
+                      className='text-white hover:text-gray-300 transition'
+                    >
+                      {item}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </nav>
 
+            {/* Desktop Actions */}
             <div className='hidden md:flex items-center gap-4'>
               <appkit-button />
               {isAuthenticated && (
                 <Link
-                  href="/dashboard"
+                  href={dashboardPath}
                   className='text-xs md:text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-[#C44DFF] to-[#0AACE6] text-white hover:opacity-90 transition'
                 >
                   Dashboard
@@ -148,15 +158,14 @@ const Header: React.FC<HeaderProps> = () => {
               )}
             </div>
 
-            <div className='md:hidden'>
+            {/* Mobile Actions */}
+            <div className='md:hidden flex items-center gap-4'>
               <appkit-button />
-            </div>
-
-            <div className='md:hidden'>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className='text-white'
+                className='text-white p-2 hover:bg-white/10 rounded-lg transition-colors'
                 type='button'
+                aria-label='Toggle menu'
               >
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
@@ -179,20 +188,30 @@ const Header: React.FC<HeaderProps> = () => {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className='md:hidden bg-black/20 backdrop-blur-sm rounded-b-lg'>
-            <div className='px-2 pt-2 pb-3 space-y-1 sm:px-3'>
+          <div className='md:hidden bg-black/20 backdrop-blur-sm rounded-b-lg border-t border-white/10'>
+            <div className='px-2 pt-2 pb-3 space-y-1'>
+              {/* Navigation Items */}
               {navItems.map((item) => (
                 <Link
                   key={item}
                   href={item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
-                  className={`block px-3 py-2 text-white hover:bg-indigo-600 rounded-md ${
-                    item === 'Dashboard' ? 'bg-gradient-to-r from-blue-500 to-purple-500' : ''
-                  }`}
+                  className='block px-3 py-2 text-white hover:bg-white/10 rounded-md transition-colors'
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item}
                 </Link>
               ))}
+              
+              {/* Dashboard Button in Mobile Menu */}
+              {isAuthenticated && (
+                <Link
+                  href={dashboardPath}
+                  className='block px-3 py-2 text-white bg-gradient-to-r from-[#C44DFF] to-[#0AACE6] rounded-md mt-2'
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+              )}
             </div>
           </div>
         )}

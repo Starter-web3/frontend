@@ -26,8 +26,7 @@ export default function StratforgeUserRegistration() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (loading) return; // Prevent multiple submissions
+    setLoading(true);
 
     try {
       if (!isConnected || !connectedWalletAddress) {
@@ -41,13 +40,17 @@ export default function StratforgeUserRegistration() {
         role: userRole || 'user'
       });
       
+      // Store email for verification page
+      localStorage.setItem('registrationEmail', email);
+      
       // Only redirect after successful registration
-      if (response?.data) {
+      if (response?.success) {
         router.push('/email-verification');
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } }; message?: string };
       setError(err.response?.data?.message || err.message || 'Registration failed');
+    } finally {
       setLoading(false);
     }
   };
