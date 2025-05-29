@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useReadContract, useWriteContract, useAccount } from 'wagmi';
+import { useReadContract, useWriteContract, useAccount, useChainId } from 'wagmi';
 import { Abi, isAddress } from 'viem';
 import DashboardLayout from '../../../DashboardLayout';
 import StrataForgeERC20ImplementationABI from '../../../../../components/ABIs/StrataForgeERC20ImplementationABI.json';
@@ -11,7 +11,7 @@ import StrataForgeMemecoinImplementationABI from '../../../../../components/ABIs
 import StrataForgeStablecoinImplementationABI from '../../../../../components/ABIs/StrataForgeStablecoinImplementationABI.json';
 import StrataForgeFactoryABI from '../../../../../components/ABIs/StrataForgeFactoryABI.json';
 
-// Background Shapes Component (Restored and Enhanced)
+// Background Shapes Component
 const BackgroundShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
     <div className="absolute top-20 left-10 w-32 h-32 border-2 border-purple-500/20 rounded-full animate-pulse"></div>
@@ -37,10 +37,12 @@ interface TokenInfo {
 }
 
 const FACTORY_CONTRACT_ADDRESS = '0x59F42c3eEcf829b34d8Ca846Dfc83D3cDC105C3F' as const;
+const BASE_SEPOLIA_CHAIN_ID = 84532; // Chain ID for Base Sepolia
 
 const ManageToken = () => {
   const { id: tokenId } = useParams<{ id: string }>();
   const { address: account } = useAccount();
+  const chainId = useChainId();
   const [tokenType, setTokenType] = useState<'erc20' | 'erc721' | 'erc1155' | 'meme' | 'stable' | null>(null);
   const [tokenDetails, setTokenDetails] = useState<TokenDetails | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -48,8 +50,57 @@ const ManageToken = () => {
   const [modalAction, setModalAction] = useState<string | null>(null);
   const [formInputs, setFormInputs] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [inputErrors, setInputErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const { writeContract, isPending, error: writeError } = useWriteContract();
+
+  // Validate numeric input
+  const validateNumber = (value: string, allowZero: boolean = true): string | null => {
+    if (value === '') return allowZero ? null : 'Value cannot be empty';
+    const num = Number(value);
+    if (isNaN(num)) return 'Must be a valid number';
+    if (num < 0) return 'Number cannot be negative';
+    if (!allowZero && num === 0) return 'Number cannot be zero';
+    return null;
+  };
+
+  // Handle modal form input changes
+  const handleInputChange = (key: string, value: string, isNumber: boolean = false) => {
+    setFormInputs((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+
+    if (isNumber) {
+      const error = validateNumber(value, true);
+      setInputErrors((prev) => ({
+        ...prev,
+        [key]: error || '',
+      }));
+    } else {
+      setInputErrors((prev) => ({
+        ...prev,
+        [key]: '',
+      }));
+    }
+  };
+
+  // Approve collateral token for stablecoin mint
+  const handleApproveCollateral = async (collateralToken: string, amount: bigint) => {
+    try {
+      await writeContract({
+        address: collateralToken as `0x${string}`,
+        abi: StrataForgeERC20ImplementationABI as Abi, // Assuming collateral is ERC20
+        functionName: 'approve',
+        args: [tokenAddress, amount],
+        account: account as `0x${string}`,
+      });
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to approve collateral');
+      return false;
+    }
+  };
 
   // Fetch TokenInfo from factory
   const { data: tokenInfo, error: tokenInfoError, isLoading: tokenInfoLoading } = useReadContract({
@@ -86,6 +137,14 @@ const ManageToken = () => {
     meme: StrataForgeMemecoinImplementationABI as Abi,
     stable: StrataForgeStablecoinImplementationABI as Abi,
   };
+
+  // Fetch collateral token address for stablecoin
+  const { data: collateralToken } = useReadContract({
+    address: tokenAddress as `0x${string}`,
+    abi: tokenABIs.stable,
+    functionName: 'collateralToken',
+    query: { enabled: !!tokenAddress && isAddress(tokenAddress) && tokenType === 'stable' },
+  });
 
   // Hook calls for token type detection (fallback if factory type fails)
   const erc721InterfaceCheck = useReadContract({
@@ -163,7 +222,7 @@ const ManageToken = () => {
           stableCollateralCheck.isLoading ||
           erc20DecimalsCheck.isLoading
         ) {
-          return; // Still loading
+          return;
         }
 
         setError('Unknown token type');
@@ -266,7 +325,7 @@ const ManageToken = () => {
     }
   }, [tokenInfoError, tokenId]);
 
-  // Static read functions (reliable, no input required)
+  // Static read functions
   const staticReadFunctions: Record<string, { name: string; label: string; args?: unknown[] }[]> = {
     erc20: [
       { name: 'name', label: 'Name' },
@@ -317,7 +376,7 @@ const ManageToken = () => {
     ],
   };
 
-  // Query read functions (require user input)
+  // Query read functions
   const queryReadFunctions: Record<string, { name: string; label: string; inputLabels: string[] }[]> = {
     erc20: [
       {
@@ -381,7 +440,7 @@ const ManageToken = () => {
     ],
   };
 
-  // Write functions with input requirements
+  // Write functions
   const writeFunctions: Record<
     string,
     { name: string; args: string[]; inputs: { label: string; type: string; default?: string }[]; ownerOnly?: boolean }[]
@@ -847,42 +906,66 @@ const ManageToken = () => {
     ],
   };
 
-  // Handle modal form input changes
-  const handleInputChange = (key: string, value: string) => {
-    setFormInputs(prev => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
-
   // Execute write function
   const handleWrite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!modalAction || !tokenType || !tokenAddress || !account) {
+      setError('Missing required parameters');
       return;
     }
 
-    const action = writeFunctions[tokenType].find((f: { name: string }) => f.name === modalAction);
-    if (!action) return;
+    if (chainId !== BASE_SEPOLIA_CHAIN_ID) {
+      setError('Please connect to Base Sepolia network');
+      return;
+    }
+
+    const action = writeFunctions[tokenType].find((f) => f.name === modalAction);
+    if (!action) {
+      setError('Invalid action');
+      return;
+    }
 
     try {
-      const args = action.args.map((arg: string) => {
-        const value = formInputs[arg];
+      const args = action.args.map((arg, index) => {
+        // Use input label as key, mapped to arg name
+        const input = action.inputs[index];
+        const value = formInputs[input.label];
         if (value === undefined) throw new Error(`Missing ${arg}`);
-        if (arg.includes('address') || arg.includes('to') || arg.includes('from') || arg.includes('spender') || arg.includes('operator') || arg.includes('account') || arg.includes('treasury') || arg.includes('newOwner')) {
+        if (
+          arg.includes('address') ||
+          arg.includes('to') ||
+          arg.includes('from') ||
+          arg.includes('spender') ||
+          arg.includes('operator') ||
+          arg.includes('account') ||
+          arg.includes('treasury') ||
+          arg.includes('newOwner')
+        ) {
           if (!isAddress(value)) throw new Error(`Invalid address for ${arg}`);
           return value;
         }
-        if (arg.includes('amount') || arg.includes('id') || arg.includes('tokenId') || arg.includes('fee') || arg.includes('ratio') || arg.includes('addedValue') || arg.includes('subtractedValue') || arg.includes('collateralAmount') || arg.includes('tokenAmount')) {
+        if (
+          arg.includes('amount') ||
+          arg.includes('id') ||
+          arg.includes('tokenId') ||
+          arg.includes('fee') ||
+          arg.includes('ratio') ||
+          arg.includes('addedValue') ||
+          arg.includes('subtractedValue') ||
+          arg.includes('collateralAmount') ||
+          arg.includes('tokenAmount')
+        ) {
           const num = Number(value);
-          if (isNaN(num) || num <= 0) throw new Error(`Invalid number for ${arg}`);
+          if (isNaN(num)) throw new Error(`Invalid number for ${arg}`);
+          if (num < 0) throw new Error(`Number cannot be negative for ${arg}`);
+          if (value === '') throw new Error(`Value for ${arg} cannot be empty`);
           return BigInt(num);
         }
         if (arg === 'ids' || arg === 'amounts') {
-          // Parse comma-separated values for arrays
-          const values = value.split(',').map(v => {
+          const values = value.split(',').map((v) => {
             const num = Number(v.trim());
-            if (isNaN(num) || num <= 0) throw new Error(`Invalid number in ${arg}`);
+            if (isNaN(num)) throw new Error(`Invalid number in ${arg}`);
+            if (num <= 0) throw new Error(`Numbers in ${arg} must be positive`);
             return BigInt(num);
           });
           return values;
@@ -890,8 +973,15 @@ const ManageToken = () => {
         if (arg === 'approved' || arg === 'excluded') {
           return value === 'true';
         }
-        return value; // For uri, data, etc.
+        return value;
       });
+
+      // For stablecoin mint, approve collateral token
+      if (tokenType === 'stable' && modalAction === 'mint' && collateralToken) {
+        const collateralAmount = args[0] as bigint;
+        const approved = await handleApproveCollateral(collateralToken as string, collateralAmount);
+        if (!approved) return;
+      }
 
       await writeContract({
         address: tokenAddress as `0x${string}`,
@@ -903,6 +993,7 @@ const ManageToken = () => {
 
       setModalOpen(false);
       setFormInputs({});
+      setInputErrors({});
       setError(null);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Transaction failed';
@@ -915,6 +1006,7 @@ const ManageToken = () => {
     setModalAction(action);
     setModalOpen(true);
     setFormInputs({});
+    setInputErrors({});
   };
 
   // Render read function result
@@ -930,7 +1022,7 @@ const ManageToken = () => {
     const [isQueryTriggered, setIsQueryTriggered] = useState(false);
 
     // Handle dynamic args for functions
-    const dynamicArgs: (string | unknown)[] = (func.args || []).map((arg, index) => {
+    const dynamicArgs = (func.args || []).map((arg: unknown, index: number) => {
       if (typeof arg === 'string' && arg === '' && isQuery) {
         return formInputs[`${func.name}_${inputLabels[index]}`] || '';
       }
@@ -950,7 +1042,10 @@ const ManageToken = () => {
       functionName: func.name,
       args: dynamicArgs,
       query: {
-        enabled: !!tokenType && !!tokenAddress && (!isQuery || (isQueryTriggered && dynamicArgs.every(arg => arg !== ''))),
+        enabled:
+          !!tokenType &&
+          !!tokenAddress &&
+          (!isQuery || (isQueryTriggered && dynamicArgs.every((arg: unknown) => arg !== ''))),
       },
     });
 
@@ -960,20 +1055,30 @@ const ManageToken = () => {
         {isQuery && (
           <div className="mt-2 space-y-2">
             {inputLabels.map((label, index) => (
-              <input
-                key={index}
-                type={label.includes('ID') ? 'number' : 'text'}
-                placeholder={`Enter ${label}`}
-                value={formInputs[`${func.name}_${label}`] || ''}
-                onChange={(e) => handleInputChange(`${func.name}_${label}`, e.target.value)}
-                className="w-full p-2 bg-[#2A1F36] border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
+              <div key={index}>
+                <input
+                  type="text"
+                  inputMode={label.includes('ID') ? 'numeric' : 'text'}
+                  pattern={label.includes('ID') ? '[0-9]*' : undefined}
+                  placeholder={`Enter ${label}`}
+                  value={formInputs[`${func.name}_${label}`] || ''}
+                  onChange={(e) => handleInputChange(`${func.name}_${label}`, e.target.value, label.includes('ID'))}
+                  className={`w-full p-2 bg-[#2A1F36] border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    inputErrors[`${func.name}_${label}`] ? 'border-red-500' : ''
+                  }`}
+                />
+                {inputErrors[`${func.name}_${label}`] && (
+                  <p className="text-red-300 text-sm mt-1">{inputErrors[`${func.name}_${label}`]}</p>
+                )}
+              </div>
             ))}
             <button
               type="button"
               onClick={() => setIsQueryTriggered(true)}
-              disabled={dynamicArgs.some(arg => arg === '')}
-              className="w-full px-3 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              disabled={dynamicArgs.some(
+                (arg: unknown, idx: number) => arg === '' || inputErrors[`${func.name}_${inputLabels[idx]}`],
+              )}
+              className="w-full px-3 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               Query
             </button>
@@ -994,34 +1099,41 @@ const ManageToken = () => {
   const WriteModal = () => {
     if (!modalOpen || !modalAction || !tokenType) return null;
 
-    const action = writeFunctions[tokenType].find((f: { name: string }) => f.name === modalAction);
+    const action = writeFunctions[tokenType].find((f) => f.name === modalAction);
     if (!action) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-[#1E1425] p-6 rounded-xl max-w-md w-full border border-purple-500/20">
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="bg-[#1E1425] p-6 rounded-xl max-w-md w-full border border-purple-500/20 shadow-2xl">
           <h3 className="text-xl text-white font-semibold mb-4">{action.name}</h3>
           <form onSubmit={handleWrite}>
-            {action.inputs.map((input: { label: string; type: string; default?: string }, index: number) => (
+            {action.inputs.map((input, index) => (
               <div key={index} className="mb-4">
                 <label className="block text-sm font-medium text-gray-400 mb-1">{input.label}</label>
                 {input.type === 'checkbox' ? (
                   <input
                     type="checkbox"
                     checked={formInputs[input.label] === 'true'}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange(input.label, e.target.checked.toString())
-                    }
+                    onChange={(e) => handleInputChange(input.label, e.target.checked.toString())}
                     className="mt-1 rounded border-gray-600 text-purple-600 focus:ring-purple-500"
                   />
                 ) : (
-                  <input
-                    type={input.type === 'number' ? 'number' : 'text'}
-                    value={formInputs[input.label] || input.default || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(input.label, e.target.value)}
-                    placeholder={input.label}
-                    className="w-full p-2 bg-[#2A1F36] border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
+                  <div>
+                    <input
+                      type="text"
+                      inputMode={input.type === 'number' ? 'numeric' : 'text'}
+                      pattern={input.type === 'number' ? '[0-9]*' : undefined}
+                      value={formInputs[input.label] || input.default || ''}
+                      onChange={(e) => handleInputChange(input.label, e.target.value, input.type === 'number')}
+                      placeholder={input.label}
+                      className={`w-full p-2 bg-[#2A1F36] border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                        inputErrors[input.label] ? 'border-red-500' : ''
+                      }`}
+                    />
+                    {inputErrors[input.label] && (
+                      <p className="text-red-300 text-sm mt-1">{inputErrors[input.label]}</p>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
@@ -1034,6 +1146,7 @@ const ManageToken = () => {
                   setModalOpen(false);
                   setModalAction(null);
                   setError(null);
+                  setInputErrors({});
                 }}
                 className="px-4 py-2 bg-gray-600 text-gray-300 rounded-xl hover:bg-gray-700"
               >
@@ -1041,7 +1154,7 @@ const ManageToken = () => {
               </button>
               <button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || Object.values(inputErrors).some((err) => err !== '')}
                 className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isPending ? 'Processing...' : 'Execute'}
@@ -1079,66 +1192,69 @@ const ManageToken = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-[#1A0D23] to-[#2A1F36] p-6 md:p-10 relative">
-        <BackgroundShapes />
-        {/* Token Header */}
-        <div className="mb-12 relative z-10 max-w-4xl mx-auto">
-          <h1 className="font-poppins font-bold text-4xl md:text-5xl text-white mb-4">
-            {tokenDetails.name} ({tokenDetails.symbol})
-          </h1>
-          <div className="bg-[#2A1F36]/50 p-4 rounded-xl">
-            <p className="text-gray-300 text-lg">Token ID: {tokenId}</p>
-            <p className="text-gray-300 text-lg">Address: {tokenAddress}</p>
-            <p className="text-gray-300 text-lg">Type: {tokenType.toUpperCase()}</p>
-          </div>
-        </div>
+      <div className="relative min-h-screen">
+        <div className={`transition-all duration-300 ${modalOpen ? 'blur-md' : ''}`}>
+          <BackgroundShapes />
+          <div className="p-6 md:p-10 bg-gradient-to-br from-[#1A0D23] to-[#2A1F36]">
+            {/* Token Header */}
+            <div className="mb-12 relative z-10 max-w-4xl mx-auto">
+              <h1 className="font-poppins font-bold text-4xl md:text-5xl text-white mb-4">
+                {tokenDetails.name} ({tokenDetails.symbol})
+              </h1>
+              <div className="bg-[#2A1F36]/50 p-4 rounded-xl">
+                <p className="text-gray-300 text-lg">Token ID: {tokenId}</p>
+                <p className="text-gray-300 text-lg">Address: {tokenAddress}</p>
+                <p className="text-gray-300 text-lg">Type: {tokenType.toUpperCase()}</p>
+              </div>
+            </div>
 
-        {/* Token Information Section */}
-        <div className="mb-12 relative z-10 max-w-6xl mx-auto">
-          <h2 className="font-poppins font-semibold text-2xl md:text-3xl text-white mb-6">Token Information</h2>
-          <div className="bg-gradient-to-r from-[#2A1F36]/80 to-[#1E1425]/80 rounded-2xl p-6 shadow-lg">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {staticReadFunctions[tokenType].map(func => (
-                <ReadCard key={func.name} func={func} />
-              ))}
+            {/* Token Information Section */}
+            <div className="mb-12 relative z-10 max-w-6xl mx-auto">
+              <h2 className="font-poppins font-semibold text-2xl md:text-3xl text-white mb-6">Token Information</h2>
+              <div className="bg-gradient-to-r from-[#2A1F36]/80 to-[#1E1425]/80 rounded-2xl p-6 shadow-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {staticReadFunctions[tokenType].map((func) => (
+                    <ReadCard key={func.name} func={func} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Token Actions Section */}
+            <div className="mb-12 relative z-10 max-w-6xl mx-auto">
+              <h2 className="font-poppins font-semibold text-2xl md:text-3xl text-white mb-6">Token Actions</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {writeFunctions[tokenType]
+                  .filter((action) => !action.ownerOnly || isOwner)
+                  .map((action) => (
+                    <button
+                      key={action.name}
+                      onClick={() => openModal(action.name)}
+                      disabled={isPending}
+                      className="p-4 bg-[#1E1425]/80 border border-purple-500/20 rounded-xl text-white text-lg font-medium hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-blue-600/20 hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {action.name}
+                    </button>
+                  ))}
+              </div>
+            </div>
+
+            {/* Query Token Data Section */}
+            <div className="mb-12 relative z-10 max-w-6xl mx-auto">
+              <h2 className="font-poppins font-semibold text-2xl md:text-3xl text-white mb-6">Query Token Data</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {queryReadFunctions[tokenType].map((func) => (
+                  <ReadCard
+                    key={func.name}
+                    func={{ name: func.name, label: func.label, args: func.inputLabels.map(() => '') }}
+                    isQuery={true}
+                    inputLabels={func.inputLabels}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Token Actions Section */}
-        <div className="mb-12 relative z-10 max-w-6xl mx-auto">
-          <h2 className="font-poppins font-semibold text-2xl md:text-3xl text-white mb-6">Token Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {writeFunctions[tokenType]
-              .filter(action => !action.ownerOnly || isOwner)
-              .map(action => (
-                <button
-                  key={action.name}
-                  onClick={() => openModal(action.name)}
-                  disabled={isPending}
-                  className="p-4 bg-[#1E1425]/80 border border-purple-500/20 rounded-xl text-white text-lg font-medium hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-blue-600/20 hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {action.name}
-                </button>
-              ))}
-          </div>
-        </div>
-
-        {/* Query Token Data Section */}
-        <div className="mb-12 relative z-10 max-w-6xl mx-auto">
-          <h2 className="font-poppins font-semibold text-2xl md:text-3xl text-white mb-6">Query Token Data</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {queryReadFunctions[tokenType].map(func => (
-              <ReadCard
-                key={func.name}
-                func={{ name: func.name, label: func.label, args: func.inputLabels.map(() => '') }}
-                isQuery={true}
-                inputLabels={func.inputLabels}
-              />
-            ))}
-          </div>
-        </div>
-
         <WriteModal />
       </div>
     </DashboardLayout>
