@@ -6,6 +6,7 @@ import TokenTypesSlider from './components/ui/TokenTypesSlider';
 import PlatformFeatures from '././components/home/PlatformFeatures';
 import WhyUs from './components/home/WhyUs';
 import HowItWorks from './components/home/HowItWorks';
+import Pricing from './components/home/Pricing';
 import CallToAction from './components/ui/CallToAction';
 import Footer from './components/layout/Footer';
 // import { inintAppkit } from './config/appkit';
@@ -23,6 +24,7 @@ export default function Home() {
       <PlatformFeatures />
       <WhyUs />
       <HowItWorks />
+      <Pricing />
       <CallToAction />
       <Footer />
     </main>
