@@ -109,13 +109,6 @@ const Pricing = () => {
     </div>
   );
 
-  const handleSelectPlan = (planName: string) => {
-    // Redirect to subscription management page or handle plan selection
-    console.log(`Selected plan: ${planName}`);
-    // You can add navigation logic here
-    // router.push('/dashboard/subscription');
-  };
-
   return (
     <section className="min-h-screen bg-[#1A0D23] py-16 px-4 md:px-8 relative">
       <BackgroundShapes />
