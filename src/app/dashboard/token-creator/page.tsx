@@ -8,7 +8,7 @@ import StrataForgeFactoryABI from '../../../app/components/ABIs/StrataForgeFacto
 import DashBoardLayout from './DashboardLayout';
 import Link from 'next/link';
 
-// SVG Icons
+// SVG Icons (unchanged)
 const Erc20Icon = () => (
   <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="10" strokeWidth="2" />
@@ -131,6 +131,15 @@ const Dashboard = () => {
     query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
   });
 
+  // Fetch airdrops
+  const { data: airdropData, error: airdropError } = useReadContract({
+    address: FACTORY_CONTRACT_ADDRESS,
+    abi: factoryABI,
+    functionName: 'getCreatorAirdrops',
+    args: [address],
+    query: { enabled: isConnected && !!address, retry: 3, retryDelay: 1000 },
+  });
+
   // Create array of token read calls
   const tokenCalls = React.useMemo(() => {
     if (!totalTokens || !isConnected) return [];
@@ -149,7 +158,7 @@ const Dashboard = () => {
     query: { enabled: tokenCalls.length > 0, retry: 3, retryDelay: 1000 },
   });
 
-  // Process subscription and token data
+  // Process subscription, tokens, and airdrops
   useEffect(() => {
     if (!isConnected || !address) {
       setUserName('Token Creator');
@@ -225,12 +234,37 @@ const Dashboard = () => {
         setTokens(userTokens);
       }
 
-      setAirdrops([]);
+      // Process airdrops
+      // Replace the airdrop processing section in your useEffect (around lines 230-245)
+// Process airdrops
+if (airdropData) {
+  try {
+    // Type the airdrop data properly
+    const airdropResult = airdropData as { 
+      status: string; 
+      result?: Array<{ tokenAddress: string; startTime: bigint | number }> 
+    };
+    
+    if (airdropResult.status === 'success' && airdropResult.result) {
+      const userAirdrops = airdropResult.result.map((airdrop, index) => ({
+        id: index + 1,
+        name: `Airdrop #${index + 1}`, // Placeholder
+        tokenAddress: airdrop.tokenAddress,
+        status: Number(airdrop.startTime) * 1000 > Date.now() ? 'Scheduled' : 'Active',
+      }));
+      setAirdrops(userAirdrops);
+    }
+  } catch (airdropErr) {
+    console.warn('Failed to process airdrop data:', airdropErr);
+    setError((prev) => [...prev, 'Could not load airdrop data']);
+  }
+}
+
       setLoading(false);
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [isConnected, address, subData, tokenData]);
+  }, [isConnected, address, subData, tokenData, airdropData]);
 
   // Handle errors
   useEffect(() => {
@@ -247,13 +281,17 @@ const Dashboard = () => {
       console.error('Token data error:', tokenDataError);
       errors.push('Failed to load token details');
     }
+    if (airdropError) {
+      console.error('Airdrop error:', airdropError);
+      errors.push('Failed to load airdrop data');
+    }
     if (connectError) {
       console.error('Wallet connection error:', connectError);
       errors.push(`Wallet connection failed: ${connectError.message}`);
     }
     setError(errors);
     setLoading(false);
-  }, [subError, totalTokensError, tokenDataError, connectError]);
+  }, [subError, totalTokensError, tokenDataError, airdropError, connectError]);
 
   // Handler for airdrop button clicks
   const handleAirdropClick = (e: React.MouseEvent) => {
@@ -268,7 +306,7 @@ const Dashboard = () => {
     }
   };
 
-  // Background Shapes Component
+  // Background Shapes Component (unchanged)
   const BackgroundShapes = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
       <div className="absolute top-20 left-10 w-32 h-32 border border-purple-500/10 rounded-full"></div>
@@ -346,7 +384,7 @@ const Dashboard = () => {
     </div>
   );
 
-  // Token Card Component
+  // Token Card Component (unchanged)
   const TokenCard = ({ token }: { token: { id: number; name: string; symbol: string; address: string; type: string } | null }) => {
     if (!token) {
       return (
@@ -400,7 +438,7 @@ const Dashboard = () => {
     );
   };
 
-  // Airdrop Card Component
+  // Airdrop Card Component (unchanged)
   const AirdropCard = ({ airdrop }: { airdrop: { id: number; name: string; tokenAddress: string; status: string } }) => (
     <div className="bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-green-500/10 relative overflow-hidden group hover:border-green-500/30 transition-all duration-300">
       <div className="absolute top-0 right-0 w-20 h-20 opacity-5">
@@ -424,7 +462,7 @@ const Dashboard = () => {
     </div>
   );
 
-  // Subscription Card Component
+  // Subscription Card Component (updated)
   const SubscriptionCard = () => {
     const getPlanIcon = (plan: string) => {
       const icons: { [key: string]: React.ReactNode } = {
@@ -464,7 +502,9 @@ const Dashboard = () => {
               <div>
                 <p className="text-gray-300 text-sm">Tokens Remaining</p>
                 <p className="text-white font-medium">
-                  {subscription.tokensRemaining} / {maxTokens[subscription.plan] === Infinity ? 'Unlimited' : maxTokens[subscription.plan] || 2}
+                  {subscription.plan === 'Premium'
+                    ? 'Unlimited'
+                    : `${subscription.tokensRemaining} / ${maxTokens[subscription.plan] || 2}`}
                 </p>
                 {subscription.plan !== 'Premium' && (
                   <div className="w-full bg-gray-700/50 rounded-full h-2.5 mt-2">
@@ -502,7 +542,7 @@ const Dashboard = () => {
     );
   };
 
-  // Loading Component
+  // Loading Component (unchanged)
   const LoadingSpinner = () => (
     <div className="flex items-center justify-center min-h-screen bg-[#1A0D23] relative">
       <BackgroundShapes />
@@ -510,7 +550,7 @@ const Dashboard = () => {
     </div>
   );
 
-  // Wallet Connection Component
+  // Wallet Connection Component (unchanged)
   const WalletConnection = () => (
     <div className="min-h-screen bg-[#1A0D23] flex items-center justify-center p-4 relative">
       <BackgroundShapes />
