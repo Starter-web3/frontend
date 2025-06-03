@@ -4,6 +4,7 @@ import { useWallet } from '../../../contexts/WalletContext';
 import { useReadContract, useReadContracts } from 'wagmi';
 import { Abi } from 'viem';
 import StrataForgeFactoryABI from '../../../app/components/ABIs/StrataForgeFactoryABI.json';
+import StrataForgeMerkleDistributorABI from '../../../app/components/ABIs/StrataForgeMerkleDistributorABI.json';
 import TraderDashboardLayout from './TraderDashboardLayout';
 import Link from 'next/link';
 
@@ -65,6 +66,7 @@ const AirdropPlaceholderIcon = () => (
 
 const FACTORY_CONTRACT_ADDRESS = '0x59F42c3eEcf829b34d8Ca846Dfc83D3cDC105C3F' as const;
 const factoryABI = StrataForgeFactoryABI as Abi;
+const distributorABI = StrataForgeMerkleDistributorABI as Abi;
 
 interface Token {
   id: number;
@@ -79,8 +81,10 @@ interface Airdrop {
   id: number;
   name: string;
   tokenAddress: string;
+  distributorAddress: string;
   status: string;
   tasks?: string[];
+  isEligible?: boolean;
 }
 
 const TokenTraderDashboard = () => {
@@ -106,6 +110,14 @@ const TokenTraderDashboard = () => {
     query: { enabled: isConnected },
   });
 
+  // Fetch total airdrop count
+  const { data: totalAirdrops, error: totalAirdropsError } = useReadContract({
+    address: FACTORY_CONTRACT_ADDRESS,
+    abi: factoryABI,
+    functionName: 'getAirdropCount',
+    query: { enabled: isConnected },
+  });
+
   // Create array of token read calls
   const tokenCalls = React.useMemo(() => {
     if (!totalTokens || !isConnected) return [];
@@ -118,18 +130,17 @@ const TokenTraderDashboard = () => {
     }));
   }, [totalTokens, isConnected]);
 
-  // Use getCreatorAirdrops for airdrop data
+  // Create array of airdrop read calls (placeholder for getAirdropByIndex)
   const airdropCalls = React.useMemo(() => {
-    if (!isConnected || !address) return [];
-    return [
-      {
-        address: FACTORY_CONTRACT_ADDRESS,
-        abi: factoryABI,
-        functionName: 'getCreatorAirdrops',
-        args: [address],
-      },
-    ];
-  }, [isConnected, address]);
+    if (!totalAirdrops || !isConnected) return [];
+    const count = Number(totalAirdrops);
+    return Array.from({ length: count }, (_, i) => ({
+      address: FACTORY_CONTRACT_ADDRESS,
+      abi: factoryABI,
+      functionName: 'getAirdropByIndex', // TODO: Replace with subgraph query
+      args: [i],
+    }));
+  }, [totalAirdrops, isConnected]);
 
   // Fetch all tokens
   const { data: tokenData, error: tokenDataError } = useReadContracts({
@@ -143,7 +154,24 @@ const TokenTraderDashboard = () => {
     query: { enabled: airdropCalls.length > 0 },
   });
 
-  // Process token data separately
+  // Create claim status check calls
+  const claimStatusCalls = React.useMemo(() => {
+    if (!isConnected || !address || !airdrops.length) return [];
+    return airdrops.map((airdrop) => ({
+      address: airdrop.distributorAddress as `0x${string}`,
+      abi: distributorABI,
+      functionName: 'hasClaimed',
+      args: [address],
+    }));
+  }, [isConnected, address, airdrops]);
+
+  // Fetch claim status
+  const { data: claimStatusData } = useReadContracts({
+    contracts: claimStatusCalls,
+    query: { enabled: claimStatusCalls.length > 0 },
+  });
+
+  // Process token data
   useEffect(() => {
     if (!isConnected || !address || !isMounted) {
       setUserName('Token Trader');
@@ -153,7 +181,6 @@ const TokenTraderDashboard = () => {
 
     setUserName(`${address.slice(0, 6)}...${address.slice(-4)}`);
 
-    // Process tokens
     if (tokenData && tokenData.length > 0) {
       const allTokens = tokenData
         .map((result, index) => {
@@ -189,56 +216,63 @@ const TokenTraderDashboard = () => {
     setLoading(false);
   }, [isConnected, address, tokenData, isMounted]);
 
-  // Process airdrops separately to avoid dependency on tokens state
+  // Process airdrops
   useEffect(() => {
     if (!isConnected || !address || !isMounted) return;
 
-    // Process airdrops from getCreatorAirdrops
     if (airdropData && airdropData.length > 0) {
       const allAirdrops = airdropData
-        .flatMap((result) => {
+        .map((result, index) => {
           if (result.status === 'success' && result.result) {
-            const airdropList = result.result as {
+            const airdrop = result.result as {
               distributorAddress: string;
               tokenAddress: string;
               creator: string;
               startTime: bigint;
               totalRecipients: bigint;
               dropAmount: bigint;
-            }[];
-            return airdropList.map((airdrop, airdropIndex) => {
-              // Find token by address instead of relying on tokens state
-              const tokenName = tokens.find((t) => t.address === airdrop.tokenAddress)?.name;
-              return {
-                id: airdropIndex + 1,
-                name: tokenName ? `${tokenName} Airdrop` : `Airdrop ${airdropIndex + 1}`,
-                tokenAddress: airdrop.tokenAddress,
-                status: airdrop.startTime <= BigInt(Math.floor(Date.now() / 1000)) ? 'Active' : 'Pending',
-                tasks: [], // Placeholder: Add tasks if supported by contract
-              } as Airdrop;
-            });
+            };
+            const tokenName = tokens.find((t) => t.address === airdrop.tokenAddress)?.name;
+            return {
+              id: index + 1,
+              name: tokenName ? `${tokenName} Airdrop` : `Airdrop ${index + 1}`,
+              tokenAddress: airdrop.tokenAddress,
+              distributorAddress: airdrop.distributorAddress,
+              status: airdrop.startTime <= BigInt(Math.floor(Date.now() / 1000)) ? 'Active' : 'Pending',
+              tasks: [],
+              isEligible: false,
+            } as Airdrop;
           }
-          console.error(`Failed to fetch airdrops for creator:`, result);
-          return [];
+          console.error(`Failed to fetch airdrop ${index + 1}:`, result);
+          return null;
         })
         .filter((airdrop): airdrop is Airdrop => airdrop !== null);
 
-      setAirdrops(allAirdrops);
+      if (claimStatusData && claimStatusData.length === allAirdrops.length) {
+        const updatedAirdrops = allAirdrops.map((airdrop, index) => ({
+          ...airdrop,
+          isEligible: claimStatusData[index]?.status === 'success' && claimStatusData[index].result === false,
+        }));
+        setAirdrops(updatedAirdrops);
+      } else {
+        setAirdrops(allAirdrops);
+      }
     }
-  }, [isConnected, address, airdropData, isMounted, tokens]);
+  }, [isConnected, address, airdropData, claimStatusData, isMounted, tokens]);
 
   // Handle errors
   useEffect(() => {
-    if (totalTokensError || tokenDataError || airdropDataError) {
+    if (totalTokensError || tokenDataError || totalAirdropsError || airdropDataError) {
       console.error('Contract read errors:', {
         totalTokensError,
         tokenDataError,
+        totalAirdropsError,
         airdropDataError,
       });
-      setError('Failed to load data');
+      setError('Failed to load tokens or airdrops');
       setLoading(false);
     }
-  }, [totalTokensError, tokenDataError, airdropDataError]);
+  }, [totalTokensError, tokenDataError, totalAirdropsError, airdropDataError]);
 
   // Background Shapes Component
   const BackgroundShapes = () => (
@@ -318,7 +352,7 @@ const TokenTraderDashboard = () => {
     </div>
   );
 
-  // Token Card Component - Optimized for better performance
+  // Token Card Component
   const TokenCard = React.memo(({ token }: { token: Token }) => {
     const typeIcons: { [key: string]: React.ReactNode } = {
       erc20: <Erc20Icon />,
@@ -436,10 +470,20 @@ const TokenTraderDashboard = () => {
         </div>
       )}
       <Link
-        href="/dashboard/token-creator/airdrop-listing/claim"
-        className="w-full px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white text-sm font-medium rounded-lg transition-all duration-200 text-center block"
+        href={`/dashboard/airdrops/claim/${airdrop.id}`}
+        className={`w-full px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-all duration-200 text-center block ${
+          airdrop.isEligible && airdrop.status === 'Active'
+            ? 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800'
+            : 'bg-gray-600 cursor-not-allowed'
+        }`}
+        onClick={(e) => {
+          if (!airdrop.isEligible || airdrop.status !== 'Active') {
+            e.preventDefault();
+            alert('You have already claimed this airdrop or it is not active.');
+          }
+        }}
       >
-        Claim Airdrop
+        {airdrop.isEligible && airdrop.status === 'Active' ? 'Claim Airdrop' : 'Ineligible'}
       </Link>
     </div>
   );
@@ -487,7 +531,7 @@ const TokenTraderDashboard = () => {
 
   return (
     <TraderDashboardLayout>
-      <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
+      <div className="min-h-screen bg-gradient-to-br from-[#1A0D23] to-[#2A1F36] p-4 md:p-8 relative">
         <BackgroundShapes />
         <div
           className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
@@ -553,7 +597,7 @@ const TokenTraderDashboard = () => {
           )}
         </div>
 
-         <div className="mb-12 relative z-10">
+        <div className="mb-12 relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <h2 className="text-2xl font-bold text-white">Airdrops</h2>
             <Link
@@ -591,10 +635,5 @@ const TokenTraderDashboard = () => {
     </TraderDashboardLayout>
   );
 };
-
-// Fix: For the image warning in Footer.tsx, ensure the <Image> component with src="/strataforge-logo.png"
-// has both width and height attributes set, or include style={{ width: 'auto', height: 'auto' }}.
-// Example:
-// <Image src="/strataforge-logo.png" alt="StrataForge Logo" width={150} height={50} style={{ width: 'auto', height: 'auto' }} />
 
 export default TokenTraderDashboard;
