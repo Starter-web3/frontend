@@ -28,40 +28,39 @@ const styles = `
     content: '';
     position: absolute;
     z-index: -1;
-    inset: -1.5px; /* Slightly thinner border */
+    inset: -1.5px;
     border-radius: inherit;
     padding: 1.5px;
     background: linear-gradient(
       90deg,
-      rgba(59, 130, 246, 0.2), /* More subtle blue */
-      rgba(147, 51, 234, 0.2), /* More subtle purple */
-      rgba(236, 72, 153, 0.2), /* More subtle pink */
-      rgba(37, 99, 235, 0.2), /* Another blue shade */
-      rgba(147, 51, 234, 0.2)  /* Loop back to purple */
+      rgba(59, 130, 246, 0.2),
+      rgba(147, 51, 234, 0.2),
+      rgba(236, 72, 153, 0.2),
+      rgba(37, 99, 235, 0.2),
+      rgba(147, 51, 234, 0.2)
     );
     background-size: 300% 300%;
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
-    animation: gradientBorder 12s linear infinite; /* Slower, more subtle animation */
-    filter: blur(1.5px); /* Slight blur for glow effect */
-    opacity: 0.6; /* More subtle opacity */
-    box-shadow: 0 0 8px rgba(114, 137, 218, 0.15); /* Subtle glow */
+    animation: gradientBorder 12s linear infinite;
+    filter: blur(1.5px);
+    opacity: 0.6;
+    box-shadow: 0 0 8px rgba(114, 137, 218, 0.15);
   }
 `;
 
-// Component to inject styles into the document
 const HeaderStyles = () => {
   useEffect(() => {
-    // Add styles to document
     const styleElement = document.createElement('style');
     styleElement.innerHTML = styles;
     document.head.appendChild(styleElement);
 
-    // Clean up when component unmounts
     return () => {
-      document.head.removeChild(styleElement);
+      if (document.head.contains(styleElement)) {
+        document.head.removeChild(styleElement);
+      }
     };
   }, []);
 
@@ -69,37 +68,28 @@ const HeaderStyles = () => {
 };
 
 const Header: React.FC<HeaderProps> = () => {
-  // Render the styles component
   HeaderStyles();
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const pathname = usePathname();
-  const { isAuthenticated } = useWallet();
   const [dashboardPath, setDashboardPath] = useState('/dashboard');
+  const pathname = usePathname();
+  const { isAuthenticated, address } = useWallet();
 
-  // Add effect to determine the correct dashboard path based on role
+  // Determine dashboard path based on role
   useEffect(() => {
-    const userRole = localStorage.getItem('role');
+    let path = '/dashboard';
+    const userRole = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
+    
     if (userRole === 'owner') {
-      setDashboardPath('/dashboard/token-creator');
+      path = '/dashboard/token-creator';
     } else if (userRole === 'user') {
-      setDashboardPath('/dashboard/token-trader');
-    } else {
-      setDashboardPath('/dashboard');
+      path = '/dashboard/token-trader';
     }
-  }, [isAuthenticated]);
+    
+    setDashboardPath(path);
+  }, [isAuthenticated, pathname, address]);
 
-  // Add logging to track authentication state and role
-  useEffect(() => {
-    console.log('Header - Auth state:', {
-      isAuthenticated,
-      token: localStorage.getItem('token'),
-      role: localStorage.getItem('role'),
-      dashboardPath,
-      pathname
-    });
-  }, [isAuthenticated, pathname, dashboardPath]);
-
+  // Don't render header on dashboard pages
   if (
     pathname?.startsWith('/dashboard') ||
     pathname?.startsWith('/token-creation') ||
@@ -146,12 +136,12 @@ const Header: React.FC<HeaderProps> = () => {
             </nav>
 
             {/* Desktop Actions */}
-            <div className='hidden md:flex items-center gap-4'>
+            <div className='hidden md:flex items-center gap-4 relative z-20'>
               <appkit-button />
               {isAuthenticated && (
                 <Link
                   href={dashboardPath}
-                  className='text-xs md:text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-[#C44DFF] to-[#0AACE6] text-white hover:opacity-90 transition'
+                  className='text-xs md:text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-[#C44DFF] to-[#0AACE6] text-white hover:opacity-90 transition cursor-pointer relative z-30'
                 >
                   Dashboard
                 </Link>
@@ -190,7 +180,6 @@ const Header: React.FC<HeaderProps> = () => {
         {isMobileMenuOpen && (
           <div className='md:hidden bg-black/20 backdrop-blur-sm rounded-b-lg border-t border-white/10'>
             <div className='px-2 pt-2 pb-3 space-y-1'>
-              {/* Navigation Items */}
               {navItems.map((item) => (
                 <Link
                   key={item}
@@ -202,7 +191,6 @@ const Header: React.FC<HeaderProps> = () => {
                 </Link>
               ))}
               
-              {/* Dashboard Button in Mobile Menu */}
               {isAuthenticated && (
                 <Link
                   href={dashboardPath}
