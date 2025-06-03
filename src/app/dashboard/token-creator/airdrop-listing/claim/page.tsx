@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { ethers } from 'ethers';
 
@@ -16,7 +15,7 @@ import {
 import { Input } from '../../../../../../components/ui/input';
 import { Label } from '../../../../../../components/ui/label';
 import { Alert, AlertDescription } from '../../../../../../components/ui/alert';
-import { ArrowLeft, Coins } from 'lucide-react';
+import { Coins } from 'lucide-react';
 import DashBoardLayout from '../../DashboardLayout';
 import MerkleDistributorABI from '../../../../../lib/contracts/MerkleDistributor.json';
 
@@ -31,6 +30,20 @@ const ExtendedMerkleDistributorABI = [
     type: 'function',
   },
 ];
+
+// Background Shapes Component (copied from upload page)
+const BackgroundShapes = () => (
+  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="absolute top-20 left-10 w-32 h-32 border-2 border-purple-500/20 rounded-full animate-pulse"></div>
+    <div className="absolute top-40 right-20 w-24 h-24 border-2 border-blue-500/20 rotate-45 animate-pulse delay-200"></div>
+    <div className="absolute bottom-32 left-20 w-40 h-40 border-2 border-purple-400/15 rounded-2xl rotate-12 animate-pulse delay-400"></div>
+    <div className="absolute top-1/3 left-1/4 w-16 h-16 border-2 border-cyan-500/20 rotate-45 animate-pulse delay-600"></div>
+    <div className="absolute bottom-1/4 right-1/3 w-28 h-28 border-2 border-purple-300/15 rounded-full animate-pulse delay-800"></div>
+    <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-500/15 to-transparent rounded-full blur-xl animate-pulse delay-1000"></div>
+    <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/15 to-transparent rounded-full blur-xl animate-pulse delay-1200"></div>
+    <div className="absolute top-1/2 right-10 w-48 h-48 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-full blur-xl animate-pulse delay-1400"></div>
+  </div>
+);
 
 export default function ClaimPage() {
   const { address, isConnected } = useAccount();
@@ -239,90 +252,84 @@ export default function ClaimPage() {
 
   return (
     <DashBoardLayout>
-      <div className='bg-[#201726] text-purple-100 min-h-screen'>
-        <header className='border-b border-purple-500/20 p-4'>
-          <div className='container flex items-center justify-between'>
-            <div className='flex items-center gap-2'>
-              <Coins className='h-6 w-6' />
-              <span className='text-xl font-bold'>LaunchPad</span>
+      <div className="min-h-screen bg-gradient-to-br from-[#1A0D23] to-[#2A1F36]">
+        <BackgroundShapes />
+        <header className="border-b border-purple-500/20 p-4">
+          <div className="container mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-2">
+              <Coins className="h-6 w-6 text-purple-400" />
+              <span className="text-xl font-bold text-white">LaunchPad</span>
             </div>
           </div>
         </header>
 
-        <main className='container py-8'>
-          <div className='mb-6 flex items-center'>
-            <Link href='/dashboard/airdrop-listing'>
-              <Button
-                variant='ghost'
-                className='text-purple-100 hover:bg-purple-500/10 hover:text-purple-200'
-              >
-                <ArrowLeft className='mr-2 h-4 w-4' />
-                Back to Dashboard
-              </Button>
-            </Link>
-            <h1 className='ml-4 text-2xl font-bold'>Claim Airdrop</h1>
-          </div>
+        <main className="py-12">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-8 flex items-center">
+              <h1 className="ml-4 text-3xl font-bold text-white">Claim Airdrop</h1>
+            </div>
 
-          <div className='max-w-2xl mx-auto'>
-            <Card className='bg-zinc-900 border-purple-500/20'>
-              <CardHeader>
-                <CardTitle className='text-purple-100'>Claim Your Tokens</CardTitle>
-                <CardDescription className='text-purple-100/70'>
-                  Enter your airdrop distributor address and claim
-                </CardDescription>
-              </CardHeader>
-              <CardContent className='space-y-4'>
-                <div>
-                  <Label htmlFor='distributorAddress'>Distributor Address</Label>
-                  <Input
-                    id='distributorAddress'
-                    placeholder='0x...'
-                    value={distributorAddress}
-                    onChange={handleAddressChange} // Use handleAddressChange
-                    className='mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500'
-                  />
-                </div>
-                {/* Add airdrop details display */}
-                {airdropInfo && (
-                  <div className='space-y-2'>
-                    <p>
-                      <strong>Token Address:</strong> {airdropInfo.tokenAddress}
-                    </p>
-                    <p>
-                      <strong>Drop Amount:</strong> {airdropInfo.dropAmount} tokens
-                    </p>
-                    <p>
-                      <strong>Start Time:</strong> {airdropInfo.startTime}
-                    </p>
-                    <p>
-                      <strong>Merkle Root:</strong> {airdropInfo.merkleRoot}
-                    </p>
+            <div className="max-w-2xl mx-auto">
+              <Card className="bg-[#2A1F36]/80 border-purple-500/20 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-white">Claim Your Tokens</CardTitle>
+                  <CardDescription className="text-gray-300">
+                    Enter your airdrop distributor address and claim
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="distributorAddress" className="text-gray-300">Distributor Address</Label>
+                    <Input
+                      id="distributorAddress"
+                      placeholder="0x..."
+                      value={distributorAddress}
+                      onChange={handleAddressChange}
+                      className="mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500 text-white placeholder:text-gray-400"
+                    />
                   </div>
-                )}
-                {statusMessage && (
-                  <Alert className='bg-blue-500/10 border-blue-500/20'>
-                    <AlertDescription>{statusMessage}</AlertDescription>
-                  </Alert>
-                )}
-                {error && (
-                  <Alert className='bg-red-500/10 border-red-500/20'>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                {success && (
-                  <Alert className='bg-green-500/10 border-green-500/20'>
-                    <AlertDescription>{success}</AlertDescription>
-                  </Alert>
-                )}
-                <Button
-                  className='w-full bg-purple-500 hover:bg-purple-600 text-black'
-                  onClick={handleClaim}
-                  disabled={!distributorAddress || loading || !isConnected}
-                >
-                  {loading ? 'Claiming...' : 'Claim Airdrop'}
-                </Button>
-              </CardContent>
-            </Card>
+                  {/* Add airdrop details display */}
+                  {airdropInfo && (
+                    <div className="space-y-2 text-gray-300">
+                      <p>
+                        <strong className="text-white">Token Address:</strong> {airdropInfo.tokenAddress}
+                      </p>
+                      <p>
+                        <strong className="text-white">Drop Amount:</strong> {airdropInfo.dropAmount} tokens
+                      </p>
+                      <p>
+                        <strong className="text-white">Start Time:</strong> {airdropInfo.startTime}
+                      </p>
+                      <p>
+                        <strong className="text-white">Merkle Root:</strong> {airdropInfo.merkleRoot}
+                      </p>
+                    </div>
+                  )}
+                  {statusMessage && (
+                    <Alert className="bg-blue-500/10 border-blue-500/20">
+                      <AlertDescription className="text-blue-200">{statusMessage}</AlertDescription>
+                    </Alert>
+                  )}
+                  {error && (
+                    <Alert className="bg-red-500/10 border-red-500/20">
+                      <AlertDescription className="text-red-200">{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  {success && (
+                    <Alert className="bg-green-500/10 border-green-500/20">
+                      <AlertDescription className="text-green-200">{success}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button
+                    className="w-full bg-purple-500 hover:bg-purple-600 text-black"
+                    onClick={handleClaim}
+                    disabled={!distributorAddress || loading || !isConnected}
+                  >
+                    {loading ? 'Claiming...' : 'Claim Airdrop'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </main>
       </div>
