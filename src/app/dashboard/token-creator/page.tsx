@@ -547,116 +547,114 @@ const Dashboard = () => {
   }
 
   return (
-    <ProtectedRoute requiredRole="owner">
-      <DashBoardLayout>
-        <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
-          <BackgroundShapes />
-          <div
-            className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
-            style={{
-              background:
-                'radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)',
-            }}
-          >
-            <h1 className="font-poppins font-semibold text-3xl md:text-4xl leading-[170%] mb-2">
-              Welcome back, {userName} <span className="text-yellow-400">👋</span>
-            </h1>
-            <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
-              Create and manage your tokens and airdrops with StrataForge – secure and seamless!
-            </p>
+    <DashBoardLayout>
+      <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
+        <BackgroundShapes />
+        <div
+          className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
+          style={{
+            background:
+              'radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)',
+          }}
+        >
+          <h1 className="font-poppins font-semibold text-3xl md:text-4xl leading-[170%] mb-2">
+            Welcome back, {userName} <span className="text-yellow-400">👋</span>
+          </h1>
+          <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
+            Create and manage your tokens and airdrops with StrataForge – secure and seamless!
+          </p>
+        </div>
+        {error.length > 0 && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3 relative z-10">
+            <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p className="text-red-500 font-medium">{error.join(', ')}</p>
           </div>
-          {error.length > 0 && (
-            <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3 relative z-10">
-              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="text-red-500 font-medium">{error.join(', ')}</p>
+        )}
+        <div className="mb-10 relative z-10">
+          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6">Your Subscription</h2>
+          <SubscriptionCard />
+        </div>
+        <div className="mb-10 relative z-10">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Tokens</h2>
+            <Link
+              href="/dashboard/token-creator/create-tokens"
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
+            >
+              Create New Token
+            </Link>
+          </div>
+          {tokens.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tokens.map((token) => (
+                <TokenCard key={token.id} token={token} />
+              ))}
             </div>
-          )}
-          <div className="mb-10 relative z-10">
-            <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6">Your Subscription</h2>
-            <SubscriptionCard />
-          </div>
-          <div className="mb-10 relative z-10">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Tokens</h2>
+          ) : (
+            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-purple-500/20">
+              <div className="mb-4">
+                <TokenPlaceholderIcon />
+              </div>
+              <p className="text-gray-400 text-lg mb-4">You haven’t created any tokens yet.</p>
               <Link
-                href="/dashboard/token-creator/create-tokens"
-                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
+                href="/dashboard/token-creator/create-token"
+                className="inline-flex px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
               >
-                Create New Token
+                Create Your First Token
               </Link>
             </div>
-            {tokens.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tokens.map((token) => (
-                  <TokenCard key={token.id} token={token} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-purple-500/20">
-                <div className="mb-4">
-                  <TokenPlaceholderIcon />
-                </div>
-                <p className="text-gray-400 text-lg mb-4">You haven't created any tokens yet.</p>
-                <Link
-                  href="/dashboard/token-creator/create-token"
-                  className="inline-flex px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
-                >
-                  Create Your First Token
-                </Link>
-              </div>
-            )}
+          )}
+        </div>
+        <div className="mb-10 relative z-10">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Airdrops</h2>
+            <Link
+              href="/dashboard/token-creator/airdrop-listing"
+              className={`px-4 py-2 rounded-xl text-white transition ${
+                subscription?.plan === 'Premium'
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
+                  : 'bg-gray-600 cursor-not-allowed'
+              }`}
+              onClick={handleAirdropClick}
+            >
+              Create Airdrop
+            </Link>
           </div>
-          <div className="mb-10 relative z-10">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Airdrops</h2>
+          {airdrops.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {airdrops.map((airdrop) => (
+                <AirdropCard key={airdrop.id} airdrop={airdrop} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-green-500/20">
+              <div className="mb-4">
+                <AirdropPlaceholderIcon />
+              </div>
+              <p className="text-gray-400 text-lg mb-4">No airdrops created yet. Start an airdrop to distribute your tokens!</p>
               <Link
-                href="/dashboard/token-creator/airdrop-listing/upload"
-                className={`px-4 py-2 rounded-xl text-white transition ${
+                href="/dashboard/token-creator/airdrop-listing"
+                className={`inline-flex px-6 py-3 rounded-xl text-white transition ${
                   subscription?.plan === 'Premium'
                     ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
                     : 'bg-gray-600 cursor-not-allowed'
                 }`}
                 onClick={handleAirdropClick}
               >
-                Create Airdrop
+                Create Your First Airdrop
               </Link>
             </div>
-            {airdrops.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {airdrops.map((airdrop) => (
-                  <AirdropCard key={airdrop.id} airdrop={airdrop} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-[#1E1425]/40 rounded-2xl border border-green-500/20">
-                <div className="mb-4">
-                  <AirdropPlaceholderIcon />
-                </div>
-                <p className="text-gray-400 text-lg mb-4">No airdrops created yet. Start an airdrop to distribute your tokens!</p>
-                <Link
-                  href="/dashboard/token-creator/airdrop-listing/upload"
-                  className={`inline-flex px-6 py-3 rounded-xl text-white transition ${
-                    subscription?.plan === 'Premium'
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
-                      : 'bg-gray-600 cursor-not-allowed'
-                  }`}
-                  onClick={handleAirdropClick}
-                >
-                  Create Your First Airdrop
-                </Link>
-              </div>
-            )}
-          </div>
+          )}
         </div>
-      </DashBoardLayout>
-    </ProtectedRoute>
+      </div>
+    </DashBoardLayout>
   );
 };
 
