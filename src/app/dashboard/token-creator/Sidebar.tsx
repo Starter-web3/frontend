@@ -121,7 +121,8 @@ export default function DashboardSidebar() {
       alert('This feature is only available for Premium subscribers. Please upgrade your plan.');
       return;
     }
-    // Navigation handled by Link
+    // Navigate to the airdrop page
+    window.location.href = '/dashboard/token-creator/airdrop-listing';
   };
 
   return (
@@ -207,7 +208,7 @@ export default function DashboardSidebar() {
               active={currentPath === '/dashboard/token-creator/create-tokens'}
             />
             <SidebarLink
-              href='/dashboard/token-creator/airdrop-listing'
+              href='#'
               icon={
                 <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                   <path
