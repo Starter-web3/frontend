@@ -93,7 +93,7 @@ const AirdropPlaceholderIcon = () => (
 );
 
 const FACTORY_CONTRACT_ADDRESS = '0x59F42c3eEcf829b34d8Ca846Dfc83D3cDC105C3F' as const;
-const ADMIN_CONTRACT_ADDRESS = '0x7e8541Ba29253C1722d366e3d08975B03f3Cc839' as const;
+const ADMIN_CONTRACT_ADDRESS = '0xADC01DF1dA777a7fE0A93eC58BfC6b69d3354599' as const;
 const factoryABI = StrataForgeFactoryABI as Abi;
 const adminABI = StrataForgeAdminABI as Abi;
 
@@ -201,7 +201,7 @@ const Dashboard = () => {
         const userTokens = tokenData
           .map((result, index) => {
             if (result.status === 'success' && result.result) {
-              const token = result.result as { name: string; symbol: string; tokenAddress: string; creator: string };
+              const token = result.result as { name: string; symbol: string; tokenAddress: string; creator: string; tokenType: bigint };
               if (
                 token.name &&
                 token.symbol &&
@@ -209,12 +209,14 @@ const Dashboard = () => {
                 token.creator &&
                 token.creator.toLowerCase() === address.toLowerCase()
               ) {
-                let type = 'erc20';
-                if (token.name.toLowerCase().includes('nft')) type = 'erc721';
-                else if (token.name.toLowerCase().includes('meme') || token.name.toLowerCase().includes('doge'))
-                  type = 'meme';
-                else if (token.name.toLowerCase().includes('usd') || token.name.toLowerCase().includes('stable'))
-                  type = 'stable';
+                const typeMap: { [key: number]: string } = {
+                  0: 'erc20',
+                  1: 'erc721',
+                  2: 'erc1155',
+                  3: 'meme',
+                  4: 'stable',
+                };
+                const type = typeMap[Number(token.tokenType)] || 'erc20';
                 return {
                   id: index + 1,
                   name: token.name,
@@ -235,30 +237,28 @@ const Dashboard = () => {
       }
 
       // Process airdrops
-      // Replace the airdrop processing section in your useEffect (around lines 230-245)
-// Process airdrops
-if (airdropData) {
-  try {
-    // Type the airdrop data properly
-    const airdropResult = airdropData as { 
-      status: string; 
-      result?: Array<{ tokenAddress: string; startTime: bigint | number }> 
-    };
-    
-    if (airdropResult.status === 'success' && airdropResult.result) {
-      const userAirdrops = airdropResult.result.map((airdrop, index) => ({
-        id: index + 1,
-        name: `Airdrop #${index + 1}`, // Placeholder
-        tokenAddress: airdrop.tokenAddress,
-        status: Number(airdrop.startTime) * 1000 > Date.now() ? 'Scheduled' : 'Active',
-      }));
-      setAirdrops(userAirdrops);
-    }
-  } catch (airdropErr) {
-    console.warn('Failed to process airdrop data:', airdropErr);
-    setError((prev) => [...prev, 'Could not load airdrop data']);
-  }
-}
+      if (airdropData) {
+        try {
+          // Type the airdrop data properly
+          const airdropResult = airdropData as { 
+            status: string; 
+            result?: Array<{ tokenAddress: string; startTime: bigint | number }> 
+          };
+          
+          if (airdropResult.status === 'success' && airdropResult.result) {
+            const userAirdrops = airdropResult.result.map((airdrop, index) => ({
+              id: index + 1,
+              name: `Airdrop #${index + 1}`, // Placeholder
+              tokenAddress: airdrop.tokenAddress,
+              status: Number(airdrop.startTime) * 1000 > Date.now() ? 'Scheduled' : 'Active',
+            }));
+            setAirdrops(userAirdrops);
+          }
+        } catch (airdropErr) {
+          console.warn('Failed to process airdrop data:', airdropErr);
+          setError((prev) => [...prev, 'Could not load airdrop data']);
+        }
+      }
 
       setLoading(false);
     }, 1000);

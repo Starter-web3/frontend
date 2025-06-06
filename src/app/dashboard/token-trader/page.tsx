@@ -97,12 +97,10 @@ const TokenTraderDashboard = () => {
   const [expandedTokenId, setExpandedTokenId] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Ensure wallet-related logic runs only on client side
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Fetch total token count
   const { data: totalTokens, error: totalTokensError } = useReadContract({
     address: FACTORY_CONTRACT_ADDRESS,
     abi: factoryABI,
@@ -110,7 +108,6 @@ const TokenTraderDashboard = () => {
     query: { enabled: isConnected },
   });
 
-  // Fetch total airdrop count
   const { data: totalAirdrops, error: totalAirdropsError } = useReadContract({
     address: FACTORY_CONTRACT_ADDRESS,
     abi: factoryABI,
@@ -118,7 +115,6 @@ const TokenTraderDashboard = () => {
     query: { enabled: isConnected },
   });
 
-  // Create array of token read calls
   const tokenCalls = React.useMemo(() => {
     if (!totalTokens || !isConnected) return [];
     const count = Number(totalTokens);
@@ -130,31 +126,27 @@ const TokenTraderDashboard = () => {
     }));
   }, [totalTokens, isConnected]);
 
-  // Create array of airdrop read calls (placeholder for getAirdropByIndex)
   const airdropCalls = React.useMemo(() => {
     if (!totalAirdrops || !isConnected) return [];
     const count = Number(totalAirdrops);
     return Array.from({ length: count }, (_, i) => ({
       address: FACTORY_CONTRACT_ADDRESS,
       abi: factoryABI,
-      functionName: 'getAirdropByIndex', // TODO: Replace with subgraph query
+      functionName: 'getAirdropByIndex',
       args: [i],
     }));
   }, [totalAirdrops, isConnected]);
 
-  // Fetch all tokens
   const { data: tokenData, error: tokenDataError } = useReadContracts({
     contracts: tokenCalls,
     query: { enabled: tokenCalls.length > 0 },
   });
 
-  // Fetch all airdrops
   const { data: airdropData, error: airdropDataError } = useReadContracts({
     contracts: airdropCalls,
     query: { enabled: airdropCalls.length > 0 },
   });
 
-  // Create claim status check calls
   const claimStatusCalls = React.useMemo(() => {
     if (!isConnected || !address || !airdrops.length) return [];
     return airdrops.map((airdrop) => ({
@@ -165,13 +157,11 @@ const TokenTraderDashboard = () => {
     }));
   }, [isConnected, address, airdrops]);
 
-  // Fetch claim status
   const { data: claimStatusData } = useReadContracts({
     contracts: claimStatusCalls,
     query: { enabled: claimStatusCalls.length > 0 },
   });
 
-  // Process token data
   useEffect(() => {
     if (!isConnected || !address || !isMounted) {
       setUserName('Token Trader');
@@ -185,14 +175,16 @@ const TokenTraderDashboard = () => {
       const allTokens = tokenData
         .map((result, index) => {
           if (result.status === 'success' && result.result) {
-            const token = result.result as { name: string; symbol: string; tokenAddress: string; creator: string };
+            const token = result.result as { name: string; symbol: string; tokenAddress: string; creator: string; tokenType: bigint };
             if (token.name && token.symbol && token.tokenAddress) {
-              let type = 'erc20';
-              if (token.name.toLowerCase().includes('nft')) type = 'erc721';
-              else if (token.name.toLowerCase().includes('meme') || token.name.toLowerCase().includes('doge'))
-                type = 'meme';
-              else if (token.name.toLowerCase().includes('usd') || token.name.toLowerCase().includes('stable'))
-                type = 'stable';
+              const typeMap: { [key: number]: string } = {
+                0: 'erc20',
+                1: 'erc721',
+                2: 'erc1155',
+                3: 'meme',
+                4: 'stable',
+              };
+              const type = typeMap[Number(token.tokenType)] || 'erc20';
               return {
                 id: index + 1,
                 name: token.name,
@@ -216,7 +208,6 @@ const TokenTraderDashboard = () => {
     setLoading(false);
   }, [isConnected, address, tokenData, isMounted]);
 
-  // Process airdrops
   useEffect(() => {
     if (!isConnected || !address || !isMounted) return;
 
@@ -260,7 +251,6 @@ const TokenTraderDashboard = () => {
     }
   }, [isConnected, address, airdropData, claimStatusData, isMounted, tokens]);
 
-  // Handle errors
   useEffect(() => {
     if (totalTokensError || tokenDataError || totalAirdropsError || airdropDataError) {
       console.error('Contract read errors:', {
@@ -274,7 +264,6 @@ const TokenTraderDashboard = () => {
     }
   }, [totalTokensError, tokenDataError, totalAirdropsError, airdropDataError]);
 
-  // Background Shapes Component
   const BackgroundShapes = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
       <div className="absolute top-20 left-10 w-32 h-32 border border-purple-500/10 rounded-full"></div>
@@ -346,13 +335,13 @@ const TokenTraderDashboard = () => {
           <line x1="40" y1="50" x2="80" y2="55" stroke="rgba(147, 51, 234, 0.06)" strokeWidth="1" />
         </svg>
       </div>
-      <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-500/3 to-transparent rounded-full blur-3xl"></div>
-      <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/3 to-transparent rounded-full blur-3xl"></div>
+      <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-600/3 to-blue-600/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-600/3 to-transparent rounded-full blur-3xl"></div>
       <div className="absolute top-1/2 right-10 w-48 h-48 bg-gradient-to-bl from-cyan-500/2 to-transparent rounded-full blur-2xl"></div>
     </div>
   );
 
-  // Token Card Component
+  // Updated TokenCard Component
   const TokenCard = React.memo(({ token }: { token: Token }) => {
     const typeIcons: { [key: string]: React.ReactNode } = {
       erc20: <Erc20Icon />,
@@ -372,9 +361,20 @@ const TokenTraderDashboard = () => {
     const label = typeLabels[token.type] || 'ERC-20';
 
     const isExpanded = expandedTokenId === token.id;
+    const [copiedAddress, setCopiedAddress] = useState<string | null>(null); // Added: Track copied address
 
     const toggleDetails = () => {
       setExpandedTokenId(isExpanded ? null : token.id);
+    };
+
+    // Added: Copy address function
+    const copyToClipboard = (address: string, type: string) => {
+      navigator.clipboard.writeText(address).then(() => {
+        setCopiedAddress(type);
+        setTimeout(() => setCopiedAddress(null), 2000); // Reset after 2 seconds
+      }).catch(() => {
+        console.error(`Failed to copy ${type} address`);
+      });
     };
 
     if (!token) {
@@ -403,9 +403,22 @@ const TokenTraderDashboard = () => {
         </div>
         <div className="mb-2">
           <p className="text-gray-500 text-xs font-medium mb-1">Token Address</p>
-          <p className="text-gray-300 text-sm font-mono bg-black/20 px-3 py-2 rounded-md truncate">
-            {token.address}
-          </p>
+          <div className="flex items-center space-x-2 bg-black/20 px-3 py-2 rounded-md">
+            <p className="text-gray-300 text-sm font-mono truncate flex-1">{token.address}</p>
+            <button
+              onClick={() => copyToClipboard(token.address, 'token')}
+              className="p-1 rounded hover:bg-purple-500/20 transition-colors"
+              title="Copy Token Address"
+            >
+              {copiedAddress === 'token' ? (
+                <span className="text-green-400 text-xs">Copied!</span>
+              ) : (
+                <svg className="w-4 h-4 text-gray-400 hover:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
         <div className={`mb-0 bg-black/20 p-4 rounded-lg transition-all duration-300 overflow-hidden ${
           isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 p-0'
@@ -413,8 +426,29 @@ const TokenTraderDashboard = () => {
           <p className="text-gray-500 text-xs font-medium mb-2">Token Details</p>
           <div className="space-y-2">
             <div>
+              <p className="text-gray-400 text-sm">Token ID:</p>
+              <p className="text-gray-300 text-sm">{token.id}</p>
+            </div>
+            <div>
               <p className="text-gray-400 text-sm">Deployer:</p>
-              <p className="text-gray-300 text-sm font-mono truncate">{token.creator || 'Unknown'}</p>
+              <div className="flex items-center space-x-2">
+                <p className="text-gray-300 text-sm font-mono truncate flex-1">{token.creator || 'Unknown'}</p>
+                {token.creator && (
+                  <button
+                    onClick={() => copyToClipboard(token.creator!, 'creator')}
+                    className="p-1 rounded hover:bg-purple-500/20 transition-colors"
+                    title="Copy Deployer Address"
+                  >
+                    {copiedAddress === 'creator' ? (
+                      <span className="text-green-400 text-xs">Copied!</span>
+                    ) : (
+                      <svg className="w-4 h-4 text-gray-400 hover:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
             <div>
               <p className="text-gray-400 text-sm">Token Type:</p>
@@ -436,7 +470,6 @@ const TokenTraderDashboard = () => {
 
   TokenCard.displayName = 'TokenCard';
 
-  // Airdrop Card Component
   const AirdropCard = ({ airdrop }: { airdrop: Airdrop }) => (
     <div className="group bg-white/[0.02] backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:bg-white/[0.04] hover:border-green-500/30 transition-all duration-300">
       <div className="flex items-start justify-between mb-4">
@@ -488,7 +521,6 @@ const TokenTraderDashboard = () => {
     </div>
   );
 
-  // Loading Component
   const LoadingSpinner = () => (
     <div className="flex items-center justify-center min-h-screen bg-[#1A0D23] relative">
       <BackgroundShapes />
@@ -496,8 +528,7 @@ const TokenTraderDashboard = () => {
     </div>
   );
 
-  // Wallet Connection Component
-  const WalletConnection = () => (
+const WalletConnection = () => (
     <div className="min-h-screen bg-[#1A0D23] flex items-center justify-center p-4 relative">
       <BackgroundShapes />
       <div className="bg-[#1E1425]/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-purple-500/20 p-8 text-center relative z-10">
@@ -505,7 +536,7 @@ const TokenTraderDashboard = () => {
         <p className="text-gray-300 mb-6">Connect your wallet to access the StrataForge Token Trader dashboard</p>
         {connectError && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300 text-sm">
-            Connection failed: {connectError.message}
+            Connection failed: {connectError.message || String(connectError)}
           </div>
         )}
         <button
@@ -555,7 +586,7 @@ const TokenTraderDashboard = () => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 0010-18 0 9 9 0 0018 0z"
               />
             </svg>
             <p className="text-red-300 font-medium">{error}</p>
@@ -570,7 +601,7 @@ const TokenTraderDashboard = () => {
               className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200 font-medium text-sm"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5m0 0l-5 5m5-5H6" />
               </svg>
               Visit Marketplace
             </Link>
@@ -604,8 +635,8 @@ const TokenTraderDashboard = () => {
               href="/dashboard/airdrops"
               className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 font-medium text-sm"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5m0 0 l-5 5m5-5H6" />
               </svg>
               View All Airdrops
             </Link>
