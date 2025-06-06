@@ -7,6 +7,7 @@ import StrataForgeAdminABI from '../../../app/components/ABIs/StrataForgeAdminAB
 import StrataForgeFactoryABI from '../../../app/components/ABIs/StrataForgeFactoryABI.json';
 import DashBoardLayout from './DashboardLayout';
 import Link from 'next/link';
+import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 
 // SVG Icons (unchanged)
 const Erc20Icon = () => (
