@@ -7,6 +7,7 @@ import StrataForgeAdminABI from '../../../app/components/ABIs/StrataForgeAdminAB
 import StrataForgeFactoryABI from '../../../app/components/ABIs/StrataForgeFactoryABI.json';
 import DashBoardLayout from './DashboardLayout';
 import Link from 'next/link';
+import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 
 // SVG Icons
 const Erc20Icon = () => (
@@ -615,7 +616,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center mb-6">
             <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Airdrops</h2>
             <Link
-              href="/dashboard/token-creator/airdrop-listing/upload"
+              href="/dashboard/token-creator/airdrop-listing"
               className={`px-4 py-2 rounded-xl text-white transition ${
                 subscription?.plan === 'Premium'
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
@@ -639,7 +640,7 @@ const Dashboard = () => {
               </div>
               <p className="text-gray-400 text-lg mb-4">No airdrops created yet. Start an airdrop to distribute your tokens!</p>
               <Link
-                href="/dashboard/token-creator/airdrop-listing/upload"
+                href="/dashboard/token-creator/airdrop-listing"
                 className={`inline-flex px-6 py-3 rounded-xl text-white transition ${
                   subscription?.plan === 'Premium'
                     ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
