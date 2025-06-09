@@ -8,7 +8,7 @@ import { useReadContract } from 'wagmi';
 import { Abi } from 'viem';
 import StrataForgeAdminABI from '../../../app/components/ABIs/StrataForgeAdminABI.json';
 
-const ADMIN_CONTRACT_ADDRESS = '0x7e8541Ba29253C1722d366e3d08975B03f3Cc839' as const;
+const ADMIN_CONTRACT_ADDRESS = '0xADC01DF1dA777a7fE0A93eC58BfC6b69d3354599' as const;
 const adminABI = StrataForgeAdminABI as Abi;
 
 interface SidebarLinkProps {
@@ -121,7 +121,8 @@ export default function DashboardSidebar() {
       alert('This feature is only available for Premium subscribers. Please upgrade your plan.');
       return;
     }
-    // Navigation handled by Link
+    // Navigate to the airdrop page
+    window.location.href = '/dashboard/token-creator/airdrop-listing';
   };
 
   return (
@@ -207,7 +208,7 @@ export default function DashboardSidebar() {
               active={currentPath === '/dashboard/token-creator/create-tokens'}
             />
             <SidebarLink
-              href='/dashboard/token-creator/airdrop-listing'
+              href='#'
               icon={
                 <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                   <path
