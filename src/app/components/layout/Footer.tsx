@@ -5,7 +5,7 @@ import { Instagram, Twitter, Github } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#16091D] py-16">
+    <footer className="bg-black/90 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Logo and Description Section */}

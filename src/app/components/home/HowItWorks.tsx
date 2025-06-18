@@ -54,7 +54,7 @@ const HowItWorks: React.FC<HowItWorksProps> = () => {
   };
 
   return (
-    <section className="py-20 bg-[#16091D]">
+    <section className="py-20 bg-black/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial="hidden"
@@ -89,7 +89,7 @@ const HowItWorks: React.FC<HowItWorksProps> = () => {
             <motion.div
               key={index}
               variants={itemVariants}
-              className="bg-[#1E1425] rounded-xl p-6 relative"
+              className="bg-black/90 rounded-xl p-6 relative"
             >
               {/* Connected line between steps */}
               {index < steps.length - 1 && (

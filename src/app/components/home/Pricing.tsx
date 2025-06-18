@@ -110,7 +110,7 @@ const Pricing = () => {
   );
 
   return (
-    <section className="min-h-screen bg-[#1A0D23] py-16 px-4 md:px-8 relative">
+    <section className="min-h-screen bg-black/90 py-16 px-4 md:px-8 relative">
       <BackgroundShapes />
       
       {/* Header */}
@@ -129,7 +129,7 @@ const Pricing = () => {
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300 ${
+              className={`bg-black/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300 ${
                 plan.isPopular 
                   ? 'border-purple-500/50 ring-2 ring-purple-500/20' 
                   : 'border-purple-500/10'

@@ -29,9 +29,9 @@ const WhyUs: React.FC<WhyUsProps> = () => {
           <path d='M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.2L4 17.2V4H20V16Z' />
         </svg>
       ),
-      title: 'No-Code Simplicity',
+      title: 'Drag & Drop Simplicity',
       description:
-        'Deploy tokens and manage campaigns with ease - no blockchain development expertise required.',
+        'Build stunning NFT collections and launch tokens with our visual editor. Upload your art, set your parameters, and go live in under 10 minutes.',
       gradientFrom: '#C44DFF',
       gradientTo: '#9A00FF',
     },
@@ -92,7 +92,7 @@ const WhyUs: React.FC<WhyUsProps> = () => {
   };
 
   return (
-    <section className='py-20 bg-[#16091D] relative overflow-hidden'>
+    <section className='py-20 bg-black/90 relative overflow-hidden'>
       {/* Background decorative elements */}
       <div className='absolute top-0 left-0 right-0 bottom-0 overflow-hidden opacity-20'>
         <div className='absolute top-10 left-10 w-40 h-40 rounded-full bg-purple-700 blur-[100px]'></div>
@@ -126,7 +126,7 @@ const WhyUs: React.FC<WhyUsProps> = () => {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Why Choose StrataForge?
+            Why Choose Our Platform?
           </h2>
           
           <p className='text-gray-300 max-w-2xl mx-auto'>

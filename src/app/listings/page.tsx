@@ -16,7 +16,7 @@ export default function TokenListingPage() {
     filterType === 'All' ? sampleTokens : sampleTokens.filter((token) => token.type === filterType);
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-gray-900 to-purple-900 text-white'>
+    <div className='min-h-screen bg-black/90 text-white'>
       {/* Main Content */}
       <main className='container mx-auto py-8 px-4'>
         <div className='flex justify-between items-center mb-8'>
@@ -112,7 +112,7 @@ export default function TokenListingPage() {
               </div>
 
               <div className='border-t border-gray-700 p-4'>
-                <button className='w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-md transition-colors'>
+                <button className='w-full bg-purple-600 hover:bg-black/90 text-white py-2 rounded-md transition-colors'>
                   View Details
                 </button>
               </div>

@@ -71,7 +71,7 @@ const CallToAction: React.FC<CallToActionProps> = () => {
   };
 
   return (
-    <section className='py-16 px-6 md:px-12 lg:px-16 bg-[#201726] relative overflow-hidden'>
+    <section className='py-16 px-6 md:px-12 lg:px-16 bg-black/90 relative overflow-hidden'>
       {/* Background animated particles */}
       {particles.map((particle) => (
         <motion.div
@@ -118,7 +118,7 @@ const CallToAction: React.FC<CallToActionProps> = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            Ready to deploy tokens <br /> without code?
+            Ready to forge tokens <br /> without code?
           </motion.h2>
 
           <motion.p
@@ -131,8 +131,8 @@ const CallToAction: React.FC<CallToActionProps> = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            Join our waitlist for the Q3 2025 launch and get <br /> early access to token templates,
-            campaign tools, <br /> and airdrop features.
+            Reserve your spot for early access and unlock <br /> eexclusive token templates,
+            advanced campaign analytics, <br />  and priority marketplace placement.
           </motion.p>
 
           <motion.div 

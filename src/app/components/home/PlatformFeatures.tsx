@@ -58,7 +58,7 @@ const PlatformFeatures: React.FC<PlatformFeaturesProps> = () => {
   };
 
   return (
-    <section className="py-20 bg-[#1A0D23] relative overflow-hidden">
+    <section className="py-20 bg-black/90 relative overflow-hidden">
       {/* Decorative blockchain elements */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
         <svg className="absolute top-10 right-40 w-40 h-40 text-purple-500/5" viewBox="0 0 100 100" fill="currentColor">

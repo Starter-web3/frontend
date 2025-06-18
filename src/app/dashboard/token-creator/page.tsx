@@ -413,7 +413,7 @@ const Dashboard = () => {
     const label = typeLabels[token.type] || 'ERC-20';
 
     return (
-      <div className="bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-purple-500/10 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
+      <div className="bg-black/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-purple-500/10 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
         <div className="absolute top-0 right-0 w-20 h-20 opacity-5">
           <svg viewBox="0 0 40 40" className="w-full h-full">
             <circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth="1" fill="none" />

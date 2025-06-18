@@ -1,8 +1,8 @@
 'use client';
 // import { useEffect } from 'react';
 import Hero from './components/home/Hero';
-import StatsSection from './components/home/StatsSection';
-import TokenTypesSlider from './components/ui/TokenTypesSlider';
+//import StatsSection from './components/home/StatsSection';
+//import TokenTypesSlider from './components/ui/TokenTypesSlider';
 import PlatformFeatures from '././components/home/PlatformFeatures';
 import WhyUs from './components/home/WhyUs';
 import HowItWorks from './components/home/HowItWorks';
@@ -19,8 +19,8 @@ export default function Home() {
   return (
     <main className='min-h-screen bg-[#201726]'>
       <Hero />
-      <StatsSection />
-      <TokenTypesSlider />
+      {/* <StatsSection /> */}
+      {/* <TokenTypesSlider /> */}
       <PlatformFeatures />
       <WhyUs />
       <HowItWorks />
