@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { ethers, Log, LogDescription } from 'ethers';
@@ -24,7 +25,7 @@ import {
 } from '../../../../../../components/ui/select';
 import { Switch } from '../../../../../../components/ui/switch';
 import { Alert, AlertDescription } from '../../../../../../components/ui/alert';
-import { Coins, Calendar, Info } from 'lucide-react';
+import { Coins, Calendar, Info, TrendingUp, TrendingDown } from 'lucide-react';
 import { Badge } from '../../../../../../components/ui/badge';
 import { Separator } from '../../../../../../components/ui/separator';
 import {
@@ -34,11 +35,12 @@ import {
   TooltipTrigger,
 } from '../../../../../../components/ui/tooltip';
 import DashBoardLayout from '../../DashboardLayout';
-import StrataForgeFactoryABI from '../../../../../app/components/ABIs/StrataForgeFactoryABI.json';
+import StrataForgeAirdropFactoryABI from '../../../../../app/components/ABIs/StrataForgeAirdropFactoryABI.json';
 import StrataForgeERC20ImplementationABI from '../../../../components/ABIs/StrataForgeERC20ImplementationABI.json';
+import StrataForgeAdminABI from '../../../../../app/components/ABIs/StrataForgeAdminABI.json';
 import { createMerkleTree, Recipient } from '../../../../../lib/merkle';
+import { useUsdEthPrice, useAirdropPriceData } from '../../../../../hooks/useUsdEthPrice';
 
-// Background Shapes Component (copied from airdrop-listing/page.tsx)
 const BackgroundShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
     <div className="absolute top-20 left-10 w-32 h-32 border-2 border-purple-500/20 rounded-full animate-pulse"></div>
@@ -47,12 +49,13 @@ const BackgroundShapes = () => (
     <div className="absolute top-1/3 left-1/4 w-16 h-16 border-2 border-cyan-500/20 rotate-45 animate-pulse delay-600"></div>
     <div className="absolute bottom-1/4 right-1/3 w-28 h-28 border-2 border-purple-300/15 rounded-full animate-pulse delay-800"></div>
     <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-500/15 to-transparent rounded-full blur-xl animate-pulse delay-1000"></div>
-    <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/15 to-transparent rounded-full blur-xl animate-pulse delay-1200"></div>
+    <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-xl animate-pulse delay-1200"></div>
     <div className="absolute top-1/2 right-10 w-48 h-48 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-full blur-xl animate-pulse delay-1400"></div>
   </div>
 );
 
-const FACTORY_CONTRACT_ADDRESS = '0x59F42c3eEcf829b34d8Ca846Dfc83D3cDC105C3F' as const;
+const FACTORY_CONTRACT_ADDRESS = '0x5463D07280b6b6B503C69Af31956265a0Ef4AA13' as const;
+const ADMIN_CONTRACT_ADDRESS = '0xFEc4e9718B1dfef72Db183f3e30b418762B674C4' as const;
 
 type RecipientFile = {
   id: string;
@@ -61,6 +64,59 @@ type RecipientFile = {
   merkleRoot: string;
   recipients: Recipient[];
   proofs: { [address: string]: string[] };
+};
+
+const PriceDisplay = ({ price, loading, error, priceChangePercentage }: {
+  price: number | null;
+  loading: boolean;
+  error: string | null;
+  priceChangePercentage?: number;
+}) => {
+  if (loading) {
+    return (
+      <div className="flex items-center space-x-2">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
+        <span className="text-white">Loading price...</span>
+      </div>
+    );
+  }
+
+  if (error || !price) {
+    return (
+      <div className="text-red-400 text-sm">
+        Failed to load price
+      </div>
+    );
+  }
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(price);
+  };
+
+  return (
+    <div className="flex items-center space-x-2">
+      <span className="font-mono text-white">{formatPrice(price)}</span>
+      {priceChangePercentage !== undefined && (
+        <div className={`flex items-center space-x-1 ${
+          priceChangePercentage >= 0 ? 'text-green-400' : 'text-red-400'
+        }`}>
+          {priceChangePercentage >= 0 ? (
+            <TrendingUp className="h-3 w-3" />
+          ) : (
+            <TrendingDown className="h-3 w-3" />
+          )}
+          <span className="text-xs">
+            {priceChangePercentage >= 0 ? '+' : ''}{priceChangePercentage.toFixed(2)}%
+          </span>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default function DistributePage() {
@@ -79,17 +135,90 @@ export default function DistributePage() {
   const [mintAmount, setMintAmount] = useState('');
   const [mintStatus, setMintStatus] = useState('');
   const [mintLoading, setMintLoading] = useState(false);
+  const [airdropFeeUSD, setAirdropFeeUSD] = useState<string | null>(null);
+  const [airdropFeeETH, setAirdropFeeETH] = useState<string | null>(null);
+  const [feeLoading, setFeeLoading] = useState(false);
 
-  // Load files from local storage
+  const { usdPrice: ethPrice, loading: priceLoading, error: priceError } = useUsdEthPrice();
+  const { 
+    ethPrice: enhancedEthPrice, 
+    priceChangePercentage 
+  } = useAirdropPriceData();
+
   useEffect(() => {
-    const storedFiles = localStorage.getItem('recipientFiles');
-    if (storedFiles) {
-      setFiles(JSON.parse(storedFiles));
+    if (typeof window !== 'undefined') {
+      const storedFiles = sessionStorage.getItem('recipientFiles');
+      if (storedFiles) {
+        try {
+          const parsed = JSON.parse(storedFiles);
+          if (Array.isArray(parsed)) {
+            setFiles(parsed);
+          }
+        } catch (error) {
+          console.error('Invalid recipientFiles in sessionStorage:', error);
+        }
+      }
     }
   }, []);
 
+  useEffect(() => {
+    const fetchAirdropFees = async () => {
+      if (!window.ethereum || files.length === 0) return;
+      
+      setFeeLoading(true);
+      setError('');
+      
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const adminContract = new ethers.Contract(
+          ADMIN_CONTRACT_ADDRESS,
+          StrataForgeAdminABI,
+          provider,
+        );
+
+        const totalRecipients = files.reduce((sum, file) => sum + file.count, 0);
+        
+        // First check if contract exists
+        const contractCode = await provider.getCode(ADMIN_CONTRACT_ADDRESS);
+        if (contractCode === '0x') {
+          throw new Error('Admin contract not deployed');
+        }
+
+        // Fetch fees with error handling for each call
+        try {
+          const feeUSD = await adminContract.getAirdropFeeUSD(totalRecipients);
+          setAirdropFeeUSD(ethers.formatUnits(feeUSD, 8));
+        } catch (usdError) {
+          console.error('Failed to fetch USD fee:', usdError);
+          setAirdropFeeUSD(null);
+        }
+
+        try {
+          const feeETH = await adminContract.getAirdropFeeETH(totalRecipients);
+          setAirdropFeeETH(ethers.formatEther(feeETH));
+        } catch (ethError) {
+          console.error('Failed to fetch ETH fee:', ethError);
+          setAirdropFeeETH(null);
+        }
+
+      } catch (err) {
+        console.error('Error fetching airdrop fees:', err);
+        setError('Failed to fetch airdrop fees. Please check your network connection.');
+      } finally {
+        setFeeLoading(false);
+      }
+    };
+
+    fetchAirdropFees();
+  }, [files]);
+
+  const ethFeeInUSD = useMemo(() => {
+    if (!airdropFeeETH || !ethPrice) return null;
+    return (parseFloat(airdropFeeETH) * ethPrice).toFixed(2);
+  }, [airdropFeeETH, ethPrice]);
+
   const handleMaxAmount = () => {
-    setTokenAmount('1000'); // Example max amount
+    setTokenAmount('1000');
   };
 
   const handleMint = async () => {
@@ -125,11 +254,8 @@ export default function DistributePage() {
       );
 
       const amountToMint = ethers.parseUnits(mintAmount, 18);
-
       const mintTx = await tokenContract.mint(distributorAddress, amountToMint);
-      console.log('Mint transaction sent:', mintTx.hash);
       await mintTx.wait();
-      console.log('Mint transaction confirmed');
 
       setMintStatus(`Successfully minted ${mintAmount} tokens to ${distributorAddress}`);
     } catch (mintErr) {
@@ -154,6 +280,10 @@ export default function DistributePage() {
       setError('No recipient files uploaded.');
       return;
     }
+    if (distributionMethod === 'custom' && files.some(file => file.recipients.some(r => !r.amount))) {
+      setError('Custom distribution requires amounts for all recipients in the CSV.');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -166,10 +296,15 @@ export default function DistributePage() {
       if (!ethers.isAddress(contractAddress)) {
         throw new Error('Invalid token contract address');
       }
+      
+      const code = await provider.getCode(contractAddress);
+      if (code === '0x') {
+        throw new Error('Token contract address is not deployed');
+      }
 
       const factoryContract = new ethers.Contract(
         FACTORY_CONTRACT_ADDRESS,
-        StrataForgeFactoryABI,
+        StrataForgeAirdropFactoryABI,
         signer,
       );
       const tokenContract = new ethers.Contract(
@@ -181,38 +316,56 @@ export default function DistributePage() {
       const allRecipients = files.flatMap((file) => file.recipients);
       const totalRecipients = allRecipients.length;
 
-      const { merkleRoot } = createMerkleTree(allRecipients);
+      const isCustomDistribution = distributionMethod === 'custom';
+      const { merkleRoot } = createMerkleTree(allRecipients, isCustomDistribution, tokenAmount || '100');
 
-      const dropAmount = ethers.parseUnits(tokenAmount || '100', 18);
-      const totalDropAmount = dropAmount * BigInt(totalRecipients);
+      let totalDropAmount: bigint;
+      let dropAmount: bigint;
+      
+      if (isCustomDistribution) {
+        const totalAmount = allRecipients.reduce((sum, recipient) => {
+          if (!recipient.amount) throw new Error('Missing amount for custom distribution');
+          return sum + ethers.parseUnits(recipient.amount, 18);
+        }, BigInt(0));
+        totalDropAmount = totalAmount;
+        dropAmount = ethers.parseUnits('1', 18); // dummy value for custom mode
+      } else {
+        dropAmount = ethers.parseUnits(tokenAmount || '100', 18);
+        totalDropAmount = dropAmount * BigInt(totalRecipients);
+      }
 
       const startTime = scheduleDate
         ? Math.floor(new Date(scheduleDate).getTime() / 1000)
         : Math.floor(Date.now() / 1000);
 
-      console.log('Creating airdrop with:', {
-        tokenAddress: contractAddress,
-        merkleRoot,
-        dropAmount: dropAmount.toString(),
-        totalRecipients,
-        startTime,
-      });
+      // Check current allowance first
+      const currentAllowance = await tokenContract.allowance(await signer.getAddress(), FACTORY_CONTRACT_ADDRESS);
+      if (currentAllowance < totalDropAmount) {
+        const approveTx = await tokenContract.approve(FACTORY_CONTRACT_ADDRESS, totalDropAmount);
+        await approveTx.wait();
+      }
 
-      const approveTx = await tokenContract.approve(FACTORY_CONTRACT_ADDRESS, totalDropAmount);
-      await approveTx.wait();
-      console.log('Approval complete');
+      // Get required ETH fee
+      const adminContract = new ethers.Contract(
+        ADMIN_CONTRACT_ADDRESS,
+        StrataForgeAdminABI,
+        signer,
+      );
+      const requiredETH = await adminContract.getAirdropFeeETH(totalRecipients);
 
-      const createTx = await factoryContract.createAirdrop(
+      // Create the airdrop
+      const createTx = await factoryContract.createERC20Airdrop(
         contractAddress,
         merkleRoot,
         dropAmount,
         totalRecipients,
         startTime,
+        { value: requiredETH },
       );
-      console.log('Transaction sent:', createTx.hash);
+      
       const receipt = await createTx.wait();
-      console.log('Transaction confirmed:', receipt);
 
+      // Parse the AirdropCreated event
       const event = receipt.logs
         .map((log: Log) => {
           try {
@@ -224,21 +377,30 @@ export default function DistributePage() {
         .find((e: LogDescription | null) => e && e.name === 'AirdropCreated');
 
       if (event && event.args) {
-        const newDistributorAddress = event.args.distributorAddress;
+        const newDistributorAddress = event.args.distributor;
         setDistributorAddress(newDistributorAddress);
-        localStorage.setItem('lastDistributorAddress', newDistributorAddress);
+        
+        // Save to sessionStorage
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('lastDistributorAddress', newDistributorAddress);
+        }
       } else {
         throw new Error('Failed to retrieve distributor address from transaction');
       }
     } catch (err) {
       console.error('Distribution error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      if (errorMessage.includes('InvalidTokenOrigin')) {
-        setError('Selected token was not created on this platform.');
-      } else if (errorMessage.includes('InvalidTokenType')) {
-        setError('Premium subscription required to create airdrop.');
-      } else if (errorMessage.includes('InsufficientTokenBalance')) {
-        setError('Not enough tokens in your wallet.');
+      
+      if (errorMessage.includes('Insufficient ETH for airdrop fee')) {
+        setError('Insufficient ETH sent for airdrop fee.');
+      } else if (errorMessage.includes('InvalidRecipientCount')) {
+        setError('Invalid number of recipients for the selected fee tier.');
+      } else if (errorMessage.includes('PriceFeedNotSet')) {
+        setError('Price feed not set in the admin contract.');
+      } else if (errorMessage.includes('StalePriceFeed')) {
+        setError('Price feed data is stale.');
+      } else if (errorMessage.includes('InvalidPriceFeed')) {
+        setError('Invalid price feed data.');
       } else {
         setError(`Error: ${errorMessage}`);
       }
@@ -247,339 +409,277 @@ export default function DistributePage() {
     }
   };
 
+  
+
   return (
     <DashBoardLayout>
       <div className="min-h-screen bg-gradient-to-br from-[#1A0D23] to-[#2A1F36]">
         <BackgroundShapes />
         <header className="border-b border-purple-500/20 p-4">
-          <div className="container mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-2">
-              <Coins className="h-6 w-6 text-purple-400" />
-              <span className="text-xl font-bold text-white">LaunchPad</span>
-            </div>
+          <div className="container mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-6">
+            <h1 className="text-2xl font-bold text-white flex items-center">
+              <Coins className="h-6 w-6 mr-2 text-purple-400" />
+              Token Distribution
+            </h1>
+            <Link href="/dashboard">
+              <Button variant="outline" className="text-white border-purple-500 hover:bg-purple-500/20">
+                Back to Dashboard
+              </Button>
+            </Link>
           </div>
         </header>
 
-        <main className="py-12">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center mb-8">
-              <Link href="/dashboard/token-creator/airdrop-listing/upload">
-                <Button
-                  variant="ghost"
-                  className="text-white hover:bg-purple-500/10 hover:text-purple-200 mr-4"
-                >
-                  <svg
-                    className="mr-2 h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Airdrop Creation Section */}
+            <Card className="bg-[#2A1F36]/80 border-purple-500/20 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-white">Create Airdrop</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Distribute tokens to multiple recipients using a Merkle tree-based airdrop.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="tokenName" className="text-white">Token Name</Label>
+                  <Input
+                    id="tokenName"
+                    value={tokenName}
+                    onChange={(e) => setTokenName(e.target.value)}
+                    placeholder="e.g., MyToken"
+                    className="bg-[#3A2F46]/50 border-purple-500/30 text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contractAddress" className="text-white">Token Contract Address</Label>
+                  <Input
+                    id="contractAddress"
+                    value={contractAddress}
+                    onChange={(e) => setContractAddress(e.target.value)}
+                    placeholder="0x..."
+                    className="bg-[#3A2F46]/50 border-purple-500/30 text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tokenAmount" className="text-white flex items-center">
+                    Token Amount per Recipient
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 ml-2 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>For equal distribution, specify the amount each recipient gets.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </Label>
+                  <div className="flex space-x-2">
+                    <Input
+                      id="tokenAmount"
+                      type="number"
+                      value={tokenAmount}
+                      onChange={(e) => setTokenAmount(e.target.value)}
+                      placeholder="100"
+                      disabled={distributionMethod === 'custom'}
+                      className="bg-[#3A2F46]/50 border-purple-500/30 text-white"
                     />
-                  </svg>
-                  Back to Upload Recipients
-                </Button>
-              </Link>
-              <h1 className="text-3xl font-bold text-white">Distribute Airdrop</h1>
-            </div>
-
-            {error && (
-              <Alert className="mb-4 bg-red-500/10 border-red-500/20">
-                <AlertDescription className="text-white">{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {distributorAddress && (
-              <Alert className="mb-4 bg-green-500/10 border-green-500/20">
-                <AlertDescription className="text-white">
-                  Airdrop created! Distributor Address: <code>{distributorAddress}</code>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {mintStatus && (
-              <Alert
-                className={`mb-4 ${
-                  mintStatus.includes('Failed')
-                    ? 'bg-red-500/10 border-red-500/20'
-                    : 'bg-blue-500/10 border-blue-500/20'
-                }`}
-              >
-                <AlertDescription className="text-white">{mintStatus}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="grid gap-8 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <Card className="bg-[#2A1F36]/80 border-purple-500/20 backdrop-blur-sm">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-white">Create New Airdrop</CardTitle>
-                        <CardDescription className="text-gray-300">
-                          Configure your token distribution parameters
-                        </CardDescription>
-                      </div>
-                      <Coins className="h-8 w-8 text-purple-400" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="tokenName" className="text-white">
-                          Token Name
-                        </Label>
-                        <Input
-                          id="tokenName"
-                          placeholder="Enter token name"
-                          value={tokenName}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setTokenName(e.target.value)
-                          }
-                          className="mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500 text-white"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="tokenAmount" className="text-white">
-                          Token Amount (per recipient)
-                        </Label>
-                        <div className="flex mt-1.5">
-                          <Input
-                            id="tokenAmount"
-                            type="number"
-                            placeholder="0.0"
-                            value={tokenAmount}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                              setTokenAmount(e.target.value)
-                            }
-                            className="bg-purple-800/40 border-purple-500/20 focus:border-purple-500 text-white"
-                          />
-                          <Button
-                            variant="outline"
-                            className="ml-2 border-purple-500 text-white hover:bg-purple-500/10"
-                            onClick={handleMaxAmount}
-                          >
-                            MAX
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="contractAddress" className="text-white">
-                          Token Contract Address
-                        </Label>
-                        <Input
-                          id="contractAddress"
-                          placeholder="0x..."
-                          value={contractAddress}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setContractAddress(e.target.value)
-                          }
-                          className="mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500 text-white"
-                        />
-                      </div>
-                    </div>
-
-                    <Separator className="bg-purple-500/20" />
-
-                    <div>
-                      <Label className="mb-2 block text-white">Recipients</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {files.map((file) => (
-                          <Badge
-                            key={file.id}
-                            variant="outline"
-                            className="border-purple-500 text-white px-3 py-1"
-                          >
-                            {file.name} ({file.count} addresses)
-                          </Badge>
-                        ))}
-                        <Link href="/dashboard/token-creator/airdrop-listing/upload">
-                          <Badge
-                            variant="outline"
-                            className="border-purple-500/50 text-gray-300 px-3 py-1 cursor-pointer hover:border-purple-500 hover:text-white"
-                          >
-                            + Add more
-                          </Badge>
-                        </Link>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="distributionMethod" className="text-white">
-                        Distribution Method
-                      </Label>
-                      <Select value={distributionMethod} onValueChange={setDistributionMethod}>
-                        <SelectTrigger className="mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500 text-white">
-                          <SelectValue placeholder="Select distribution method" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-purple-800/40 border-purple-500/20 text-white">
-                          <SelectItem value="equal">Equal Split</SelectItem>
-                          <SelectItem value="custom">Custom Amounts (from CSV)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="scheduleDate" className="text-white">
-                        Schedule
-                      </Label>
-                      <div className="flex mt-1.5">
-                        <Input
-                          id="scheduleDate"
-                          type="date"
-                          value={scheduleDate}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setScheduleDate(e.target.value)
-                          }
-                          className="bg-purple-800/40 border-purple-500/20 focus:border-purple-500 text-white"
-                        />
-                        <Button
-                          variant="outline"
-                          className="ml-2 border-purple-500 text-white hover:bg-purple-500/10"
-                        >
-                          <Calendar className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <Separator className="bg-purple-500/20" />
-                    <div>
-                      <Label htmlFor="mintAmount" className="text-white">
-                        Mint Tokens to Distributor
-                      </Label>
-                      <div className="space-y-4 mt-1.5">
-                        <div>
-                          <Label htmlFor="mintRecipient" className="text-white">
-                            Recipient (Distributor Address)
-                          </Label>
-                          <Input
-                            id="mintRecipient"
-                            value={distributorAddress || 'Create airdrop to set recipient'}
-                            readOnly
-                            className="mt-1.5 bg-purple-800/40 border-purple-500/20 text-white"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="mintAmount" className="text-white">
-                            Mint Amount
-                          </Label>
-                          <Input
-                            id="mintAmount"
-                            type="number"
-                            placeholder="0.0"
-                            value={mintAmount}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                              setMintAmount(e.target.value)
-                            }
-                            className="mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500 text-white"
-                          />
-                        </div>
-                        <Button
-                          className="w-full bg-purple-500 hover:bg-purple-600 text-black"
-                          onClick={handleMint}
-                          disabled={!distributorAddress || !mintAmount || mintLoading || !isConnected}
-                        >
-                          {mintLoading ? 'Minting...' : 'Mint Tokens'}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div>
-                <Card className="bg-[#2A1F36]/80 border-purple-500/20 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="text-white">Advanced Settings</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor="gasOptimization" className="text-white">
-                          Gas Optimization
-                        </Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-4 w-4 text-gray-300" />
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-purple-800/40 border-purple-500/20 text-white">
-                              <p>Optimize gas usage for large distributions</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <Switch
-                        id="gasOptimization"
-                        checked={gasOptimization}
-                        onCheckedChange={setGasOptimization}
-                        className="data-[state=checked]:bg-purple-500"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="batchSize" className="text-white">
-                        Batch Size
-                      </Label>
-                      <Input
-                        id="batchSize"
-                        type="number"
-                        value={batchSize}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setBatchSize(e.target.value)
-                        }
-                        className="mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500 text-white"
-                      />
-                    </div>
-
-                    <Separator className="bg-purple-500/20" />
-
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label className="text-white">Estimated Gas:</Label>
-                        <span className="font-mono text-white">0.05 ETH</span>
-                      </div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label className="text-white">Total Recipients:</Label>
-                        <span className="text-white">
-                          {files.reduce((sum, file) => sum + file.count, 0)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Label className="text-white">Distribution Type:</Label>
-                        <Badge variant="outline" className="border-purple-500/50 text-white">
-                          {distributionMethod === 'equal' ? 'Equal Split' : 'Custom'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter>
                     <Button
-                      className="w-full bg-purple-500 hover:bg-purple-600 text-black"
-                      onClick={handleDistribute}
-                      disabled={
-                        !tokenName ||
-                        !tokenAmount ||
-                        !contractAddress ||
-                        files.length === 0 ||
-                        loading ||
-                        !isConnected
-                      }
+                      onClick={handleMaxAmount}
+                      variant="outline"
+                      className="text-white border-purple-500 hover:bg-purple-500/20"
                     >
-                      {loading ? 'Distributing...' : 'Distribute Airdrop'}
+                      Max
                     </Button>
-                  </CardFooter>
-                </Card>
-              </div>
-            </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="distributionMethod" className="text-white">Distribution Method</Label>
+                  <Select
+                    value={distributionMethod}
+                    onValueChange={setDistributionMethod}
+                  >
+                    <SelectTrigger className="bg-[#3A2F46]/50 border-purple-500/30 text-white">
+                      <SelectValue placeholder="Select method" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#2A1F36] border-purple-500/30 text-white">
+                      <SelectItem value="equal">Equal Distribution</SelectItem>
+                      <SelectItem value="custom">Custom Distribution (CSV)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="scheduleDate" className="text-white flex items-center">
+                    Schedule Distribution
+                    <Calendar className="h-4 w-4 ml-2 text-gray-400" />
+                  </Label>
+                  <Input
+                    id="scheduleDate"
+                    type="datetime-local"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    className="bg-[#3A2F46]/50 border-purple-500/30 text-white"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="gasOptimization"
+                      checked={gasOptimization}
+                      onCheckedChange={setGasOptimization}
+                    />
+                    <Label htmlFor="gasOptimization" className="text-white">Gas Optimization</Label>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="batchSize" className="text-white">Batch Size</Label>
+                    <Input
+                      id="batchSize"
+                      type="number"
+                      value={batchSize}
+                      onChange={(e) => setBatchSize(e.target.value)}
+                      className="w-20 bg-[#3A2F46]/50 border-purple-500/30 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white">Recipient Files</Label>
+                  <div className="space-y-2">
+                    {files.map((file) => (
+                      <div key={file.id} className="flex items-center justify-between bg-[#3A2F46]/50 p-2 rounded-md">
+                        <span className="text-white">{file.name} ({file.count} recipients)</span>
+                        <Badge variant="secondary" className="text-gray-300">Merkle Root: {file.merkleRoot.slice(0, 8)}...</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white">Airdrop Fee</Label>
+                  {feeLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
+                      <span className="text-white">Calculating fees...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {airdropFeeUSD && (
+                        <div className="text-white">USD: ${airdropFeeUSD}</div>
+                      )}
+                      {airdropFeeETH && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-white">ETH: {airdropFeeETH}</span>
+                          {ethFeeInUSD && (
+                            <span className="text-gray-400">(${ethFeeInUSD})</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white">ETH Price</Label>
+                  <PriceDisplay
+                    price={enhancedEthPrice}
+                    loading={priceLoading}
+                    error={priceError}
+                    priceChangePercentage={priceChangePercentage}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button
+                  onClick={handleDistribute}
+                  disabled={loading || !isConnected}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {loading ? 'Creating Airdrop...' : 'Create Airdrop'}
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {/* Mint Tokens Section */}
+            <Card className="bg-[#2A1F36]/80 border-purple-500/20 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-white">Mint Tokens</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Mint tokens to the distributor address for airdrop distribution.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {mintStatus && (
+                  <Alert>
+                    <AlertDescription className="text-green-400">{mintStatus}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="distributorAddress" className="text-white">Distributor Address</Label>
+                  <Input
+                    id="distributorAddress"
+                    value={distributorAddress}
+                    onChange={(e) => setDistributorAddress(e.target.value)}
+                    placeholder="0x..."
+                    className="bg-[#3A2F46]/50 border-purple-500/30 text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mintAmount" className="text-white">Mint Amount</Label>
+                  <Input
+                    id="mintAmount"
+                    type="number"
+                    value={mintAmount}
+                    onChange={(e) => setMintAmount(e.target.value)}
+                    placeholder="1000"
+                    className="bg-[#3A2F46]/50 border-purple-500/30 text-white"
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button
+                  onClick={handleMint}
+                  disabled={mintLoading || !isConnected}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {mintLoading ? 'Minting Tokens...' : 'Mint Tokens'}
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
+
+          {distributorAddress && (
+            <div className="mt-8">
+              <Separator className="bg-purple-500/20" />
+              <Card className="bg-[#2A1F36]/80 border-purple-500/20 backdrop-blur-sm mt-4">
+                <CardHeader>
+                  <CardTitle className="text-white">Airdrop Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p className="text-white">
+                      <span className="font-semibold">Distributor Address:</span> {distributorAddress}
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      Save this address to interact with the airdrop contract.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </main>
       </div>
     </DashBoardLayout>

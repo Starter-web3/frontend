@@ -1,47 +1,66 @@
-'use client';
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useWallet } from '../../../contexts/WalletContext';
-import { useReadContract, useReadContracts } from 'wagmi';
-import { Abi } from 'viem';
-import StrataForgeAdminABI from '../../../app/components/ABIs/StrataForgeAdminABI.json';
+"use client";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useWallet } from "../../../contexts/WalletContext";
+import { useReadContract, useReadContracts } from "wagmi";
+import { Abi } from "viem";
+import StrataForgeAdminABI from "../../../app/components/ABIs/StrataForgeAdminABI.json";
 
-const ADMIN_CONTRACT_ADDRESS = '0xADC01DF1dA777a7fE0A93eC58BfC6b69d3354599' as const;
+const ADMIN_CONTRACT_ADDRESS =
+  "0xFEc4e9718B1dfef72Db183f3e30b418762B674C4" as const;
 const adminABI = StrataForgeAdminABI as Abi;
 
 interface SidebarLinkProps {
-  href?: string; // Made href optional
+  href?: string;
   icon: React.ReactNode;
   text: string;
   active?: boolean;
   onClick?: () => void;
 }
 
-const SidebarLink: React.FC<SidebarLinkProps> = ({ href, icon, text, active, onClick }) => {
+const SidebarLink: React.FC<SidebarLinkProps> = ({
+  href,
+  icon,
+  text,
+  active,
+  onClick,
+}) => {
   if (onClick) {
     return (
       <button
         onClick={onClick}
         className={`w-full flex items-center px-4 py-3 ${
-          active ? 'bg-[hsl(var(--foreground)/0.1)]' : 'hover:bg-[hsl(var(--foreground)/0.05)]'
+          active
+            ? "bg-[hsl(var(--foreground)/0.1)]"
+            : "hover:bg-[hsl(var(--foreground)/0.05)]"
         } transition-colors rounded-lg my-1 text-left`}
       >
-        <div className="w-6 h-6 mr-3 flex items-center justify-center">{icon}</div>
-        <span className="font-inter font-normal text-base leading-[25px]">{text}</span>
+        <div className="w-6 h-6 mr-3 flex items-center justify-center">
+          {icon}
+        </div>
+        <span className="font-inter font-normal text-base leading-[25px]">
+          {text}
+        </span>
       </button>
     );
   }
 
   return (
     <Link
-      href={href ?? '#'} // Fallback to '#' if href is undefined
+      href={href ?? "#"}
       className={`flex items-center px-4 py-3 ${
-        active ? 'bg-[hsl(var(--foreground)/0.1)]' : 'hover:bg-[hsl(var(--foreground)/0.05)]'
+        active
+          ? "bg-[hsl(var(--foreground)/0.1)]"
+          : "hover:bg-[hsl(var(--foreground)/0.05)]"
       } transition-colors rounded-lg my-1`}
     >
-      <div className="w-6 h-6 mr-3 flex items-center justify-center">{icon}</div>
-      <span className="font-inter font-normal text-base leading-[25px]">{text}</span>
+      <div className="w-6 h-6 mr-3 flex items-center justify-center">
+        {icon}
+      </div>
+      <span className="font-inter font-normal text-base leading-[25px]">
+        {text}
+      </span>
     </Link>
   );
 };
@@ -49,10 +68,10 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ href, icon, text, active, onC
 const AdminSidebar = () => {
   const { address, isConnected, disconnect } = useWallet();
   const pathname = usePathname();
-  const currentPath = pathname || '/dashboard/admin';
+  const currentPath = pathname || "/dashboard/admin";
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
 
   // Get admin count
   const {
@@ -62,7 +81,7 @@ const AdminSidebar = () => {
   } = useReadContract({
     address: ADMIN_CONTRACT_ADDRESS,
     abi: adminABI,
-    functionName: 'adminCount',
+    functionName: "adminCount",
     query: {
       enabled: isConnected,
       retry: 3,
@@ -75,12 +94,12 @@ const AdminSidebar = () => {
     if (!adminCount || !isConnected || !adminCountSuccess) return [];
 
     const count = Number(adminCount);
-    console.log('Sidebar Admin Count:', count);
+    console.log("Sidebar Admin Count:", count);
 
     return Array.from({ length: count }, (_, i) => ({
       address: ADMIN_CONTRACT_ADDRESS as `0x${string}`,
       abi: adminABI,
-      functionName: 'admin' as const,
+      functionName: "admin" as const,
       args: [i] as const,
     }));
   }, [adminCount, isConnected, adminCountSuccess]);
@@ -100,8 +119,13 @@ const AdminSidebar = () => {
 
   // Check admin status
   useEffect(() => {
-    if (!address || !adminAddressesSuccess || !adminAddresses || adminAddresses.length === 0) {
-      console.log('Sidebar admin check conditions not met:', {
+    if (
+      !address ||
+      !adminAddressesSuccess ||
+      !adminAddresses ||
+      adminAddresses.length === 0
+    ) {
+      console.log("Sidebar admin check conditions not met:", {
         address: !!address,
         adminAddressesSuccess,
         adminAddressesLength: adminAddresses?.length || 0,
@@ -116,20 +140,23 @@ const AdminSidebar = () => {
       const result = adminAddresses[i];
       console.log(`Sidebar Admin check ${i}:`, result);
 
-      if (result && result.status === 'success' && result.result) {
+      if (result && result.status === "success" && result.result) {
         const adminAddress = result.result as string;
         console.log(`Sidebar Admin ${i}:`, adminAddress);
 
-        if (adminAddress && adminAddress.toLowerCase() === address.toLowerCase()) {
+        if (
+          adminAddress &&
+          adminAddress.toLowerCase() === address.toLowerCase()
+        ) {
           isAdminUser = true;
           break;
         }
-      } else if (result && result.status === 'failure') {
+      } else if (result && result.status === "failure") {
         console.error(`Sidebar: Failed to fetch admin ${i}:`, result.error);
       }
     }
 
-    console.log('Sidebar Is Admin:', isAdminUser);
+    console.log("Sidebar Is Admin:", isAdminUser);
     setIsAdmin(isAdminUser);
     setIsLoading(false);
   }, [address, adminAddresses, adminAddressesSuccess]);
@@ -139,19 +166,19 @@ const AdminSidebar = () => {
     const errors: string[] = [];
 
     if (adminCountError) {
-      console.error('Sidebar admin count error:', adminCountError);
-      errors.push('Failed to load admin count');
+      console.error("Sidebar admin count error:", adminCountError);
+      errors.push("Failed to load admin count");
     }
     if (adminAddressesError) {
-      console.error('Sidebar admin addresses error:', adminAddressesError);
-      errors.push('Failed to load admin addresses');
+      console.error("Sidebar admin addresses error:", adminAddressesError);
+      errors.push("Failed to load admin addresses");
     }
 
     if (errors.length > 0) {
-      setError(errors.join(', '));
+      setError(errors.join(", "));
       setIsLoading(false);
     } else {
-      setError('');
+      setError("");
     }
   }, [adminCountError, adminAddressesError]);
 
@@ -168,12 +195,21 @@ const AdminSidebar = () => {
           <div className="p-4 flex flex-col h-full">
             <div className="flex items-center mb-8">
               <div className="text-xl font-bold flex items-center">
-                <span className="text-[hsl(var(--primary-from))] mr-1">Strata</span>
-                <span className="text-[hsl(var(--foreground))]">Forge Admin</span>
+                <span className="text-[hsl(var(--primary-from))] mr-1">
+                  Strata
+                </span>
+                <span className="text-[hsl(var(--foreground))]">
+                  Forge Admin
+                </span>
               </div>
             </div>
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3">
-              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-5 h-5 text-red-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -195,14 +231,21 @@ const AdminSidebar = () => {
         <div className="p-4 flex flex-col h-full">
           <div className="flex items-center mb-8">
             <div className="text-xl font-bold flex items-center">
-              <span className="text-[hsl(var(--primary-from))] mr-1">Strata</span>
+              <span className="text-[hsl(var(--primary-from))] mr-1">
+                Strata
+              </span>
               <span className="text-[hsl(var(--foreground))]">Forge Admin</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 mb-8 px-4">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-600 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -213,9 +256,13 @@ const AdminSidebar = () => {
             </div>
             <div className="flex flex-col">
               <div className="flex items-center">
-                <span className="font-inter text-sm font-medium mr-2">Admin</span>
+                <span className="font-inter text-sm font-medium mr-2">
+                  Admin
+                </span>
                 <div
-                  className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
+                  className={`w-2 h-2 rounded-full ${
+                    isConnected ? "bg-green-500" : "bg-red-500"
+                  }`}
                 ></div>
               </div>
               <span className="font-mono text-xs text-gray-400">
@@ -238,7 +285,7 @@ const AdminSidebar = () => {
                 </svg>
               }
               text="Admin Dashboard"
-              active={currentPath === '/dashboard/admin'}
+              active={currentPath === "/dashboard/admin"}
             />
             <SidebarLink
               href="/dashboard/admin/manage-admins"
@@ -253,10 +300,10 @@ const AdminSidebar = () => {
                 </svg>
               }
               text="Manage Admins"
-              active={currentPath === '/dashboard/admin/manage-admins'}
+              active={currentPath === "/dashboard/admin/manage-admins"}
             />
             <SidebarLink
-              href="/dashboard/admin/subscription-fees"
+              href="/dashboard/admin/fee-management"
               icon={
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -272,8 +319,8 @@ const AdminSidebar = () => {
                   />
                 </svg>
               }
-              text="Subscription Fees"
-              active={currentPath === '/dashboard/admin/subscription-fees'}
+              text="Fee Management"
+              active={currentPath === "/dashboard/admin/fee-management"}
             />
             <SidebarLink
               href="/dashboard/admin/withdrawals"
@@ -292,7 +339,7 @@ const AdminSidebar = () => {
                 </svg>
               }
               text="Withdrawals"
-              active={currentPath === '/dashboard/admin/withdrawals'}
+              active={currentPath === "/dashboard/admin/withdrawals"}
             />
             <SidebarLink
               href="/dashboard/admin/contract-controls"
@@ -311,7 +358,7 @@ const AdminSidebar = () => {
                 </svg>
               }
               text="Contract Controls"
-              active={currentPath === '/dashboard/admin/contract-controls'}
+              active={currentPath === "/dashboard/admin/contract-controls"}
             />
             <SidebarLink
               href="/dashboard/admin/analytics"
@@ -326,11 +373,30 @@ const AdminSidebar = () => {
                 </svg>
               }
               text="Analytics & Reports"
-              active={currentPath === '/dashboard/admin/analytics'}
+              active={currentPath === "/dashboard/admin/analytics"}
             />
             <div className="border-t border-gray-700/30 my-4"></div>
             <SidebarLink
-              href="/dashboard"
+              href="/dashboard/token-creator"
+              icon={
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              }
+              text="Creator Dashboard"
+              active={currentPath === "/dashboard/token-creator"}
+            />
+            <SidebarLink
+              href="/dashboard/token-trader"
               icon={
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -342,7 +408,7 @@ const AdminSidebar = () => {
                 </svg>
               }
               text="User Dashboard"
-              active={currentPath === '/dashboard'}
+              active={currentPath === "/dashboard/token-trader"}
             />
             <SidebarLink
               href="/support"
@@ -361,7 +427,7 @@ const AdminSidebar = () => {
                 </svg>
               }
               text="Help & Support"
-              active={currentPath === '/support'}
+              active={currentPath === "/support"}
             />
             <div className="border-t border-gray-700/30 my-4"></div>
             <SidebarLink

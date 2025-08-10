@@ -1,0 +1,994 @@
+"use client";
+import React, { useState, useEffect, useMemo } from "react";
+import { useWallet } from "../../../../contexts/WalletContext";
+import { useReadContract, useReadContracts, useBlockNumber } from "wagmi";
+import { ethers } from "ethers";
+import { Abi } from "viem";
+import StrataForgeAdminABI from "../../../components/ABIs/StrataForgeAdminABI.json";
+import StrataForgeAirdropFactoryABI from "../../../components/ABIs/StrataForgeAirdropFactoryABI.json";
+import StrataForgeFactoryABI from "../../../components/ABIs/StrataForgeFactoryABI.json";
+import AdminDashboardLayout from "../AdminDashboardLayout";
+
+const ADMIN_CONTRACT_ADDRESS = "0xBD8e7980DCFA4E41873D90046f77Faa90A068cAd" as const;
+const AIRDROP_CONTRACT_ADDRESS = "0x195dcF2E5340b5Fd3EC4BDBB94ADFeF09919CC8d" as const;
+const FACTORY_CONTRACT_ADDRESS = "0xEaAf43B8C19B1E0CdEc61C8170A446BAc5F79954" as const;
+const EXPLORER_URL = "https://sepolia.basescan.org/address";
+const RPC_URL = "https://base-sepolia-rpc.publicnode.com";
+
+interface AirdropInfo {
+  distributor: string;
+  token: string;
+  creator: string;
+  startTime: number;
+  totalRecipients: number;
+  dropAmount: number;
+  tokenType: number;
+  reserved: number;
+}
+
+interface FeePaidEvent {
+  payer: string;
+  recipients: number;
+  amountETH: bigint;
+  amountUSD: bigint;
+  timestamp: number;
+  transactionHash: string;
+}
+
+interface AirdropCreatedEvent {
+  creator: string;
+  distributor: string;
+  token: string;
+  tokenType: number;
+  totalRecipients: number;
+  airdropIndex: number;
+  timestamp: number;
+  transactionHash: string;
+}
+
+interface TokenCreatedEvent {
+  creator: string;
+  tokenAddress: string;
+  name: string;
+  symbol: string;
+  initialSupply: bigint;
+  timestamp: number;
+  tokenType: number;
+  tokenId: number;
+  transactionHash: string;
+}
+
+interface WithdrawalEvent {
+  proposalId: number;
+  proposer?: string;
+  admin?: string;
+  amount?: bigint;
+  timestamp: number;
+  transactionHash: string;
+}
+
+interface AirdropFeePaidEventArgs {
+  payer: string;
+  recipients: bigint;
+  amountETH: bigint;
+  amountUSD: bigint;
+}
+
+interface FeaturesPaidEventArgs {
+  user: string;
+  featureCount: bigint;
+  totalFee: bigint;
+}
+
+interface WithdrawalProposedEventArgs {
+  proposalId: bigint;
+  proposer: string;
+  amount: bigint;
+}
+
+interface WithdrawalApprovedEventArgs {
+  proposalId: bigint;
+  admin: string;
+}
+
+interface WithdrawalExecutedEventArgs {
+  proposalId: bigint;
+  amount: bigint;
+}
+
+interface TypedLog<T> extends ethers.EventLog {
+  args: T;
+  eventName: string;
+}
+
+const AnalyticsReports = () => {
+  const { address, isConnected } = useWallet();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [feePaidEvents, setFeePaidEvents] = useState<FeePaidEvent[]>([]);
+  const [airdropCreatedEvents, setAirdropCreatedEvents] = useState<AirdropCreatedEvent[]>([]);
+  const [tokenCreatedEvents, setTokenCreatedEvents] = useState<TokenCreatedEvent[]>([]);
+  const [withdrawalEvents, setWithdrawalEvents] = useState<WithdrawalEvent[]>([]);
+  const [activeAirdrops, setActiveAirdrops] = useState<AirdropInfo[]>([]);
+  const [reportGenerated, setReportGenerated] = useState<"csv" | "json" | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "sections">("sections");
+
+  const provider = useMemo(() => new ethers.JsonRpcProvider(RPC_URL), []);
+
+  const adminContract = useMemo(
+    () => new ethers.Contract(ADMIN_CONTRACT_ADDRESS, StrataForgeAdminABI as Abi, provider),
+    [provider]
+  );
+
+  const airdropContract = useMemo(
+    () => new ethers.Contract(AIRDROP_CONTRACT_ADDRESS, StrataForgeAirdropFactoryABI as Abi, provider),
+    [provider]
+  );
+
+  const factoryContract = useMemo(
+    () => new ethers.Contract(FACTORY_CONTRACT_ADDRESS, StrataForgeFactoryABI as Abi, provider),
+    [provider]
+  );
+
+  const { data: adminCount, error: adminCountError, isLoading: adminCountLoading, isSuccess: adminCountSuccess } =
+    useReadContract({
+      address: ADMIN_CONTRACT_ADDRESS,
+      abi: StrataForgeAdminABI as Abi,
+      functionName: "adminCount",
+      query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+    });
+
+  const { data: contractState, error: contractStateError, isLoading: contractStateLoading } = useReadContracts({
+    contracts: [
+      { address: ADMIN_CONTRACT_ADDRESS, abi: StrataForgeAdminABI as Abi, functionName: "factoryContract" },
+      { address: ADMIN_CONTRACT_ADDRESS, abi: StrataForgeAdminABI as Abi, functionName: "airdropContract" },
+      { address: ADMIN_CONTRACT_ADDRESS, abi: StrataForgeAdminABI as Abi, functionName: "priceFeed" },
+      { address: ADMIN_CONTRACT_ADDRESS, abi: StrataForgeAdminABI as Abi, functionName: "featureFee" },
+      { address: ADMIN_CONTRACT_ADDRESS, abi: StrataForgeAdminABI as Abi, functionName: "getBalance" },
+      { address: AIRDROP_CONTRACT_ADDRESS, abi: StrataForgeAirdropFactoryABI as Abi, functionName: "getAirdropCount" },
+      { address: FACTORY_CONTRACT_ADDRESS, abi: StrataForgeFactoryABI as Abi, functionName: "getTotalTokenCount" },
+    ],
+    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+  });
+
+  const { data: activeAirdropsData, error: activeAirdropsError, isLoading: activeAirdropsLoading } = useReadContract({
+    address: AIRDROP_CONTRACT_ADDRESS,
+    abi: StrataForgeAirdropFactoryABI as Abi,
+    functionName: "getActiveAirdrops",
+    args: [BigInt(100)],
+    query: { enabled: isConnected && !!contractState?.[1]?.result, retry: 3, retryDelay: 1000 },
+  });
+
+  const { data: blockNumber, error: blockNumberError, isLoading: blockNumberLoading } = useBlockNumber({
+    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+  });
+
+  const adminChecks = useMemo(() => {
+    if (!adminCount || !isConnected || !adminCountSuccess) return [];
+    const count = Number(adminCount);
+    return Array.from({ length: count }, (_, i) => ({
+      address: ADMIN_CONTRACT_ADDRESS as `0x${string}`,
+      abi: StrataForgeAdminABI as Abi,
+      functionName: "admin",
+      args: [BigInt(i)],
+    }));
+  }, [adminCount, isConnected, adminCountSuccess]);
+
+  const { data: adminAddresses, error: adminAddressesError, isLoading: adminAddressesLoading, isSuccess: adminAddressesSuccess } =
+    useReadContracts({
+      contracts: adminChecks,
+      query: { enabled: adminChecks.length > 0, retry: 3, retryDelay: 1000 },
+    });
+
+  useEffect(() => {
+    if (!address || !adminAddressesSuccess || !adminAddresses || adminAddresses.length === 0) {
+      if (!adminCountLoading && !adminAddressesLoading && adminCountSuccess) setLoading(false);
+      return;
+    }
+    const isAdminUser = adminAddresses.some(
+      (result) => result?.status === "success" && result.result && result.result.toLowerCase() === address?.toLowerCase()
+    );
+    setIsAdmin(isAdminUser);
+    setLoading(false);
+  }, [address, adminAddresses, adminAddressesSuccess, adminCountLoading, adminAddressesLoading, adminCountSuccess]);
+
+  useEffect(() => {
+    if (activeAirdropsData) setActiveAirdrops(activeAirdropsData as AirdropInfo[]);
+  }, [activeAirdropsData]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const [feePaidEvents, featuresPaidEvents, airdropEvents, tokenEvents, proposedEvents, approvedEvents, executedEvents] =
+          await Promise.all([
+            adminContract.queryFilter(adminContract.filters.AirdropFeePaid(), 0, "latest"),
+            adminContract.queryFilter(adminContract.filters.FeaturesPaid(), 0, "latest"),
+            airdropContract.queryFilter(airdropContract.filters.AirdropCreated(), 0, "latest"),
+            factoryContract.queryFilter(factoryContract.filters.TokenCreated(), 0, "latest"),
+            adminContract.queryFilter(adminContract.filters.WithdrawalProposed(), 0, "latest"),
+            adminContract.queryFilter(adminContract.filters.WithdrawalApproved(), 0, "latest"),
+            adminContract.queryFilter(adminContract.filters.WithdrawalExecuted(), 0, "latest"),
+          ]);
+
+        const feePaidData = await Promise.all(
+          [...feePaidEvents, ...featuresPaidEvents].map(async (event: ethers.EventLog) => {
+            const block = await event.getBlock();
+            const parsedLog = adminContract.interface.parseLog(event);
+            if (parsedLog) {
+              if (parsedLog.name === "AirdropFeePaid") {
+                const args = parsedLog.args as unknown as AirdropFeePaidEventArgs;
+                return {
+                  payer: args.payer,
+                  recipients: Number(args.recipients),
+                  amountETH: args.amountETH,
+                  amountUSD: args.amountUSD,
+                  timestamp: block.timestamp * 1000,
+                  transactionHash: event.transactionHash,
+                };
+              } else if (parsedLog.name === "FeaturesPaid") {
+                const args = parsedLog.args as unknown as FeaturesPaidEventArgs;
+                return {
+                  payer: args.user,
+                  recipients: Number(args.featureCount),
+                  amountETH: args.totalFee,
+                  amountUSD: args.totalFee,
+                  timestamp: block.timestamp * 1000,
+                  transactionHash: event.transactionHash,
+                };
+              }
+            }
+            return null;
+          })
+        );
+        setFeePaidEvents(feePaidData.filter(Boolean) as FeePaidEvent[]);
+
+        const airdropCreatedData = await Promise.all(
+          airdropEvents.map(async (event: ethers.EventLog) => {
+            const block = await event.getBlock();
+            const parsedLog = airdropContract.interface.parseLog(event);
+            if (parsedLog) {
+              const args = parsedLog.args as unknown as AirdropCreatedEvent;
+              return {
+                creator: args.creator,
+                distributor: args.distributor,
+                token: args.token,
+                tokenType: Number(args.tokenType),
+                totalRecipients: Number(args.totalRecipients),
+                airdropIndex: Number(args.airdropIndex),
+                timestamp: block.timestamp * 1000,
+                transactionHash: event.transactionHash,
+              };
+            }
+            return null;
+          })
+        );
+        setAirdropCreatedEvents(airdropCreatedData.filter(Boolean) as AirdropCreatedEvent[]);
+
+        const tokenCreatedData = await Promise.all(
+          tokenEvents.map(async (event: ethers.EventLog) => {
+            const block = await event.getBlock();
+            const parsedLog = factoryContract.interface.parseLog(event);
+            if (parsedLog) {
+              const args = parsedLog.args as unknown as TokenCreatedEvent;
+              return {
+                creator: args.creator,
+                tokenAddress: args.tokenAddress,
+                name: args.name,
+                symbol: args.symbol,
+                initialSupply: args.initialSupply,
+                timestamp: block.timestamp * 1000,
+                tokenType: Number(args.tokenType),
+                tokenId: Number(args.tokenId),
+                transactionHash: event.transactionHash,
+              };
+            }
+            return null;
+          })
+        );
+        setTokenCreatedEvents(tokenCreatedData.filter(Boolean) as TokenCreatedEvent[]);
+
+        const withdrawalData = await Promise.all(
+          [...proposedEvents, ...approvedEvents, ...executedEvents].map(async (event: ethers.EventLog) => {
+            const block = await event.getBlock();
+            const parsedLog = adminContract.interface.parseLog(event);
+            if (parsedLog) {
+              if (parsedLog.name === "WithdrawalProposed") {
+                const args = parsedLog.args as unknown as WithdrawalProposedEventArgs;
+                return {
+                  proposalId: Number(args.proposalId),
+                  proposer: args.proposer,
+                  amount: args.amount,
+                  timestamp: block.timestamp * 1000,
+                  transactionHash: event.transactionHash,
+                };
+              } else if (parsedLog.name === "WithdrawalApproved") {
+                const args = parsedLog.args as unknown as WithdrawalApprovedEventArgs;
+                return {
+                  proposalId: Number(args.proposalId),
+                  admin: args.admin,
+                  timestamp: block.timestamp * 1000,
+                  transactionHash: event.transactionHash,
+                };
+              } else if (parsedLog.name === "WithdrawalExecuted") {
+                const args = parsedLog.args as unknown as WithdrawalExecutedEventArgs;
+                return {
+                  proposalId: Number(args.proposalId),
+                  amount: args.amount,
+                  timestamp: block.timestamp * 1000,
+                  transactionHash: event.transactionHash,
+                };
+              }
+            }
+            return null;
+          })
+        );
+        setWithdrawalEvents(withdrawalData.filter(Boolean) as WithdrawalEvent[]);
+      } catch (err) {
+        setError("Failed to fetch event logs: " + (err as Error).message);
+      }
+    };
+
+    if (isConnected && isAdmin) fetchEvents();
+  }, [blockNumber, isConnected, isAdmin, adminContract, airdropContract, factoryContract]);
+
+  useEffect(() => {
+    const errors: string[] = [];
+    if (adminCountError) errors.push("Failed to load admin count");
+    if (adminAddressesError) errors.push("Failed to load admin addresses");
+    if (contractStateError) errors.push("Failed to load contract state");
+    if (activeAirdropsError) errors.push("Failed to load active airdrops");
+    if (blockNumberError) errors.push("Failed to load block number");
+    setError(errors.join(", "));
+    if (!adminCountLoading && !adminAddressesLoading && !contractStateLoading && !activeAirdropsLoading && !blockNumberLoading) {
+      setLoading(false);
+    }
+  }, [
+    adminCountError,
+    adminAddressesError,
+    contractStateError,
+    activeAirdropsError,
+    blockNumberError,
+    adminCountLoading,
+    adminAddressesLoading,
+    contractStateLoading,
+    activeAirdropsLoading,
+    blockNumberLoading,
+  ]);
+
+  const formatFee = (amount: bigint | undefined, type: "ETH" | "USD" = "USD") => {
+    if (!amount) return "0.00";
+    return type === "USD" ? (Number(amount) / 1e8).toFixed(2) : (Number(amount) / 1e18).toFixed(4);
+  };
+
+  const generateCSV = () => {
+    const headers = ["Type,Details,User/Creator,Token,Amount/Fee,Recipients,Date,Transaction Hash"];
+    const rows: string[] = [];
+
+    tokenCreatedEvents.forEach((event) => {
+      const tokenType = ["ERC20", "ERC721", "ERC1155", "Memecoin", "Stablecoin"][event.tokenType] || "Unknown";
+      rows.push(
+        `Token Creation,Created ${tokenType} (${event.name}/${event.symbol}),${event.creator},${event.tokenAddress},${formatFee(
+          event.initialSupply,
+          "ETH"
+        )},,${new Date(event.timestamp).toLocaleString()},${event.transactionHash}`
+      );
+    });
+
+    airdropCreatedEvents.forEach((event) => {
+      const tokenType = ["ERC20", "ERC721", "ERC1155"][event.tokenType] || "Unknown";
+      rows.push(
+        `Airdrop,Created ${tokenType} Airdrop,${event.creator},${event.token},,${event.totalRecipients},${new Date(
+          event.timestamp
+        ).toLocaleString()},${event.transactionHash}`
+      );
+    });
+
+    feePaidEvents.forEach((event) => {
+      rows.push(
+        `Fee,Paid Fee,${event.payer},,$${formatFee(event.amountUSD, "USD")} (${formatFee(
+          event.amountETH,
+          "ETH"
+        )} ETH),${event.recipients},${new Date(event.timestamp).toLocaleString()},${event.transactionHash}`
+      );
+    });
+
+    withdrawalEvents.forEach((event) => {
+      if (event.proposer) {
+        rows.push(
+          `Withdrawal,Proposed Withdrawal,${event.proposer},,${formatFee(event.amount, "ETH")} ETH,,${new Date(
+            event.timestamp
+          ).toLocaleString()},${event.transactionHash}`
+        );
+      } else if (event.admin) {
+        rows.push(
+          `Withdrawal,Approved Withdrawal,${event.admin},,Proposal ${event.proposalId},,${new Date(
+            event.timestamp
+          ).toLocaleString()},${event.transactionHash}`
+        );
+      } else {
+        rows.push(
+          `Withdrawal,Executed Withdrawal,,${formatFee(event.amount, "ETH")} ETH,Proposal ${event.proposalId},,${new Date(
+            overgrown
+            event.timestamp
+          ).toLocaleString()},${event.transactionHash}`
+        );
+      }
+    });
+
+    const csvContent = headers.concat(rows).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `StrataForge_Analytics_${new Date().toISOString()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setReportGenerated("csv");
+    setTimeout(() => setReportGenerated(null), 3000);
+  };
+
+  const handleGenerateReport = () => {
+    const report = {
+      timestamp: new Date().toISOString(),
+      airdropCount: contractState?.[5]?.result?.toString() || "0",
+      tokenCount: contractState?.[6]?.result?.toString() || "0",
+      activeAirdrops: activeAirdrops.length,
+      totalAirdropRecipients: activeAirdrops.reduce((sum, airdrop) => sum + airdrop.totalRecipients, 0),
+      totalFeesETH: feePaidEvents.reduce((sum, event) => sum + event.amountETH, BigInt(0)).toString(),
+      totalFeesUSD: feePaidEvents.reduce((sum, event) => sum + event.amountUSD, BigInt(0)).toString(),
+      totalTokensCreated: tokenCreatedEvents.length,
+      totalTokenSupply: tokenCreatedEvents.reduce((sum, event) => sum + event.initialSupply, BigInt(0)).toString(),
+      contractBalance: contractState?.[4]?.result ? formatFee(contractState[4].result as bigint, "ETH") : "0",
+      featureFee: contractState?.[3]?.result ? formatFee(contractState[3].result as bigint, "USD") : "0",
+      feePaymentHistory: feePaidEvents.map((event) => ({
+        payer: event.payer,
+        recipients: event.recipients,
+        amountETH: event.amountETH.toString(),
+        amountUSD: event.amountUSD.toString(),
+        timestamp: new Date(event.timestamp).toISOString(),
+        transactionHash: event.transactionHash,
+      })),
+      airdropHistory: airdropCreatedEvents.map((event) => ({
+        creator: event.creator,
+        distributor: event.distributor,
+        token: event.token,
+        tokenType: ["ERC20", "ERC721", "ERC1155", "Memecoin", "Stablecoin"][event.tokenType] || "Unknown",
+        totalRecipients: event.totalRecipients,
+        airdropIndex: event.airdropIndex,
+        timestamp: new Date(event.timestamp).toISOString(),
+        transactionHash: event.transactionHash,
+      })),
+      tokenCreationHistory: tokenCreatedEvents.map((event) => ({
+        creator: event.creator,
+        tokenAddress: event.tokenAddress,
+        name: event.name,
+        symbol: event.symbol,
+        initialSupply: event.initialSupply.toString(),
+        timestamp: new Date(event.timestamp).toISOString(),
+        tokenType: ["ERC20", "ERC721", "ERC1155", "Memecoin", "Stablecoin"][event.tokenType] || "Unknown",
+        tokenId: event.tokenId,
+        transactionHash: event.transactionHash,
+      })),
+      withdrawalHistory: withdrawalEvents.map((event) => ({
+        type: event.proposer ? "Proposed" : event.admin ? "Approved" : "Executed",
+        proposalId: event.proposalId,
+        proposer: event.proposer,
+        admin: event.admin,
+        amount: event.amount?.toString(),
+        timestamp: new Date(event.timestamp).toISOString(),
+        transactionHash: event.transactionHash,
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `StrataForge_Report_${new Date().toISOString()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setReportGenerated("json");
+    setTimeout(() => setReportGenerated(null), 3000);
+  };
+
+  const LoadingSpinner = () => (
+    <div className="flex items-center justify-center min-h-screen bg-[#1A0D23]">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-white text-lg">Loading analytics...</p>
+        {error && <p className="text-red-400 text-sm mt-2 max-w-md">{error}</p>}
+      </div>
+    </div>
+  );
+
+  const WalletConnection = () => (
+    <div className="min-h-screen bg-[#1A0D23] flex items-center justify-center p-4">
+      <div className="bg-[#1E1425]/80 rounded-3xl shadow-2xl border border-purple-500/20 p-8 text-center">
+        <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
+        <p className="text-gray-300 mb-6">Connect your wallet to view analytics and reports</p>
+        <button
+          onClick={() => document.querySelector("appkit-button")?.click()}
+          className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
+        >
+          Connect Wallet
+        </button>
+      </div>
+    </div>
+  );
+
+  const UnauthorizedAccess = () => (
+    <div className="min-h-screen bg-[#1A0D23] flex items-center justify-center p-4">
+      <div className="max-w-lg w-full">
+        <div className="bg-[#1E1425]/80 rounded-3xl shadow-2xl border border-red-500/20 p-8 text-center">
+          <div className="mb-6">
+            <div className="w-20 h-20 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl mx-auto flex items-center justify-center mb-4">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Access Denied</h2>
+            <p className="text-gray-300 mb-6">You are not authorized to view analytics and reports</p>
+          </div>
+          <div className="bg-[#16091D]/60 rounded-xl p-4 mb-6 text-left space-y-2 border border-gray-700/30">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Connected Address:</span>
+              <span className="font-mono text-gray-300 text-xs">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Admin Count:</span>
+              <span className="font-mono text-gray-300">{adminCount ? Number(adminCount).toString() : "0"}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Network:</span>
+              <span className="font-mono text-gray-300">Base Sepolia</span>
+            </div>
+            {error && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Status:</span>
+                  <span className="text-red-400 text-xs">Error</span>
+                </div>
+                <div className="text-xs text-red-400 mt-2 p-2 bg-red-500/10 rounded">{error}</div>
+              </>
+            )}
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:scale-105 transition"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!isConnected) return <WalletConnection />;
+  if (loading) return <LoadingSpinner />;
+  if (!isAdmin) return <UnauthorizedAccess />;
+
+  const airdropFactoryAddress = contractState?.[1]?.result as string | undefined;
+  const priceFeedAddress = contractState?.[2]?.result as string | undefined;
+  const featureFee = contractState?.[3]?.result as bigint | undefined;
+  const contractBalance = contractState?.[4]?.result as bigint | undefined;
+  const airdropCount = contractState?.[5]?.result as bigint | undefined;
+  const tokenCount = contractState?.[6]?.result as bigint | undefined;
+
+  return (
+    <AdminDashboardLayout>
+      <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8">
+        <div className="text-center mb-8 rounded-lg p-6" style={{ background: "radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)" }}>
+          <h1 className="font-poppins font-semibold text-3xl md:text-4xl mb-2">
+            Analytics & Reports <span className="text-purple-400">📊</span>
+          </h1>
+          <p className="font-vietnam text-base text-[hsl(var(--foreground)/0.7)]">
+            View detailed analytics, transaction history, fee collections, token creations, and generate platform reports.
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3">
+            <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-red-300 font-medium">{error}</p>
+          </div>
+        )}
+
+        <div className="mb-10">
+          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6">Platform Analytics</h2>
+          <div className="bg-[#1E1425]/80 rounded-2xl p-6 border border-purple-500/10 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Total Tokens Created</h3>
+              <p className="text-2xl font-bold text-purple-400">{tokenCount?.toString() || "0"}</p>
+            </div>
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Total Airdrops Created</h3>
+              <p className="text-2xl font-bold text-purple-400">{airdropCount?.toString() || "0"}</p>
+            </div>
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Active Airdrops</h3>
+              <p className="text-2xl font-bold text-purple-400">{activeAirdrops.length}</p>
+            </div>
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Total Airdrop Recipients</h3>
+              <p className="text-2xl font-bold text-purple-400">
+                {activeAirdrops.reduce((sum, airdrop) => sum + airdrop.totalRecipients, 0)}
+              </p>
+            </div>
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Total Fees (ETH)</h3>
+              <p className="text-2xl font-bold text-purple-400">
+                {formatFee(feePaidEvents.reduce((sum, event) => sum + event.amountETH, BigInt(0)), "ETH")} ETH
+              </p>
+            </div>
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Total Fees (USD)</h3>
+              <p className="text-2xl font-bold text-purple-400">
+                ${formatFee(feePaidEvents.reduce((sum, event) => sum + event.amountUSD, BigInt(0)), "USD")}
+              </p>
+            </div>
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Total Token Supply</h3>
+              <p className="text-2xl font-bold text-purple-400">
+                {formatFee(tokenCreatedEvents.reduce((sum, event) => sum + event.initialSupply, BigInt(0)), "ETH")}
+              </p>
+            </div>
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Contract Balance</h3>
+              <p className="text-2xl font-bold text-purple-400">{contractBalance ? formatFee(contractBalance, "ETH") : "0"} ETH</p>
+            </div>
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Feature Fee</h3>
+              <p className="text-2xl font-bold text-purple-400">${featureFee ? formatFee(featureFee, "USD") : "0.00"}</p>
+            </div>
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Airdrop Factory Contract</h3>
+              <a href={`${EXPLORER_URL}/${airdropFactoryAddress}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 font-mono text-sm hover:underline break-all">
+                {airdropFactoryAddress ? `${airdropFactoryAddress.slice(0, 6)}...${airdropFactoryAddress.slice(-4)}` : "Not set"}
+              </a>
+            </div>
+            <div className="p-4 bg-[#16091D]/60 rounded-xl">
+              <h3 className="text-lg font-semibold text-white">Price Feed</h3>
+              <a href={`${EXPLORER_URL}/${priceFeedAddress}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 font-mono text-sm hover:underline break-all">
+                {priceFeedAddress ? `${priceFeedAddress.slice(0, 6)}...${priceFeedAddress.slice(-4)}` : "Not set"}
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-10">
+          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6">Transaction History</h2>
+          <div className="mb-4">
+            <button
+              onClick={() => setViewMode(viewMode === "table" ? "sections" : "table")}
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
+            >
+              {viewMode === "table" ? "Switch to Detailed View" : "Switch to Table View"}
+            </button>
+          </div>
+
+          {viewMode === "table" ? (
+            <div className="bg-[#1E1425]/80 rounded-2xl p-6 border border-purple-500/10">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="text-gray-300 border-b border-gray-700/30">
+                      <th className="py-3 px-4">Type</th>
+                      <th className="py-3 px-4">Details</th>
+                      <th className="py-3 px-4">User/Creator</th>
+                      <th className="py-3 px-4">Amount/Fee</th>
+                      <th className="py-3 px-4">Tx Hash</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tokenCreatedEvents.map((event, index) => (
+                      <tr key={`token-${index}`} className="border-b border-gray-700/20">
+                        <td className="py-3 px-4 text-white">Token Creation</td>
+                        <td className="py-3 px-4 text-gray-300">
+                          Created {["ERC20", "ERC721", "ERC1155", "Memecoin", "Stablecoin"][event.tokenType] || "Unknown"} ({event.name}/{event.symbol})
+                        </td>
+                        <td className="py-3 px-4 text-gray-300 font-mono text-xs">
+                          <a href={`${EXPLORER_URL}/${event.creator}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                            {event.creator.slice(0, 6)}...{event.creator.slice(-4)}
+                          </a>
+                        </td>
+                        <td className="py-3 px-4 text-gray-300">{formatFee(event.initialSupply, "ETH")} Tokens</td>
+                        <td className="py-3 px-4 text-gray-300 font-mono text-xs">
+                          <a href={`${EXPLORER_URL}/${event.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                            {event.transactionHash.slice(0, 6)}...{event.transactionHash.slice(-4)}
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                    {airdropCreatedEvents.map((event, index) => (
+                      <tr key={`airdrop-${index}`} className="border-b border-gray-700/20">
+                        <td className="py-3 px-4 text-white">Airdrop</td>
+                        <td className="py-3 px-4 text-gray-300">
+                          Created {["ERC20", "ERC721", "ERC1155"][event.tokenType] || "Unknown"} Airdrop
+                        </td>
+                        <td className="py-3 px-4 text-gray-300 font-mono text-xs">
+                          <a href={`${EXPLORER_URL}/${event.creator}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                            {event.creator.slice(0, 6)}...{event.creator.slice(-4)}
+                          </a>
+                        </td>
+                        <td className="py-3 px-4 text-gray-300">{event.totalRecipients} Recipients</td>
+                        <td className="py-3 px-4 text-gray-300 font-mono text-xs">
+                          <a href={`${EXPLORER_URL}/${event.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                            {event.transactionHash.slice(0, 6)}...{event.transactionHash.slice(-4)}
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                    {feePaidEvents.map((event, index) => (
+                      <tr key={`fee-${index}`} className="border-b border-gray-700/20">
+                        <td className="py-3 px-4 text-white">Fee</td>
+                        <td className="py-3 px-4 text-gray-300">Paid Fee</td>
+                        <td className="py-3 px-4 text-gray-300 font-mono text-xs">
+                          <a href={`${EXPLORER_URL}/${event.payer}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                            {event.payer.slice(0, 6)}...{event.payer.slice(-4)}
+                          </a>
+                        </td>
+                        <td className="py-3 px-4 text-purple-400">${formatFee(event.amountUSD, "USD")} ({formatFee(event.amountETH, "ETH")} ETH)</td>
+                        <td className="py-3 px-4 text-gray-300 font-mono text-xs">
+                          <a href={`${EXPLORER_URL}/${event.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                            {event.transactionHash.slice(0, 6)}...{event.transactionHash.slice(-4)}
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                    {withdrawalEvents.map((event, index) => (
+                      <tr key={`withdrawal-${index}`} className="border-b border-gray-700/20">
+                        <td className="py-3 px-4 text-white">Withdrawal</td>
+                        <td className="py-3 px-4 text-gray-300">
+                          {event.proposer ? "Proposed Withdrawal" : event.admin ? `Approved Withdrawal #${event.proposalId}` : `Executed Withdrawal #${event.proposalId}`}
+                        </td>
+                        <td className="py-3 px-4 text-gray-300 font-mono text-xs">
+                          <a
+                            href={`${EXPLORER_URL}/${event.proposer || event.admin || ""}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:underline"
+                          >
+                            {(event.proposer || event.admin || "").slice(0, 6)}...{(event.proposer || event.admin || "").slice(-4)}
+                          </a>
+                        </td>
+                        <td className="py-3 px-4 text-purple-400">{event.amount ? `${formatFee(event.amount, "ETH")} ETH` : `Proposal ${event.proposalId}`}</td>
+                        <td className="py-3 px-4 text-gray-300 font-mono text-xs">
+                          <a href={`${EXPLORER_URL}/${event.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                            {event.transactionHash.slice(0, 6)}...{event.transactionHash.slice(-4)}
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-10">
+                <h3 className="font-poppins font-semibold text-lg mb-4">Airdrop Fee Payments</h3>
+                <div className="bg-[#1E1425]/80 rounded-2xl p-6 border border-purple-500/10">
+                  {feePaidEvents.length === 0 ? (
+                    <p className="text-gray-300">No fee payments found.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {feePaidEvents.map((event, index) => (
+                        <div key={index} className="p-4 bg-[#16091D]/60 rounded-xl border border-gray-700/30">
+                          <p className="text-gray-300">
+                            <span className="font-medium">Payer:</span>{" "}
+                            <a href={`${EXPLORER_URL}/${event.payer}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {event.payer.slice(0, 6)}...{event.payer.slice(-4)}
+                            </a>
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Recipients:</span> {event.recipients}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Amount (ETH):</span> {formatFee(event.amountETH, "ETH")} ETH
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Amount (USD):</span> ${formatFee(event.amountUSD, "USD")}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Timestamp:</span> {new Date(event.timestamp).toLocaleString()}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Transaction:</span>{" "}
+                            <a href={`${EXPLORER_URL}/${event.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {event.transactionHash.slice(0, 6)}...{event.transactionHash.slice(-4)}
+                            </a>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-10">
+                <h3 className="font-poppins font-semibold text-lg mb-4">Airdrop History</h3>
+                <div className="bg-[#1E1425]/80 rounded-2xl p-6 border border-purple-500/10">
+                  {airdropCreatedEvents.length === 0 ? (
+                    <p className="text-gray-300">No airdrops created.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {airdropCreatedEvents.map((event, index) => (
+                        <div key={index} className="p-4 bg-[#16091D]/60 rounded-xl border border-gray-700/30">
+                          <p className="text-gray-300">
+                            <span className="font-medium">Creator:</span>{" "}
+                            <a href={`${EXPLORER_URL}/${event.creator}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {event.creator.slice(0, 6)}...{event.creator.slice(-4)}
+                            </a>
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Distributor:</span>{" "}
+                            <a href={`${EXPLORER_URL}/${event.distributor}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {event.distributor.slice(0, 6)}...{event.distributor.slice(-4)}
+                            </a>
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Token:</span>{" "}
+                            <a href={`${EXPLORER_URL}/${event.token}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {event.token.slice(0, 6)}...{event.token.slice(-4)}
+                            </a>
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Token Type:</span> {["ERC20", "ERC721", "ERC1155"][event.tokenType] || "Unknown"}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Total Recipients:</span> {event.totalRecipients}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Airdrop Index:</span> {event.airdropIndex}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Timestamp:</span> {new Date(event.timestamp).toLocaleString()}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Transaction:</span>{" "}
+                            <a href={`${EXPLORER_URL}/${event.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {event.transactionHash.slice(0, 6)}...{event.transactionHash.slice(-4)}
+                            </a>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-10">
+                <h3 className="font-poppins font-semibold text-lg mb-4">Token Creation History</h3>
+                <div className="bg-[#1E1425]/80 rounded-2xl p-6 border border-purple-500/10">
+                  {tokenCreatedEvents.length === 0 ? (
+                    <p className="text-gray-300">No tokens created.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {tokenCreatedEvents.map((event, index) => (
+                        <div key={index} className="p-4 bg-[#16091D]/60 rounded-xl border border-gray-700/30">
+                          <p className="text-gray-300">
+                            <span className="font-medium">Creator:</span>{" "}
+                            <a href={`${EXPLORER_URL}/${event.creator}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {event.creator.slice(0, 6)}...{event.creator.slice(-4)}
+                            </a>
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Token Address:</span>{" "}
+                            <a href={`${EXPLORER_URL}/${event.tokenAddress}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {event.tokenAddress.slice(0, 6)}...{event.tokenAddress.slice(-4)}
+                            </a>
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Name:</span> {event.name}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Symbol:</span> {event.symbol}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Initial Supply:</span> {formatFee(event.initialSupply, "ETH")}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Token Type:</span>{" "}
+                            {["ERC20", "ERC721", "ERC1155", "Memecoin", "Stablecoin"][event.tokenType] || "Unknown"}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Token ID:</span> {event.tokenId}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Timestamp:</span> {new Date(event.timestamp).toLocaleString()}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Transaction:</span>{" "}
+                            <a href={`${EXPLORER_URL}/${event.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {event.transactionHash.slice(0, 6)}...{event.transactionHash.slice(-4)}
+                            </a>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-10">
+                <h3 className="font-poppins font-semibold text-lg mb-4">Withdrawal History</h3>
+                <div className="bg-[#1E1425]/80 rounded-2xl p-6 border border-purple-500/10">
+                  {withdrawalEvents.length === 0 ? (
+                    <p className="text-gray-300">No withdrawals found.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {withdrawalEvents.map((event, index) => (
+                        <div key={index} className="p-4 bg-[#16091D]/60 rounded-xl border border-gray-700/30">
+                          <p className="text-gray-300">
+                            <span className="font-medium">Type:</span>{" "}
+                            {event.proposer ? "Proposed Withdrawal" : event.admin ? "Approved Withdrawal" : "Executed Withdrawal"}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Proposal ID:</span> {event.proposalId}
+                          </p>
+                          {event.proposer && (
+                            <p className="text-gray-300">
+                              <span className="font-medium">Proposer:</span>{" "}
+                              <a href={`${EXPLORER_URL}/${event.proposer}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                {event.proposer.slice(0, 6)}...{event.proposer.slice(-4)}
+                              </a>
+                            </p>
+                          )}
+                          {event.admin && (
+                            <p className="text-gray-300">
+                              <span className="font-medium">Admin:</span>{" "}
+                              <a href={`${EXPLORER_URL}/${event.admin}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                {event.admin.slice(0, 6)}...{event.admin.slice(-4)}
+                              </a>
+                            </p>
+                          )}
+                          {event.amount && (
+                            <p className="text-gray-300">
+                              <span className="font-medium">Amount:</span> {formatFee(event.amount, "ETH")} ETH
+                            </p>
+                          )}
+                          <p className="text-gray-300">
+                            <span className="font-medium">Timestamp:</span> {new Date(event.timestamp).toLocaleString()}
+                          </p>
+                          <p className="text-gray-300">
+                            <span className="font-medium">Transaction:</span>{" "}
+                            <a href={`${EXPLORER_URL}/${event.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              {event.transactionHash.slice(0, 6)}...{event.transactionHash.slice(-4)}
+                            </a>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="mb-10">
+          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6">Generate Report</h2>
+          <div className="bg-[#1E1425]/80 rounded-2xl p-6 border border-purple-500/10">
+            <p className="text-gray-300 mb-4">Download a CSV or JSON report of all token creations, airdrop activity, fee collections, and withdrawals.</p>
+            <div className="flex flex-col md:flex-row gap-4">
+              <button onClick={generateCSV} className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:scale-105 transition">
+                Download CSV Report
+              </button>
+              <button onClick={handleGenerateReport} className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:scale-105 transition">
+                Download JSON Report
+              </button>
+            </div>
+            {reportGenerated && <p className="text-purple-400 text-sm mt-2">{reportGenerated === "csv" ? "CSV" : "JSON"} report generated successfully!</p>}
+          </div>
+        </div>
+      </div>
+    </AdminDashboardLayout>
+  );
+};
+
+export default AnalyticsReports;

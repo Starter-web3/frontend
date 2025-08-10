@@ -26,7 +26,7 @@ import { Coins, Upload, Send, Gift } from 'lucide-react';
 import DashBoardLayout from '../DashboardLayout';
 import StrataForgeFactoryABI from '../../../../app/components/ABIs/StrataForgeFactoryABI.json';
 
-// Background Shapes Component
+// Background Shapes Component (unchanged)
 const BackgroundShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
     <div className="absolute top-20 left-10 w-32 h-32 border-2 border-purple-500/20 rounded-full animate-pulse"></div>
@@ -40,15 +40,17 @@ const BackgroundShapes = () => (
   </div>
 );
 
-const FACTORY_CONTRACT_ADDRESS = '0x59F42c3eEcf829b34d8Ca846Dfc83D3cDC105C3F' as const;
+// Updated contract addresses
+const FACTORY_CONTRACT_ADDRESS = '0x5463D07280b6b6B503C69Af31956265a0Ef4AA13' as const;
 
 type RecipientFile = {
   id: string;
   name: string;
   count: number;
   merkleRoot: string;
-  recipients: { address: string }[];
+  recipients: { address: string; amount?: string }[];
   proofs: { [address: string]: string[] };
+  distributionMethod: 'equal' | 'custom';
 };
 
 type AirdropData = {
@@ -57,6 +59,7 @@ type AirdropData = {
   startTime: bigint;
   totalRecipients: bigint;
   dropAmount: bigint;
+  merkleRoot: string; // Added to access merkleRoot
 };
 
 export default function AirdropListing() {
@@ -65,7 +68,7 @@ export default function AirdropListing() {
 
   // Fetch airdrops
   const { data: airdrops } = useReadContract({
-    address: FACTORY_CONTRACT_ADDRESS,
+    address: FACTORY_CONTRACT_ADDRESS, // Updated to use AIRDROP_CONTRACT_ADDRESS
     abi: StrataForgeFactoryABI,
     functionName: 'getCreatorAirdrops',
     args: [address],
@@ -81,6 +84,13 @@ export default function AirdropListing() {
   }, []);
 
   const airdropsList = Array.isArray(airdrops) ? (airdrops as AirdropData[]) : [];
+
+  // Determine distribution method for each airdrop based on recipient files
+  const getDistributionMethod = (merkleRoot: string): 'equal' | 'custom' | 'unknown' => {
+    const file = files.find((f) => f.merkleRoot.toLowerCase() === merkleRoot.toLowerCase());
+    if (!file) return 'unknown';
+    return file.distributionMethod || (file.recipients.some((r) => r.amount) ? 'custom' : 'equal');
+  };
 
   return (
     <DashBoardLayout>
@@ -118,20 +128,35 @@ export default function AirdropListing() {
                             <TableHead className="text-gray-300">Start Time</TableHead>
                             <TableHead className="text-gray-300">Recipients</TableHead>
                             <TableHead className="text-gray-300">Amount</TableHead>
+                            <TableHead className="text-gray-300">Distribution</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {airdropsList.map((airdrop: AirdropData, index: number) => (
-                            <TableRow key={index} className="border-purple-500/20">
-                              <TableCell className="text-white">{airdrop.tokenAddress}</TableCell>
-                              <TableCell className="text-white">{airdrop.distributorAddress}</TableCell>
-                              <TableCell className="text-white">
-                                {new Date(Number(airdrop.startTime) * 1000).toLocaleString()}
-                              </TableCell>
-                              <TableCell className="text-white">{Number(airdrop.totalRecipients)}</TableCell>
-                              <TableCell className="text-white">{ethers.formatUnits(airdrop.dropAmount, 18)}</TableCell>
-                            </TableRow>
-                          ))}
+                          {airdropsList.map((airdrop: AirdropData, index: number) => {
+                            const distributionMethod = getDistributionMethod(airdrop.merkleRoot || '');
+                            return (
+                              <TableRow key={index} className="border-purple-500/20">
+                                <TableCell className="text-white">{airdrop.tokenAddress}</TableCell>
+                                <TableCell className="text-white">{airdrop.distributorAddress}</TableCell>
+                                <TableCell className="text-white">
+                                  {new Date(Number(airdrop.startTime) * 1000).toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-white">{Number(airdrop.totalRecipients)}</TableCell>
+                                <TableCell className="text-white">
+                                  {distributionMethod === 'custom'
+                                    ? `Custom (see CSV, contract uses ${ethers.formatUnits(airdrop.dropAmount, 18)})`
+                                    : ethers.formatUnits(airdrop.dropAmount, 18)}
+                                </TableCell>
+                                <TableCell className="text-white">
+                                  {distributionMethod === 'equal'
+                                    ? 'Equal Split'
+                                    : distributionMethod === 'custom'
+                                    ? 'Custom Amounts'
+                                    : 'Unknown'}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     ) : (
@@ -155,8 +180,8 @@ export default function AirdropListing() {
                     <div>
                       <h3 className="font-semibold text-white">1. Upload Recipient List</h3>
                       <p className="text-sm text-gray-400">
-                        Start by uploading a CSV file with the wallet addresses of your airdrop
-                        recipients. Click the {"\"Upload Whitelisted CSV\""} button below.
+                        Upload a CSV file with wallet addresses and optional amounts for custom
+                        distributions. Click {"\"Upload Whitelisted CSV\""} below.
                       </p>
                     </div>
                     <div>
@@ -166,7 +191,7 @@ export default function AirdropListing() {
                           ? `Create your airdrop with ${files.reduce(
                               (sum, file) => sum + file.count,
                               0,
-                            )} uploaded addresses by clicking {"\"Advanced Distribution\""}. Select your token, set the amount per recipient, and finalize the airdrop creation to deploy a distributor contract.`
+                            )} uploaded addresses by clicking {"\"Advanced Distribution\""}. Select your token, choose equal or custom distribution, set the amount (for equal distribution), and finalize the airdrop creation to deploy a distributor contract. Note: Airdrop creation requires a fee based on the number of recipients.`
                           : 'Upload recipients first to enable airdrop creation on the "Advanced Distribution" page.'}
                       </p>
                     </div>
