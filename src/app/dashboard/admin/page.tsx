@@ -9,12 +9,19 @@ import StrataForgeAirdropFactoryABI from "../../../app/components/ABIs/StrataFor
 import AdminDashboardLayout from "./AdminDashboardLayout";
 import { useUsdEthPrice } from "../../../hooks/useUsdEthPrice"; // Added Moralis hook
 
+// const ADMIN_CONTRACT_ADDRESS =
+//   "0xFEc4e9718B1dfef72Db183f3e30b418762B674C4" as const;
+// const FACTORY_CONTRACT_ADDRESS =
+//   "0x676EA6F52b4f27a164DaC428247e3458b74754b9" as const;
+// const AIRDROP_FACTORY_ADDRESS =
+//   "0x5463D07280b6b6B503C69Af31956265a0Ef4AA13" as const;
+
 const ADMIN_CONTRACT_ADDRESS =
-  "0xFEc4e9718B1dfef72Db183f3e30b418762B674C4" as const;
+  "0x52CD9E0eb7863Ee69e951f78fD3cfFe7967d7B90" as const;
 const FACTORY_CONTRACT_ADDRESS =
-  "0x676EA6F52b4f27a164DaC428247e3458b74754b9" as const;
+  "0x4A620e8C10514c7EE20ad27Df361a605236B1f21" as const;
 const AIRDROP_FACTORY_ADDRESS =
-  "0x5463D07280b6b6B503C69Af31956265a0Ef4AA13" as const;
+  "0x8284386B664D1e3838A1fB7403af9c0b4478E70E" as const;
 
 const adminABI = StrataForgeAdminABI as Abi;
 const factoryABI = StrataForgeFactoryABI as Abi;
@@ -44,7 +51,15 @@ const AdminDashboard = () => {
     address: ADMIN_CONTRACT_ADDRESS,
     abi: adminABI,
     functionName: "adminCount",
-    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+    query: {
+      enabled: isConnected,
+      retry: 3,
+      retryDelay: 1000,
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: false,
+    },
   });
 
   // Get contract balance
@@ -56,7 +71,15 @@ const AdminDashboard = () => {
     address: ADMIN_CONTRACT_ADDRESS,
     abi: adminABI,
     functionName: "getBalance",
-    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+    query: {
+      enabled: isConnected,
+      retry: 3,
+      retryDelay: 1000,
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: false,
+    },
   });
 
   // Get total tokens created
@@ -68,7 +91,15 @@ const AdminDashboard = () => {
     address: FACTORY_CONTRACT_ADDRESS,
     abi: factoryABI,
     functionName: "getTotalTokenCount",
-    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+    query: {
+      enabled: isConnected,
+      retry: 3,
+      retryDelay: 1000,
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: false,
+    },
   });
 
   // Get total airdrops created
@@ -80,7 +111,15 @@ const AdminDashboard = () => {
     address: AIRDROP_FACTORY_ADDRESS,
     abi: airdropFactoryABI,
     functionName: "getAirdropCount",
-    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+    query: {
+      enabled: isConnected,
+      retry: 3,
+      retryDelay: 1000,
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: false,
+    },
   });
 
   // Get feature fee
@@ -92,7 +131,15 @@ const AdminDashboard = () => {
     address: ADMIN_CONTRACT_ADDRESS,
     abi: adminABI,
     functionName: "featureFeeUSD",
-    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+    query: {
+      enabled: isConnected,
+      retry: 3,
+      retryDelay: 1000,
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: false,
+    },
   });
 
   // Get airdrop fee tiers
@@ -111,7 +158,15 @@ const AdminDashboard = () => {
     isLoading: airdropFeesLoading,
   } = useReadContracts({
     contracts: airdropTierCalls,
-    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+    query: {
+      enabled: isConnected,
+      retry: 3,
+      retryDelay: 1000,
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: false,
+    },
   });
 
   // Get proposal counter
@@ -123,7 +178,15 @@ const AdminDashboard = () => {
     address: ADMIN_CONTRACT_ADDRESS,
     abi: adminABI,
     functionName: "proposalCounter",
-    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+    query: {
+      enabled: isConnected,
+      retry: 3,
+      retryDelay: 1000,
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: false,
+    },
   });
   void proposalCounter;
 
@@ -146,7 +209,15 @@ const AdminDashboard = () => {
     isSuccess: adminAddressesSuccess,
   } = useReadContracts({
     contracts: adminChecks,
-    query: { enabled: adminChecks.length > 0, retry: 3, retryDelay: 1000 },
+    query: {
+      enabled: adminChecks.length > 0,
+      retry: 3,
+      retryDelay: 1000,
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: false,
+    },
   });
 
   // Check admin status
@@ -500,7 +571,7 @@ const AdminDashboard = () => {
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Network:</span>
               <span className="font-mono text-gray-300">
-                Lisk Sepolia Testnet
+                Core Sepolia Testnet
               </span>
             </div>
             {error && (
@@ -696,7 +767,7 @@ const AdminDashboard = () => {
                 </svg>
               }
               title="Contract Balance"
-              value={`${formatBalance(balance as bigint).eth} ETH / $${
+              value={`${formatBalance(balance as bigint).eth} ETH / ${
                 formatBalance(balance as bigint).usd
               }`}
               subtitle="Available Funds"

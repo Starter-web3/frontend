@@ -1,11 +1,10 @@
+"use client";
 
-'use client';
-
-import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import { useAccount } from 'wagmi';
-import { ethers, Log, LogDescription } from 'ethers';
-import { Button } from '../../../../../../components/ui/button';
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
+import { useAccount } from "wagmi";
+import { ethers, Log, LogDescription } from "ethers";
+import { Button } from "../../../../../../components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,33 +12,36 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../../../../../../components/ui/card';
-import { Input } from '../../../../../../components/ui/input';
-import { Label } from '../../../../../../components/ui/label';
+} from "../../../../../../components/ui/card";
+import { Input } from "../../../../../../components/ui/input";
+import { Label } from "../../../../../../components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../../../components/ui/select';
-import { Switch } from '../../../../../../components/ui/switch';
-import { Alert, AlertDescription } from '../../../../../../components/ui/alert';
-import { Coins, Calendar, Info, TrendingUp, TrendingDown } from 'lucide-react';
-import { Badge } from '../../../../../../components/ui/badge';
-import { Separator } from '../../../../../../components/ui/separator';
+} from "../../../../../../components/ui/select";
+import { Switch } from "../../../../../../components/ui/switch";
+import { Alert, AlertDescription } from "../../../../../../components/ui/alert";
+import { Coins, Calendar, Info, TrendingUp, TrendingDown } from "lucide-react";
+import { Badge } from "../../../../../../components/ui/badge";
+import { Separator } from "../../../../../../components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '../../../../../../components/ui/tooltip';
-import DashBoardLayout from '../../DashboardLayout';
-import StrataForgeAirdropFactoryABI from '../../../../../app/components/ABIs/StrataForgeAirdropFactoryABI.json';
-import StrataForgeERC20ImplementationABI from '../../../../components/ABIs/StrataForgeERC20ImplementationABI.json';
-import StrataForgeAdminABI from '../../../../../app/components/ABIs/StrataForgeAdminABI.json';
-import { createMerkleTree, Recipient } from '../../../../../lib/merkle';
-import { useUsdEthPrice, useAirdropPriceData } from '../../../../../hooks/useUsdEthPrice';
+} from "../../../../../../components/ui/tooltip";
+import DashBoardLayout from "../../DashboardLayout";
+import StrataForgeAirdropFactoryABI from "../../../../../app/components/ABIs/StrataForgeAirdropFactoryABI.json";
+import StrataForgeERC20ImplementationABI from "../../../../components/ABIs/StrataForgeERC20ImplementationABI.json";
+import StrataForgeAdminABI from "../../../../../app/components/ABIs/StrataForgeAdminABI.json";
+import { createMerkleTree, Recipient } from "../../../../../lib/merkle";
+import {
+  useUsdEthPrice,
+  useAirdropPriceData,
+} from "../../../../../hooks/useUsdEthPrice";
 
 const BackgroundShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -54,8 +56,10 @@ const BackgroundShapes = () => (
   </div>
 );
 
-const FACTORY_CONTRACT_ADDRESS = '0x5463D07280b6b6B503C69Af31956265a0Ef4AA13' as const;
-const ADMIN_CONTRACT_ADDRESS = '0xFEc4e9718B1dfef72Db183f3e30b418762B674C4' as const;
+const FACTORY_CONTRACT_ADDRESS =
+  "0x8284386B664D1e3838A1fB7403af9c0b4478E70E" as const;
+const ADMIN_CONTRACT_ADDRESS =
+  "0x52CD9E0eb7863Ee69e951f78fD3cfFe7967d7B90" as const;
 
 type RecipientFile = {
   id: string;
@@ -66,7 +70,12 @@ type RecipientFile = {
   proofs: { [address: string]: string[] };
 };
 
-const PriceDisplay = ({ price, loading, error, priceChangePercentage }: {
+const PriceDisplay = ({
+  price,
+  loading,
+  error,
+  priceChangePercentage,
+}: {
   price: number | null;
   loading: boolean;
   error: string | null;
@@ -82,17 +91,13 @@ const PriceDisplay = ({ price, loading, error, priceChangePercentage }: {
   }
 
   if (error || !price) {
-    return (
-      <div className="text-red-400 text-sm">
-        Failed to load price
-      </div>
-    );
+    return <div className="text-red-400 text-sm">Failed to load price</div>;
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(price);
@@ -102,16 +107,19 @@ const PriceDisplay = ({ price, loading, error, priceChangePercentage }: {
     <div className="flex items-center space-x-2">
       <span className="font-mono text-white">{formatPrice(price)}</span>
       {priceChangePercentage !== undefined && (
-        <div className={`flex items-center space-x-1 ${
-          priceChangePercentage >= 0 ? 'text-green-400' : 'text-red-400'
-        }`}>
+        <div
+          className={`flex items-center space-x-1 ${
+            priceChangePercentage >= 0 ? "text-green-400" : "text-red-400"
+          }`}
+        >
           {priceChangePercentage >= 0 ? (
             <TrendingUp className="h-3 w-3" />
           ) : (
             <TrendingDown className="h-3 w-3" />
           )}
           <span className="text-xs">
-            {priceChangePercentage >= 0 ? '+' : ''}{priceChangePercentage.toFixed(2)}%
+            {priceChangePercentage >= 0 ? "+" : ""}
+            {priceChangePercentage.toFixed(2)}%
           </span>
         </div>
       )}
@@ -121,33 +129,35 @@ const PriceDisplay = ({ price, loading, error, priceChangePercentage }: {
 
 export default function DistributePage() {
   const { isConnected } = useAccount();
-  const [tokenName, setTokenName] = useState('');
-  const [tokenAmount, setTokenAmount] = useState('');
-  const [contractAddress, setContractAddress] = useState('');
-  const [distributionMethod, setDistributionMethod] = useState('equal');
-  const [scheduleDate, setScheduleDate] = useState('');
+  const [tokenName, setTokenName] = useState("");
+  const [tokenAmount, setTokenAmount] = useState("");
+  const [contractAddress, setContractAddress] = useState("");
+  const [distributionMethod, setDistributionMethod] = useState("equal");
+  const [scheduleDate, setScheduleDate] = useState("");
   const [gasOptimization, setGasOptimization] = useState(true);
-  const [batchSize, setBatchSize] = useState('100');
+  const [batchSize, setBatchSize] = useState("100");
   const [files, setFiles] = useState<RecipientFile[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [distributorAddress, setDistributorAddress] = useState('');
-  const [mintAmount, setMintAmount] = useState('');
-  const [mintStatus, setMintStatus] = useState('');
+  const [error, setError] = useState("");
+  const [distributorAddress, setDistributorAddress] = useState("");
+  const [mintAmount, setMintAmount] = useState("");
+  const [mintStatus, setMintStatus] = useState("");
   const [mintLoading, setMintLoading] = useState(false);
   const [airdropFeeUSD, setAirdropFeeUSD] = useState<string | null>(null);
   const [airdropFeeETH, setAirdropFeeETH] = useState<string | null>(null);
   const [feeLoading, setFeeLoading] = useState(false);
 
-  const { usdPrice: ethPrice, loading: priceLoading, error: priceError } = useUsdEthPrice();
-  const { 
-    ethPrice: enhancedEthPrice, 
-    priceChangePercentage 
-  } = useAirdropPriceData();
+  const {
+    usdPrice: ethPrice,
+    loading: priceLoading,
+    error: priceError,
+  } = useUsdEthPrice();
+  const { ethPrice: enhancedEthPrice, priceChangePercentage } =
+    useAirdropPriceData();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedFiles = sessionStorage.getItem('recipientFiles');
+    if (typeof window !== "undefined") {
+      const storedFiles = sessionStorage.getItem("recipientFiles");
       if (storedFiles) {
         try {
           const parsed = JSON.parse(storedFiles);
@@ -155,7 +165,7 @@ export default function DistributePage() {
             setFiles(parsed);
           }
         } catch (error) {
-          console.error('Invalid recipientFiles in sessionStorage:', error);
+          console.error("Invalid recipientFiles in sessionStorage:", error);
         }
       }
     }
@@ -164,24 +174,27 @@ export default function DistributePage() {
   useEffect(() => {
     const fetchAirdropFees = async () => {
       if (!window.ethereum || files.length === 0) return;
-      
+
       setFeeLoading(true);
-      setError('');
-      
+      setError("");
+
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const adminContract = new ethers.Contract(
           ADMIN_CONTRACT_ADDRESS,
           StrataForgeAdminABI,
-          provider,
+          provider
         );
 
-        const totalRecipients = files.reduce((sum, file) => sum + file.count, 0);
-        
+        const totalRecipients = files.reduce(
+          (sum, file) => sum + file.count,
+          0
+        );
+
         // First check if contract exists
         const contractCode = await provider.getCode(ADMIN_CONTRACT_ADDRESS);
-        if (contractCode === '0x') {
-          throw new Error('Admin contract not deployed');
+        if (contractCode === "0x") {
+          throw new Error("Admin contract not deployed");
         }
 
         // Fetch fees with error handling for each call
@@ -189,7 +202,7 @@ export default function DistributePage() {
           const feeUSD = await adminContract.getAirdropFeeUSD(totalRecipients);
           setAirdropFeeUSD(ethers.formatUnits(feeUSD, 8));
         } catch (usdError) {
-          console.error('Failed to fetch USD fee:', usdError);
+          console.error("Failed to fetch USD fee:", usdError);
           setAirdropFeeUSD(null);
         }
 
@@ -197,13 +210,14 @@ export default function DistributePage() {
           const feeETH = await adminContract.getAirdropFeeETH(totalRecipients);
           setAirdropFeeETH(ethers.formatEther(feeETH));
         } catch (ethError) {
-          console.error('Failed to fetch ETH fee:', ethError);
+          console.error("Failed to fetch ETH fee:", ethError);
           setAirdropFeeETH(null);
         }
-
       } catch (err) {
-        console.error('Error fetching airdrop fees:', err);
-        setError('Failed to fetch airdrop fees. Please check your network connection.');
+        console.error("Error fetching airdrop fees:", err);
+        setError(
+          "Failed to fetch airdrop fees. Please check your network connection."
+        );
       } finally {
         setFeeLoading(false);
       }
@@ -218,31 +232,33 @@ export default function DistributePage() {
   }, [airdropFeeETH, ethPrice]);
 
   const handleMaxAmount = () => {
-    setTokenAmount('1000');
+    setTokenAmount("1000");
   };
 
   const handleMint = async () => {
     if (!window.ethereum) {
-      setError('Please install MetaMask or another wallet!');
+      setError("Please install MetaMask or another wallet!");
       return;
     }
     if (!isConnected) {
-      setError('Please connect your wallet!');
+      setError("Please connect your wallet!");
       return;
     }
     if (!ethers.isAddress(distributorAddress)) {
-      setError('No valid distributor address available. Create an airdrop first.');
+      setError(
+        "No valid distributor address available. Create an airdrop first."
+      );
       return;
     }
     if (!mintAmount || isNaN(Number(mintAmount)) || Number(mintAmount) <= 0) {
-      setError('Enter a valid mint amount.');
+      setError("Enter a valid mint amount.");
       return;
     }
 
     try {
       setMintLoading(true);
-      setError('');
-      setMintStatus('Minting tokens to distributor...');
+      setError("");
+      setMintStatus("Minting tokens to distributor...");
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
@@ -250,18 +266,20 @@ export default function DistributePage() {
       const tokenContract = new ethers.Contract(
         contractAddress,
         StrataForgeERC20ImplementationABI,
-        signer,
+        signer
       );
 
       const amountToMint = ethers.parseUnits(mintAmount, 18);
       const mintTx = await tokenContract.mint(distributorAddress, amountToMint);
       await mintTx.wait();
 
-      setMintStatus(`Successfully minted ${mintAmount} tokens to ${distributorAddress}`);
+      setMintStatus(
+        `Successfully minted ${mintAmount} tokens to ${distributorAddress}`
+      );
     } catch (mintErr) {
-      console.error('Minting error:', mintErr);
+      console.error("Minting error:", mintErr);
       setError(`Minting failed: ${(mintErr as Error).message}`);
-      setMintStatus('');
+      setMintStatus("");
     } finally {
       setMintLoading(false);
     }
@@ -269,68 +287,78 @@ export default function DistributePage() {
 
   const handleDistribute = async () => {
     if (!window.ethereum) {
-      setError('Please install MetaMask!');
+      setError("Please install MetaMask!");
       return;
     }
     if (!isConnected) {
-      setError('Please connect your wallet!');
+      setError("Please connect your wallet!");
       return;
     }
     if (files.length === 0) {
-      setError('No recipient files uploaded.');
+      setError("No recipient files uploaded.");
       return;
     }
-    if (distributionMethod === 'custom' && files.some(file => file.recipients.some(r => !r.amount))) {
-      setError('Custom distribution requires amounts for all recipients in the CSV.');
+    if (
+      distributionMethod === "custom" &&
+      files.some((file) => file.recipients.some((r) => !r.amount))
+    ) {
+      setError(
+        "Custom distribution requires amounts for all recipients in the CSV."
+      );
       return;
     }
 
     try {
       setLoading(true);
-      setError('');
-      setDistributorAddress('');
+      setError("");
+      setDistributorAddress("");
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
       if (!ethers.isAddress(contractAddress)) {
-        throw new Error('Invalid token contract address');
+        throw new Error("Invalid token contract address");
       }
-      
+
       const code = await provider.getCode(contractAddress);
-      if (code === '0x') {
-        throw new Error('Token contract address is not deployed');
+      if (code === "0x") {
+        throw new Error("Token contract address is not deployed");
       }
 
       const factoryContract = new ethers.Contract(
         FACTORY_CONTRACT_ADDRESS,
         StrataForgeAirdropFactoryABI,
-        signer,
+        signer
       );
       const tokenContract = new ethers.Contract(
         contractAddress,
         StrataForgeERC20ImplementationABI,
-        signer,
+        signer
       );
 
       const allRecipients = files.flatMap((file) => file.recipients);
       const totalRecipients = allRecipients.length;
 
-      const isCustomDistribution = distributionMethod === 'custom';
-      const { merkleRoot } = createMerkleTree(allRecipients, isCustomDistribution, tokenAmount || '100');
+      const isCustomDistribution = distributionMethod === "custom";
+      const { merkleRoot } = createMerkleTree(
+        allRecipients,
+        isCustomDistribution,
+        tokenAmount || "100"
+      );
 
       let totalDropAmount: bigint;
       let dropAmount: bigint;
-      
+
       if (isCustomDistribution) {
         const totalAmount = allRecipients.reduce((sum, recipient) => {
-          if (!recipient.amount) throw new Error('Missing amount for custom distribution');
+          if (!recipient.amount)
+            throw new Error("Missing amount for custom distribution");
           return sum + ethers.parseUnits(recipient.amount, 18);
         }, BigInt(0));
         totalDropAmount = totalAmount;
-        dropAmount = ethers.parseUnits('1', 18); // dummy value for custom mode
+        dropAmount = ethers.parseUnits("1", 18); // dummy value for custom mode
       } else {
-        dropAmount = ethers.parseUnits(tokenAmount || '100', 18);
+        dropAmount = ethers.parseUnits(tokenAmount || "100", 18);
         totalDropAmount = dropAmount * BigInt(totalRecipients);
       }
 
@@ -339,9 +367,15 @@ export default function DistributePage() {
         : Math.floor(Date.now() / 1000);
 
       // Check current allowance first
-      const currentAllowance = await tokenContract.allowance(await signer.getAddress(), FACTORY_CONTRACT_ADDRESS);
+      const currentAllowance = await tokenContract.allowance(
+        await signer.getAddress(),
+        FACTORY_CONTRACT_ADDRESS
+      );
       if (currentAllowance < totalDropAmount) {
-        const approveTx = await tokenContract.approve(FACTORY_CONTRACT_ADDRESS, totalDropAmount);
+        const approveTx = await tokenContract.approve(
+          FACTORY_CONTRACT_ADDRESS,
+          totalDropAmount
+        );
         await approveTx.wait();
       }
 
@@ -349,7 +383,7 @@ export default function DistributePage() {
       const adminContract = new ethers.Contract(
         ADMIN_CONTRACT_ADDRESS,
         StrataForgeAdminABI,
-        signer,
+        signer
       );
       const requiredETH = await adminContract.getAirdropFeeETH(totalRecipients);
 
@@ -360,9 +394,9 @@ export default function DistributePage() {
         dropAmount,
         totalRecipients,
         startTime,
-        { value: requiredETH },
+        { value: requiredETH }
       );
-      
+
       const receipt = await createTx.wait();
 
       // Parse the AirdropCreated event
@@ -374,33 +408,39 @@ export default function DistributePage() {
             return null;
           }
         })
-        .find((e: LogDescription | null) => e && e.name === 'AirdropCreated');
+        .find((e: LogDescription | null) => e && e.name === "AirdropCreated");
 
       if (event && event.args) {
         const newDistributorAddress = event.args.distributor;
         setDistributorAddress(newDistributorAddress);
-        
+
         // Save to sessionStorage
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('lastDistributorAddress', newDistributorAddress);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(
+            "lastDistributorAddress",
+            newDistributorAddress
+          );
         }
       } else {
-        throw new Error('Failed to retrieve distributor address from transaction');
+        throw new Error(
+          "Failed to retrieve distributor address from transaction"
+        );
       }
     } catch (err) {
-      console.error('Distribution error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      
-      if (errorMessage.includes('Insufficient ETH for airdrop fee')) {
-        setError('Insufficient ETH sent for airdrop fee.');
-      } else if (errorMessage.includes('InvalidRecipientCount')) {
-        setError('Invalid number of recipients for the selected fee tier.');
-      } else if (errorMessage.includes('PriceFeedNotSet')) {
-        setError('Price feed not set in the admin contract.');
-      } else if (errorMessage.includes('StalePriceFeed')) {
-        setError('Price feed data is stale.');
-      } else if (errorMessage.includes('InvalidPriceFeed')) {
-        setError('Invalid price feed data.');
+      console.error("Distribution error:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown error occurred";
+
+      if (errorMessage.includes("Insufficient ETH for airdrop fee")) {
+        setError("Insufficient ETH sent for airdrop fee.");
+      } else if (errorMessage.includes("InvalidRecipientCount")) {
+        setError("Invalid number of recipients for the selected fee tier.");
+      } else if (errorMessage.includes("PriceFeedNotSet")) {
+        setError("Price feed not set in the admin contract.");
+      } else if (errorMessage.includes("StalePriceFeed")) {
+        setError("Price feed data is stale.");
+      } else if (errorMessage.includes("InvalidPriceFeed")) {
+        setError("Invalid price feed data.");
       } else {
         setError(`Error: ${errorMessage}`);
       }
@@ -408,8 +448,6 @@ export default function DistributePage() {
       setLoading(false);
     }
   };
-
-  
 
   return (
     <DashBoardLayout>
@@ -422,7 +460,10 @@ export default function DistributePage() {
               Token Distribution
             </h1>
             <Link href="/dashboard">
-              <Button variant="outline" className="text-white border-purple-500 hover:bg-purple-500/20">
+              <Button
+                variant="outline"
+                className="text-white border-purple-500 hover:bg-purple-500/20"
+              >
                 Back to Dashboard
               </Button>
             </Link>
@@ -436,7 +477,8 @@ export default function DistributePage() {
               <CardHeader>
                 <CardTitle className="text-white">Create Airdrop</CardTitle>
                 <CardDescription className="text-gray-400">
-                  Distribute tokens to multiple recipients using a Merkle tree-based airdrop.
+                  Distribute tokens to multiple recipients using a Merkle
+                  tree-based airdrop.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -447,7 +489,9 @@ export default function DistributePage() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="tokenName" className="text-white">Token Name</Label>
+                  <Label htmlFor="tokenName" className="text-white">
+                    Token Name
+                  </Label>
                   <Input
                     id="tokenName"
                     value={tokenName}
@@ -458,7 +502,9 @@ export default function DistributePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="contractAddress" className="text-white">Token Contract Address</Label>
+                  <Label htmlFor="contractAddress" className="text-white">
+                    Token Contract Address
+                  </Label>
                   <Input
                     id="contractAddress"
                     value={contractAddress}
@@ -469,7 +515,10 @@ export default function DistributePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tokenAmount" className="text-white flex items-center">
+                  <Label
+                    htmlFor="tokenAmount"
+                    className="text-white flex items-center"
+                  >
                     Token Amount per Recipient
                     <TooltipProvider>
                       <Tooltip>
@@ -477,7 +526,10 @@ export default function DistributePage() {
                           <Info className="h-4 w-4 ml-2 text-gray-400" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>For equal distribution, specify the amount each recipient gets.</p>
+                          <p>
+                            For equal distribution, specify the amount each
+                            recipient gets.
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -489,7 +541,7 @@ export default function DistributePage() {
                       value={tokenAmount}
                       onChange={(e) => setTokenAmount(e.target.value)}
                       placeholder="100"
-                      disabled={distributionMethod === 'custom'}
+                      disabled={distributionMethod === "custom"}
                       className="bg-[#3A2F46]/50 border-purple-500/30 text-white"
                     />
                     <Button
@@ -503,7 +555,9 @@ export default function DistributePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="distributionMethod" className="text-white">Distribution Method</Label>
+                  <Label htmlFor="distributionMethod" className="text-white">
+                    Distribution Method
+                  </Label>
                   <Select
                     value={distributionMethod}
                     onValueChange={setDistributionMethod}
@@ -513,13 +567,18 @@ export default function DistributePage() {
                     </SelectTrigger>
                     <SelectContent className="bg-[#2A1F36] border-purple-500/30 text-white">
                       <SelectItem value="equal">Equal Distribution</SelectItem>
-                      <SelectItem value="custom">Custom Distribution (CSV)</SelectItem>
+                      <SelectItem value="custom">
+                        Custom Distribution (CSV)
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="scheduleDate" className="text-white flex items-center">
+                  <Label
+                    htmlFor="scheduleDate"
+                    className="text-white flex items-center"
+                  >
                     Schedule Distribution
                     <Calendar className="h-4 w-4 ml-2 text-gray-400" />
                   </Label>
@@ -539,10 +598,14 @@ export default function DistributePage() {
                       checked={gasOptimization}
                       onCheckedChange={setGasOptimization}
                     />
-                    <Label htmlFor="gasOptimization" className="text-white">Gas Optimization</Label>
+                    <Label htmlFor="gasOptimization" className="text-white">
+                      Gas Optimization
+                    </Label>
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="batchSize" className="text-white">Batch Size</Label>
+                    <Label htmlFor="batchSize" className="text-white">
+                      Batch Size
+                    </Label>
                     <Input
                       id="batchSize"
                       type="number"
@@ -557,9 +620,16 @@ export default function DistributePage() {
                   <Label className="text-white">Recipient Files</Label>
                   <div className="space-y-2">
                     {files.map((file) => (
-                      <div key={file.id} className="flex items-center justify-between bg-[#3A2F46]/50 p-2 rounded-md">
-                        <span className="text-white">{file.name} ({file.count} recipients)</span>
-                        <Badge variant="secondary" className="text-gray-300">Merkle Root: {file.merkleRoot.slice(0, 8)}...</Badge>
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between bg-[#3A2F46]/50 p-2 rounded-md"
+                      >
+                        <span className="text-white">
+                          {file.name} ({file.count} recipients)
+                        </span>
+                        <Badge variant="secondary" className="text-gray-300">
+                          Merkle Root: {file.merkleRoot.slice(0, 8)}...
+                        </Badge>
                       </div>
                     ))}
                   </div>
@@ -579,9 +649,13 @@ export default function DistributePage() {
                       )}
                       {airdropFeeETH && (
                         <div className="flex items-center space-x-2">
-                          <span className="text-white">ETH: {airdropFeeETH}</span>
+                          <span className="text-white">
+                            ETH: {airdropFeeETH}
+                          </span>
                           {ethFeeInUSD && (
-                            <span className="text-gray-400">(${ethFeeInUSD})</span>
+                            <span className="text-gray-400">
+                              (${ethFeeInUSD})
+                            </span>
                           )}
                         </div>
                       )}
@@ -605,7 +679,7 @@ export default function DistributePage() {
                   disabled={loading || !isConnected}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                 >
-                  {loading ? 'Creating Airdrop...' : 'Create Airdrop'}
+                  {loading ? "Creating Airdrop..." : "Create Airdrop"}
                 </Button>
               </CardFooter>
             </Card>
@@ -615,18 +689,23 @@ export default function DistributePage() {
               <CardHeader>
                 <CardTitle className="text-white">Mint Tokens</CardTitle>
                 <CardDescription className="text-gray-400">
-                  Mint tokens to the distributor address for airdrop distribution.
+                  Mint tokens to the distributor address for airdrop
+                  distribution.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {mintStatus && (
                   <Alert>
-                    <AlertDescription className="text-green-400">{mintStatus}</AlertDescription>
+                    <AlertDescription className="text-green-400">
+                      {mintStatus}
+                    </AlertDescription>
                   </Alert>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="distributorAddress" className="text-white">Distributor Address</Label>
+                  <Label htmlFor="distributorAddress" className="text-white">
+                    Distributor Address
+                  </Label>
                   <Input
                     id="distributorAddress"
                     value={distributorAddress}
@@ -637,7 +716,9 @@ export default function DistributePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="mintAmount" className="text-white">Mint Amount</Label>
+                  <Label htmlFor="mintAmount" className="text-white">
+                    Mint Amount
+                  </Label>
                   <Input
                     id="mintAmount"
                     type="number"
@@ -654,7 +735,7 @@ export default function DistributePage() {
                   disabled={mintLoading || !isConnected}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                 >
-                  {mintLoading ? 'Minting Tokens...' : 'Mint Tokens'}
+                  {mintLoading ? "Minting Tokens..." : "Mint Tokens"}
                 </Button>
               </CardFooter>
             </Card>
@@ -670,7 +751,10 @@ export default function DistributePage() {
                 <CardContent>
                   <div className="space-y-2">
                     <p className="text-white">
-                      <span className="font-semibold">Distributor Address:</span> {distributorAddress}
+                      <span className="font-semibold">
+                        Distributor Address:
+                      </span>{" "}
+                      {distributorAddress}
                     </p>
                     <p className="text-gray-400 text-sm">
                       Save this address to interact with the airdrop contract.

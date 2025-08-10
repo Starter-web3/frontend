@@ -14,15 +14,15 @@ import StrataForgeAirdropFactoryABI from "../../../../app/components/ABIs/Strata
 import AdminDashboardLayout from "../AdminDashboardLayout";
 
 const ADMIN_CONTRACT_ADDRESS =
-  "0xFEc4e9718B1dfef72Db183f3e30b418762B674C4" as const;
+  "0x52CD9E0eb7863Ee69e951f78fD3cfFe7967d7B90" as const;
 const FACTORY_CONTRACT_ADDRESS =
-  "0x676EA6F52b4f27a164DaC428247e3458b74754b9" as const;
+  "0x4A620e8C10514c7EE20ad27Df361a605236B1f21" as const;
 const AIRDROP_CONTRACT_ADDRESS =
-  "0x5463D07280b6b6B503C69Af31956265a0Ef4AA13" as const;
+  "0x8284386B664D1e3838A1fB7403af9c0b4478E70E" as const;
 const adminABI = StrataForgeAdminABI as Abi;
 const factoryABI = StrataForgeFactoryABI as Abi;
 const airdropFactoryABI = StrataForgeAirdropFactoryABI as Abi;
-const EXPLORER_URL = "https://sepolia-blockscout.lisk.com/address";
+const EXPLORER_URL = "https://scan.test.btcs.network/address";
 
 // Define proper types for token data
 interface TokenInfo {
@@ -599,7 +599,7 @@ const ContractControls = () => {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Network:</span>
-              <span className="font-mono text-gray-300">Lisk Sepolia</span>
+              <span className="font-mono text-gray-300">Core Sepolia</span>
             </div>
             {error && (
               <>

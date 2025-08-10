@@ -64,8 +64,8 @@ interface TokenInfo {
 // const BASE_SEPOLIA_CHAIN_ID = 84532;
 
 const FACTORY_CONTRACT_ADDRESS =
-  "0x676EA6F52b4f27a164DaC428247e3458b74754b9" as const;
-const LISK_SEPOLIA_CHAIN_ID = 84532;
+  "0x4A620e8C10514c7EE20ad27Df361a605236B1f21" as const;
+const CORE_SEPOLIA_CHAIN_ID = 1115;
 
 const ManageToken = () => {
   const { id: tokenId } = useParams<{ id: string }>();
@@ -1428,8 +1428,8 @@ const ManageToken = () => {
     //   setError("Please connect to Base Sepolia network");
     //   return;
     // }
-    if (chainId !== LISK_SEPOLIA_CHAIN_ID) {
-      setError("Please connect to Lisk Sepolia network");
+    if (chainId !== CORE_SEPOLIA_CHAIN_ID) {
+      setError("Please connect to Core Sepolia network");
       return;
     }
 

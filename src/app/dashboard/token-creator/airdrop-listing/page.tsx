@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { ethers } from 'ethers';
-import { useWallet } from '../../../../contexts/WalletContext';
-import { useReadContract } from 'wagmi';
-import { Button } from '../../../../../components/ui/button';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { ethers } from "ethers";
+import { useWallet } from "../../../../contexts/WalletContext";
+import { useReadContract } from "wagmi";
+import { Button } from "../../../../../components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '../../../../../components/ui/card';
+} from "../../../../../components/ui/card";
 import {
   Table,
   TableBody,
@@ -20,11 +20,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../../../../components/ui/table';
-import { Alert, AlertDescription } from '../../../../../components/ui/alert';
-import { Coins, Upload, Send, Gift } from 'lucide-react';
-import DashBoardLayout from '../DashboardLayout';
-import StrataForgeFactoryABI from '../../../../app/components/ABIs/StrataForgeFactoryABI.json';
+} from "../../../../../components/ui/table";
+import { Alert, AlertDescription } from "../../../../../components/ui/alert";
+import { Coins, Upload, Send, Gift } from "lucide-react";
+import DashBoardLayout from "../DashboardLayout";
+import StrataForgeFactoryABI from "../../../../app/components/ABIs/StrataForgeFactoryABI.json";
 
 // Background Shapes Component (unchanged)
 const BackgroundShapes = () => (
@@ -41,7 +41,8 @@ const BackgroundShapes = () => (
 );
 
 // Updated contract addresses
-const FACTORY_CONTRACT_ADDRESS = '0x5463D07280b6b6B503C69Af31956265a0Ef4AA13' as const;
+const FACTORY_CONTRACT_ADDRESS =
+  "0x8284386B664D1e3838A1fB7403af9c0b4478E70E" as const;
 
 type RecipientFile = {
   id: string;
@@ -50,7 +51,7 @@ type RecipientFile = {
   merkleRoot: string;
   recipients: { address: string; amount?: string }[];
   proofs: { [address: string]: string[] };
-  distributionMethod: 'equal' | 'custom';
+  distributionMethod: "equal" | "custom";
 };
 
 type AirdropData = {
@@ -70,26 +71,35 @@ export default function AirdropListing() {
   const { data: airdrops } = useReadContract({
     address: FACTORY_CONTRACT_ADDRESS, // Updated to use AIRDROP_CONTRACT_ADDRESS
     abi: StrataForgeFactoryABI,
-    functionName: 'getCreatorAirdrops',
+    functionName: "getCreatorAirdrops",
     args: [address],
     query: { enabled: isConnected && !!address },
   });
 
   // Load recipient files
   useEffect(() => {
-    const storedFiles = localStorage.getItem('recipientFiles');
+    const storedFiles = localStorage.getItem("recipientFiles");
     if (storedFiles) {
       setFiles(JSON.parse(storedFiles));
     }
   }, []);
 
-  const airdropsList = Array.isArray(airdrops) ? (airdrops as AirdropData[]) : [];
+  const airdropsList = Array.isArray(airdrops)
+    ? (airdrops as AirdropData[])
+    : [];
 
   // Determine distribution method for each airdrop based on recipient files
-  const getDistributionMethod = (merkleRoot: string): 'equal' | 'custom' | 'unknown' => {
-    const file = files.find((f) => f.merkleRoot.toLowerCase() === merkleRoot.toLowerCase());
-    if (!file) return 'unknown';
-    return file.distributionMethod || (file.recipients.some((r) => r.amount) ? 'custom' : 'equal');
+  const getDistributionMethod = (
+    merkleRoot: string
+  ): "equal" | "custom" | "unknown" => {
+    const file = files.find(
+      (f) => f.merkleRoot.toLowerCase() === merkleRoot.toLowerCase()
+    );
+    if (!file) return "unknown";
+    return (
+      file.distributionMethod ||
+      (file.recipients.some((r) => r.amount) ? "custom" : "equal")
+    );
   };
 
   return (
@@ -107,7 +117,9 @@ export default function AirdropListing() {
 
         <main className="py-12">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-3xl font-bold text-white mb-8">Airdrop Management</h1>
+            <h1 className="text-3xl font-bold text-white mb-8">
+              Airdrop Management
+            </h1>
 
             <div className="grid gap-8 md:grid-cols-3">
               <div className="md:col-span-2">
@@ -123,45 +135,80 @@ export default function AirdropListing() {
                       <Table>
                         <TableHeader>
                           <TableRow className="border-purple-500/20">
-                            <TableHead className="text-gray-300">Token</TableHead>
-                            <TableHead className="text-gray-300">Distributor</TableHead>
-                            <TableHead className="text-gray-300">Start Time</TableHead>
-                            <TableHead className="text-gray-300">Recipients</TableHead>
-                            <TableHead className="text-gray-300">Amount</TableHead>
-                            <TableHead className="text-gray-300">Distribution</TableHead>
+                            <TableHead className="text-gray-300">
+                              Token
+                            </TableHead>
+                            <TableHead className="text-gray-300">
+                              Distributor
+                            </TableHead>
+                            <TableHead className="text-gray-300">
+                              Start Time
+                            </TableHead>
+                            <TableHead className="text-gray-300">
+                              Recipients
+                            </TableHead>
+                            <TableHead className="text-gray-300">
+                              Amount
+                            </TableHead>
+                            <TableHead className="text-gray-300">
+                              Distribution
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {airdropsList.map((airdrop: AirdropData, index: number) => {
-                            const distributionMethod = getDistributionMethod(airdrop.merkleRoot || '');
-                            return (
-                              <TableRow key={index} className="border-purple-500/20">
-                                <TableCell className="text-white">{airdrop.tokenAddress}</TableCell>
-                                <TableCell className="text-white">{airdrop.distributorAddress}</TableCell>
-                                <TableCell className="text-white">
-                                  {new Date(Number(airdrop.startTime) * 1000).toLocaleString()}
-                                </TableCell>
-                                <TableCell className="text-white">{Number(airdrop.totalRecipients)}</TableCell>
-                                <TableCell className="text-white">
-                                  {distributionMethod === 'custom'
-                                    ? `Custom (see CSV, contract uses ${ethers.formatUnits(airdrop.dropAmount, 18)})`
-                                    : ethers.formatUnits(airdrop.dropAmount, 18)}
-                                </TableCell>
-                                <TableCell className="text-white">
-                                  {distributionMethod === 'equal'
-                                    ? 'Equal Split'
-                                    : distributionMethod === 'custom'
-                                    ? 'Custom Amounts'
-                                    : 'Unknown'}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
+                          {airdropsList.map(
+                            (airdrop: AirdropData, index: number) => {
+                              const distributionMethod = getDistributionMethod(
+                                airdrop.merkleRoot || ""
+                              );
+                              return (
+                                <TableRow
+                                  key={index}
+                                  className="border-purple-500/20"
+                                >
+                                  <TableCell className="text-white">
+                                    {airdrop.tokenAddress}
+                                  </TableCell>
+                                  <TableCell className="text-white">
+                                    {airdrop.distributorAddress}
+                                  </TableCell>
+                                  <TableCell className="text-white">
+                                    {new Date(
+                                      Number(airdrop.startTime) * 1000
+                                    ).toLocaleString()}
+                                  </TableCell>
+                                  <TableCell className="text-white">
+                                    {Number(airdrop.totalRecipients)}
+                                  </TableCell>
+                                  <TableCell className="text-white">
+                                    {distributionMethod === "custom"
+                                      ? `Custom (see CSV, contract uses ${ethers.formatUnits(
+                                          airdrop.dropAmount,
+                                          18
+                                        )})`
+                                      : ethers.formatUnits(
+                                          airdrop.dropAmount,
+                                          18
+                                        )}
+                                  </TableCell>
+                                  <TableCell className="text-white">
+                                    {distributionMethod === "equal"
+                                      ? "Equal Split"
+                                      : distributionMethod === "custom"
+                                      ? "Custom Amounts"
+                                      : "Unknown"}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            }
+                          )}
                         </TableBody>
                       </Table>
                     ) : (
                       <div className="flex h-[200px] items-center justify-center">
-                        <p className="text-gray-400">No airdrops created yet.</p>
+                        <p className="text-gray-400">
+                          No airdrops created yet.
+                        </p>
                       </div>
                     )}
                   </CardContent>
@@ -171,35 +218,45 @@ export default function AirdropListing() {
               <div>
                 <Card className="bg-[#2A1F36]/80 border-purple-500/20 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle className="text-white">How to Create an Airdrop</CardTitle>
+                    <CardTitle className="text-white">
+                      How to Create an Airdrop
+                    </CardTitle>
                     <CardDescription className="text-gray-300">
                       Follow these steps to distribute your tokens
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div>
-                      <h3 className="font-semibold text-white">1. Upload Recipient List</h3>
+                      <h3 className="font-semibold text-white">
+                        1. Upload Recipient List
+                      </h3>
                       <p className="text-sm text-gray-400">
-                        Upload a CSV file with wallet addresses and optional amounts for custom
-                        distributions. Click {"\"Upload Whitelisted CSV\""} below.
+                        Upload a CSV file with wallet addresses and optional
+                        amounts for custom distributions. Click{" "}
+                        {'"Upload Whitelisted CSV"'} below.
                       </p>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-white">2. Configure and Create Airdrop</h3>
+                      <h3 className="font-semibold text-white">
+                        2. Configure and Create Airdrop
+                      </h3>
                       <p className="text-sm text-gray-400">
                         {files.length > 0
                           ? `Create your airdrop with ${files.reduce(
                               (sum, file) => sum + file.count,
-                              0,
+                              0
                             )} uploaded addresses by clicking {"\"Advanced Distribution\""}. Select your token, choose equal or custom distribution, set the amount (for equal distribution), and finalize the airdrop creation to deploy a distributor contract. Note: Airdrop creation requires a fee based on the number of recipients.`
                           : 'Upload recipients first to enable airdrop creation on the "Advanced Distribution" page.'}
                       </p>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-white">3. Claim Tokens</h3>
+                      <h3 className="font-semibold text-white">
+                        3. Claim Tokens
+                      </h3>
                       <p className="text-sm text-gray-400">
-                        After creating the airdrop, recipients can claim their tokens using the
-                        distributor address. Click {"\"Claim Airdrop\""} to start claiming.
+                        After creating the airdrop, recipients can claim their
+                        tokens using the distributor address. Click{" "}
+                        {'"Claim Airdrop"'} to start claiming.
                       </p>
                     </div>
                     {!isConnected && (
