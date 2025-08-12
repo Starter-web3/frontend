@@ -12,10 +12,10 @@ import StrataForgeAdminABI from "../../../../app/components/ABIs/StrataForgeAdmi
 import AdminDashboardLayout from "../AdminDashboardLayout";
 
 const ADMIN_CONTRACT_ADDRESS =
-  "0x52CD9E0eb7863Ee69e951f78fD3cfFe7967d7B90" as const;
+  "0x4eB7bba93734533350455B50056c33e93DD86493" as const;
 const adminABI = StrataForgeAdminABI as Abi;
 // const EXPLORER_URL = "https://sepolia.basescan.org/address";
-const EXPLORER_URL = "https://scan.test.btcs.network/address";
+const EXPLORER_URL = "https://scan.test2.btcs.network/address";
 const CHAINLINK_ABI = [
   {
     inputs: [],
@@ -34,7 +34,6 @@ const CHAINLINK_ABI = [
 
 const Withdrawals = () => {
   const { address, isConnected } = useWallet();
-  const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [proposalId, setProposalId] = useState("");
@@ -161,43 +160,25 @@ const Withdrawals = () => {
   });
 
   // Check admin status
+  // Set loading to false when data is loaded
   useEffect(() => {
     if (
-      !address ||
-      !adminAddressesSuccess ||
-      !adminAddresses ||
-      adminAddresses.length === 0
+      !adminCountLoading &&
+      !adminAddressesLoading &&
+      !contractStateLoading &&
+      !proposalsLoading &&
+      !priceLoading &&
+      !balanceLoading
     ) {
-      if (!adminCountLoading && !adminAddressesLoading && adminCountSuccess) {
-        setLoading(false);
-      }
-      return;
+      setLoading(false);
     }
-
-    let isAdminUser = false;
-    for (let i = 0; i < adminAddresses.length; i++) {
-      const result = adminAddresses[i];
-      if (result?.status === "success" && result.result) {
-        const adminAddress = result.result as string;
-        if (
-          adminAddress &&
-          adminAddress.toLowerCase() === address?.toLowerCase()
-        ) {
-          isAdminUser = true;
-          break;
-        }
-      }
-    }
-
-    setIsAdmin(isAdminUser);
-    setLoading(false);
   }, [
-    address,
-    adminAddresses,
-    adminAddressesSuccess,
     adminCountLoading,
     adminAddressesLoading,
-    adminCountSuccess,
+    contractStateLoading,
+    proposalsLoading,
+    priceLoading,
+    balanceLoading,
   ]);
 
   // Handle errors
@@ -364,78 +345,11 @@ const Withdrawals = () => {
     </div>
   );
 
-  // Unauthorized Access Component
-  const UnauthorizedAccess = () => (
-    <div className="min-h-screen bg-[#1A0D23] relative overflow-hidden flex items-center justify-center p-4">
-      <div className="max-w-lg w-full relative z-10">
-        <div className="bg-[#1E1425]/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-red-500/20 p-8 text-center">
-          <div className="mb-6">
-            <div className="w-20 h-20 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg">
-              <svg
-                className="w-10 h-10 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Access Denied
-            </h2>
-            <p className="text-gray-300 mb-6">
-              You are not authorized to manage withdrawals
-            </p>
-          </div>
-          <div className="bg-[#16091D]/60 backdrop-blur-sm rounded-xl p-4 mb-6 text-left space-y-2 border border-gray-700/30">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Connected Address:</span>
-              <span className="font-mono text-gray-300 text-xs">
-                {address?.slice(0, 6)}...{address?.slice(-4)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Admin Count:</span>
-              <span className="font-mono text-gray-300">
-                {adminCount ? Number(adminCount).toString() : "0"}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Network:</span>
-              {/* <span className="font-mono text-gray-300">Base Sepolia</span> */}
-              <span className="font-mono text-gray-300">Core Sepolia</span>
-            </div>
-            {error && (
-              <>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Status:</span>
-                  <span className="text-red-400 text-xs">Error</span>
-                </div>
-                <div className="text-xs text-red-400 mt-2 p-2 bg-red-500/10 rounded">
-                  {error}
-                </div>
-              </>
-            )}
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-          >
-            Reload Page
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+
 
   if (!isConnected) return <WalletConnection />;
   if (loading) return <LoadingSpinner />;
-  if (!isAdmin) return <UnauthorizedAccess />;
+
 
   const ethPrice =
     priceData && priceData[1] ? (Number(priceData[1]) / 1e8).toFixed(2) : "N/A";

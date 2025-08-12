@@ -1,44 +1,132 @@
 [
   {
     "inputs": [
-      { "internalType": "address", "name": "initialAdmin", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "initialAdmin",
+        "type": "address"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
-  { "inputs": [], "name": "AdminLimitReached", "type": "error" },
-  { "inputs": [], "name": "AlreadyApproved", "type": "error" },
-  { "inputs": [], "name": "CannotRemoveLastAdmin", "type": "error" },
-  { "inputs": [], "name": "EnforcedPause", "type": "error" },
-  { "inputs": [], "name": "ExpectedPause", "type": "error" },
-  { "inputs": [], "name": "InsufficientETH", "type": "error" },
-  { "inputs": [], "name": "InsufficientFunds", "type": "error" },
-  { "inputs": [], "name": "InvalidAddress", "type": "error" },
-  { "inputs": [], "name": "InvalidAmount", "type": "error" },
-  { "inputs": [], "name": "InvalidFeatureCount", "type": "error" },
-  { "inputs": [], "name": "InvalidFeeTier", "type": "error" },
-  { "inputs": [], "name": "InvalidProposal", "type": "error" },
-  { "inputs": [], "name": "InvalidRecipientCount", "type": "error" },
-  { "inputs": [], "name": "NotAdmin", "type": "error" },
-  { "inputs": [], "name": "OnlyAirdropContract", "type": "error" },
-  { "inputs": [], "name": "OnlyFactory", "type": "error" },
+  {
+    "inputs": [],
+    "name": "AdminLimitReached",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyApproved",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CannotRemoveLastAdmin",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EnforcedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ExpectedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientETH",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientFunds",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidFeatureCount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidFeeTier",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidProposal",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidRecipientCount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotAdmin",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyAirdropContract",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyFactory",
+    "type": "error"
+  },
   {
     "inputs": [
-      { "internalType": "address", "name": "owner", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
     ],
     "name": "OwnableInvalidOwner",
     "type": "error"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "account", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
     ],
     "name": "OwnableUnauthorizedAccount",
     "type": "error"
   },
-  { "inputs": [], "name": "ProposalExecuted", "type": "error" },
-  { "inputs": [], "name": "ReentrancyGuardReentrantCall", "type": "error" },
-  { "inputs": [], "name": "TransferFailed", "type": "error" },
+  {
+    "inputs": [],
+    "name": "ProposalExecuted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferFailed",
+    "type": "error"
+  },
   {
     "anonymous": false,
     "inputs": [
@@ -270,7 +358,11 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "newAdmin", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "newAdmin",
+        "type": "address"
+      }
     ],
     "name": "addAdmin",
     "outputs": [],
@@ -278,40 +370,86 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
     "name": "admin",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "adminCount",
-    "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "airdropContract",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "name": "airdropFees",
     "outputs": [
-      { "internalType": "uint256", "name": "minRecipients", "type": "uint256" },
-      { "internalType": "uint256", "name": "maxRecipients", "type": "uint256" },
-      { "internalType": "uint256", "name": "feeUSD", "type": "uint256" }
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "uint32", "name": "proposalId", "type": "uint32" }
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "airdropFees",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "minRecipients",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxRecipients",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "feeUSD",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "proposalId",
+        "type": "uint32"
+      }
     ],
     "name": "approveWithdrawal",
     "outputs": [],
@@ -334,30 +472,58 @@
   {
     "inputs": [],
     "name": "featureFeeUSD",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "numRecipients", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "numRecipients",
+        "type": "uint256"
+      }
     ],
     "name": "getAirdropFeeUSD",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "getBalance",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "owner",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
@@ -371,51 +537,103 @@
   {
     "inputs": [],
     "name": "paused",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "user", "type": "address" },
-      { "internalType": "uint256", "name": "recipientCount", "type": "uint256" }
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "recipientCount",
+        "type": "uint256"
+      }
     ],
     "name": "payForAirdrop",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "user", "type": "address" },
-      { "internalType": "uint8", "name": "featureCount", "type": "uint8" }
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "featureCount",
+        "type": "uint8"
+      }
     ],
     "name": "payForFeatures",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "proposalCounter",
-    "outputs": [{ "internalType": "uint32", "name": "", "type": "uint32" }],
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "uint96", "name": "amount", "type": "uint96" }
+      {
+        "internalType": "uint96",
+        "name": "amount",
+        "type": "uint96"
+      }
     ],
     "name": "proposeWithdrawal",
     "outputs": [
-      { "internalType": "uint32", "name": "proposalId", "type": "uint32" }
+      {
+        "internalType": "uint32",
+        "name": "proposalId",
+        "type": "uint32"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "adminToRemove", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "adminToRemove",
+        "type": "address"
+      }
     ],
     "name": "removeAdmin",
     "outputs": [],
@@ -456,7 +674,11 @@
             "name": "maxRecipients",
             "type": "uint256"
           },
-          { "internalType": "uint256", "name": "feeUSD", "type": "uint256" }
+          {
+            "internalType": "uint256",
+            "name": "feeUSD",
+            "type": "uint256"
+          }
         ],
         "internalType": "struct StrataForgeAdmin.AirdropFeeTier[]",
         "name": "newTiers",
@@ -483,7 +705,11 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "_feeUSD", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "_feeUSD",
+        "type": "uint256"
+      }
     ],
     "name": "setFeatureFee",
     "outputs": [],
@@ -492,7 +718,11 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "newOwner", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
     ],
     "name": "transferOwnership",
     "outputs": [],
@@ -507,13 +737,35 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint32", "name": "", "type": "uint32" }],
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
     "name": "withdrawalProposals",
     "outputs": [
-      { "internalType": "address", "name": "proposer", "type": "address" },
-      { "internalType": "uint96", "name": "amount", "type": "uint96" },
-      { "internalType": "uint8", "name": "approvals", "type": "uint8" },
-      { "internalType": "bool", "name": "executed", "type": "bool" }
+      {
+        "internalType": "address",
+        "name": "proposer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint96",
+        "name": "amount",
+        "type": "uint96"
+      },
+      {
+        "internalType": "uint8",
+        "name": "approvals",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "executed",
+        "type": "bool"
+      }
     ],
     "stateMutability": "view",
     "type": "function"

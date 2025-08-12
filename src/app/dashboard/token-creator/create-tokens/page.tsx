@@ -15,9 +15,9 @@ import { useRouter } from "next/navigation";
 import { useUsdEthPrice } from "../../../../hooks/useUsdEthPrice"; // Import Moralis hook
 
 const ADMIN_CONTRACT_ADDRESS =
-  "0x52CD9E0eb7863Ee69e951f78fD3cfFe7967d7B90" as const;
+  "0x4eB7bba93734533350455B50056c33e93DD86493" as const;
 const FACTORY_CONTRACT_ADDRESS =
-  "0x4A620e8C10514c7EE20ad27Df361a605236B1f21" as const;
+  "0x0b5870D52E5b0b2dDD75a66BC124DF350643C682" as const;
 const adminABI = StrataForgeAdminABI as Abi;
 const factoryABI = StrataForgeFactoryABI as Abi;
 
@@ -1028,7 +1028,7 @@ const CreateTokensPage = () => {
           <p className="text-yellow-400 text-sm relative z-10">
             Transaction pending:{" "}
             <a
-              href={`https://scan.test.btcs.network/tx/${txHash}`}
+              href={`https://scan.test2.btcs.network/tx/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="underline"

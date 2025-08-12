@@ -59,13 +59,9 @@ interface TokenInfo {
   tokenType: bigint;
 }
 
-// const FACTORY_CONTRACT_ADDRESS =
-//   "0xCa8Ba517fb2517575B853647EB304F59a935725f" as const;
-// const BASE_SEPOLIA_CHAIN_ID = 84532;
-
 const FACTORY_CONTRACT_ADDRESS =
-  "0x4A620e8C10514c7EE20ad27Df361a605236B1f21" as const;
-const CORE_SEPOLIA_CHAIN_ID = 1115;
+  "0x0b5870D52E5b0b2dDD75a66BC124DF350643C682" as const;
+const CORE_TESTNET2_CHAIN_ID = 1114;
 
 const ManageToken = () => {
   const { id: tokenId } = useParams<{ id: string }>();
@@ -1428,8 +1424,8 @@ const ManageToken = () => {
     //   setError("Please connect to Base Sepolia network");
     //   return;
     // }
-    if (chainId !== CORE_SEPOLIA_CHAIN_ID) {
-      setError("Please connect to Core Sepolia network");
+    if (chainId !== CORE_TESTNET2_CHAIN_ID) {
+      setError("Please connect to Core Testnet 2 network");
       return;
     }
 

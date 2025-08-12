@@ -99,11 +99,11 @@ const AirdropPlaceholderIcon = () => (
 );
 
 const ADMIN_CONTRACT_ADDRESS =
-  "0x52CD9E0eb7863Ee69e951f78fD3cfFe7967d7B90" as const;
+  "0x4eB7bba93734533350455B50056c33e93DD86493" as const;
 const FACTORY_CONTRACT_ADDRESS =
-  "0x4A620e8C10514c7EE20ad27Df361a605236B1f21" as const;
+  "0x0b5870D52E5b0b2dDD75a66BC124DF350643C682" as const;
 const AIRDROP_CONTRACT_ADDRESS =
-  "0x8284386B664D1e3838A1fB7403af9c0b4478E70E" as const;
+  "0xFe9fDE126C4aE4Be8A6D4F1Da284611935726920" as const;
 
 const factoryABI = StrataForgeFactoryABI as Abi;
 const adminABI = StrataForgeAdminABI as Abi;

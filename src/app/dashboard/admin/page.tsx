@@ -9,19 +9,12 @@ import StrataForgeAirdropFactoryABI from "../../../app/components/ABIs/StrataFor
 import AdminDashboardLayout from "./AdminDashboardLayout";
 import { useUsdEthPrice } from "../../../hooks/useUsdEthPrice"; // Added Moralis hook
 
-// const ADMIN_CONTRACT_ADDRESS =
-//   "0xFEc4e9718B1dfef72Db183f3e30b418762B674C4" as const;
-// const FACTORY_CONTRACT_ADDRESS =
-//   "0x676EA6F52b4f27a164DaC428247e3458b74754b9" as const;
-// const AIRDROP_FACTORY_ADDRESS =
-//   "0x5463D07280b6b6B503C69Af31956265a0Ef4AA13" as const;
-
 const ADMIN_CONTRACT_ADDRESS =
-  "0x52CD9E0eb7863Ee69e951f78fD3cfFe7967d7B90" as const;
+  "0x4eB7bba93734533350455B50056c33e93DD86493" as const;
 const FACTORY_CONTRACT_ADDRESS =
-  "0x4A620e8C10514c7EE20ad27Df361a605236B1f21" as const;
+  "0x0b5870D52E5b0b2dDD75a66BC124DF350643C682" as const;
 const AIRDROP_FACTORY_ADDRESS =
-  "0x8284386B664D1e3838A1fB7403af9c0b4478E70E" as const;
+  "0xFe9fDE126C4aE4Be8A6D4F1Da284611935726920" as const;
 
 const adminABI = StrataForgeAdminABI as Abi;
 const factoryABI = StrataForgeFactoryABI as Abi;
@@ -29,8 +22,6 @@ const airdropFactoryABI = StrataForgeAirdropFactoryABI as Abi;
 
 const AdminDashboard = () => {
   const { address, isConnected } = useWallet();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [adminIndex, setAdminIndex] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -220,48 +211,31 @@ const AdminDashboard = () => {
     },
   });
 
-  // Check admin status
+  // Set loading to false when data is loaded
   useEffect(() => {
     if (
-      !address ||
-      !adminAddressesSuccess ||
-      !adminAddresses ||
-      adminAddresses.length === 0
+      !adminCountLoading &&
+      !balanceLoading &&
+      !totalTokensLoading &&
+      !totalAirdropsLoading &&
+      !adminAddressesLoading &&
+      !featureFeeLoading &&
+      !airdropFeesLoading &&
+      !proposalCounterLoading &&
+      !ethPriceLoading
     ) {
-      if (!adminCountLoading && !adminAddressesLoading && adminCountSuccess) {
-        setLoading(false);
-      }
-      return;
+      setLoading(false);
     }
-
-    let isAdminUser = false;
-    let userAdminIndex = null;
-
-    for (let i = 0; i < adminAddresses.length; i++) {
-      const result = adminAddresses[i];
-      if (result?.status === "success" && result.result) {
-        const adminAddress = result.result as string;
-        if (
-          adminAddress &&
-          adminAddress.toLowerCase() === address.toLowerCase()
-        ) {
-          isAdminUser = true;
-          userAdminIndex = i;
-          break;
-        }
-      }
-    }
-
-    setIsAdmin(isAdminUser);
-    setAdminIndex(userAdminIndex);
-    setLoading(false);
   }, [
-    address,
-    adminAddresses,
-    adminAddressesSuccess,
     adminCountLoading,
+    balanceLoading,
+    totalTokensLoading,
+    totalAirdropsLoading,
     adminAddressesLoading,
-    adminCountSuccess,
+    featureFeeLoading,
+    airdropFeesLoading,
+    proposalCounterLoading,
+    ethPriceLoading,
   ]);
 
   // Handle errors
@@ -526,76 +500,7 @@ const AdminDashboard = () => {
     </div>
   );
 
-  // Unauthorized Access Component
-  const UnauthorizedAccess = () => (
-    <div className="min-h-screen bg-[#1A0D23] relative overflow-hidden flex items-center justify-center p-4">
-      <BackgroundShapes />
-      <div className="max-w-lg w-full relative z-10">
-        <div className="bg-[#1E1425]/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-red-500/20 p-8 text-center">
-          <div className="mb-6">
-            <div className="w-20 h-20 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg">
-              <svg
-                className="w-10 h-10 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Access Denied
-            </h2>
-            <p className="text-gray-300 mb-6">
-              You are not authorized to access the admin dashboard
-            </p>
-          </div>
-          <div className="bg-[#16091D]/60 backdrop-blur-sm rounded-xl p-4 mb-6 text-left space-y-2 border border-gray-700/30">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Connected Address:</span>
-              <span className="font-mono text-gray-300 text-xs">
-                {address?.slice(0, 6)}...{address?.slice(-4)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Admin Count:</span>
-              <span className="font-mono text-gray-300">
-                {adminCount ? Number(adminCount).toString() : "0"}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Network:</span>
-              <span className="font-mono text-gray-300">
-                Core Sepolia Testnet
-              </span>
-            </div>
-            {error && (
-              <>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Status:</span>
-                  <span className="text-red-400 text-xs">Error</span>
-                </div>
-                <div className="text-xs text-red-400 mt-2 p-2 bg-red-500/10 rounded">
-                  {error}
-                </div>
-              </>
-            )}
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-          >
-            Reload Page
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+
 
   // Stats Card Component
   const StatsCard = ({
@@ -705,9 +610,7 @@ const AdminDashboard = () => {
     return <LoadingSpinner />;
   }
 
-  if (!isAdmin) {
-    return <UnauthorizedAccess />;
-  }
+
 
   return (
     <AdminDashboardLayout>
@@ -982,11 +885,7 @@ const AdminDashboard = () => {
             </div>
             <div className="flex items-center justify-between relative z-10">
               <p className="font-mono text-gray-300 break-all">{address}</p>
-              {adminIndex !== null && (
-                <span className="ml-4 px-2 py-1 bg-purple-500/10 text-purple-400 rounded-md text-xs font-medium">
-                  Admin #{adminIndex}
-                </span>
-              )}
+
             </div>
           </div>
         </div>

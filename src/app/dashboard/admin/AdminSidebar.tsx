@@ -8,7 +8,7 @@ import { Abi } from "viem";
 import StrataForgeAdminABI from "../../../app/components/ABIs/StrataForgeAdminABI.json";
 
 const ADMIN_CONTRACT_ADDRESS =
-  "0x52CD9E0eb7863Ee69e951f78fD3cfFe7967d7B90" as const;
+  "0x4eB7bba93734533350455B50056c33e93DD86493" as const;
 const adminABI = StrataForgeAdminABI as Abi;
 
 interface SidebarLinkProps {
@@ -69,7 +69,6 @@ const AdminSidebar = () => {
   const { address, isConnected, disconnect } = useWallet();
   const pathname = usePathname();
   const currentPath = pathname || "/dashboard/admin";
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
@@ -117,49 +116,12 @@ const AdminSidebar = () => {
     },
   });
 
-  // Check admin status
+  // Set loading to false when data is loaded
   useEffect(() => {
-    if (
-      !address ||
-      !adminAddressesSuccess ||
-      !adminAddresses ||
-      adminAddresses.length === 0
-    ) {
-      console.log("Sidebar admin check conditions not met:", {
-        address: !!address,
-        adminAddressesSuccess,
-        adminAddressesLength: adminAddresses?.length || 0,
-      });
+    if (adminCountSuccess && adminAddressesSuccess) {
       setIsLoading(false);
-      return;
     }
-
-    let isAdminUser = false;
-
-    for (let i = 0; i < adminAddresses.length; i++) {
-      const result = adminAddresses[i];
-      console.log(`Sidebar Admin check ${i}:`, result);
-
-      if (result && result.status === "success" && result.result) {
-        const adminAddress = result.result as string;
-        console.log(`Sidebar Admin ${i}:`, adminAddress);
-
-        if (
-          adminAddress &&
-          adminAddress.toLowerCase() === address.toLowerCase()
-        ) {
-          isAdminUser = true;
-          break;
-        }
-      } else if (result && result.status === "failure") {
-        console.error(`Sidebar: Failed to fetch admin ${i}:`, result.error);
-      }
-    }
-
-    console.log("Sidebar Is Admin:", isAdminUser);
-    setIsAdmin(isAdminUser);
-    setIsLoading(false);
-  }, [address, adminAddresses, adminAddressesSuccess]);
+  }, [adminCountSuccess, adminAddressesSuccess]);
 
   // Handle errors
   useEffect(() => {
@@ -182,8 +144,8 @@ const AdminSidebar = () => {
     }
   }, [adminCountError, adminAddressesError]);
 
-  // Don't render sidebar if not connected, still loading, or not admin
-  if (!isConnected || isLoading || !isAdmin) {
+  // Don't render sidebar if not connected or still loading
+  if (!isConnected || isLoading) {
     return null;
   }
 
