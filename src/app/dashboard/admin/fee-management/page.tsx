@@ -373,7 +373,7 @@ const FeeManagement = () => {
 
   // Loading Component
   const LoadingSpinner = () => (
-    <div className="flex items-center justify-center min-h-screen bg-[#1A0D23] relative">
+    <div className="flex items-center justify-center min-h-screen bg-black/90 relative">
       <div className="text-center relative z-10">
         <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
         <p className="text-white text-lg">Loading fee management data...</p>
@@ -384,7 +384,7 @@ const FeeManagement = () => {
 
   // Wallet Connection Component
   const WalletConnection = () => (
-    <div className="min-h-screen bg-[#1A0D23] flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-black/90 flex items-center justify-center p-4 relative">
       <div className="bg-[#1E1425]/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-purple-500/20 p-8 text-center relative z-10">
         <h2 className="text-2xl font-bold text-white mb-2">
           Connect Your Wallet
@@ -408,7 +408,7 @@ const FeeManagement = () => {
 
   return (
     <AdminDashboardLayout>
-      <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
+      <div className="min-h-full bg-black/90 p-4 md:p-8 relative">
         <div
           className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
           style={{
@@ -420,7 +420,7 @@ const FeeManagement = () => {
             Fee Management <span className="text-green-400">💰</span>
           </h1>
           <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
-            Configure feature and airdrop fee settings for the StrataForge
+            Configure feature and airdrop fee settings for the Zephyra
             platform.
           </p>
         </div>

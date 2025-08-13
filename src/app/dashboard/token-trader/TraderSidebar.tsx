@@ -52,13 +52,12 @@ const TraderSidebar = () => {
   };
 
   return (
-    <aside className='w-64 h-auto min-h-2/5 transition-transform duration-300 ease-in-out'>
-      <div className='h-full inset-shadow-[0px_0px_10px_0px_hsl(var(--foreground)/0.25)] backdrop-blur-[30px] bg-[#201726] flex flex-col'>
+    <aside className="w-64 h-screen transition-transform duration-300 ease-in-out">
+      <div className='h-full inset-shadow-[0px_0px_10px_0px_hsl(var(--foreground)/0.25)] backdrop-blur-[30px] bg-black/90 flex flex-col'>
         <div className='p-4 flex flex-col h-full'>
           <div className='flex items-center mb-8'>
             <div className='text-xl font-bold flex items-center'>
-              <span className='text-[hsl(var(--primary-from))] mr-1'>Strata</span>
-              <span className='text-[hsl(var(--foreground))]'>Forge</span>
+              <span className='text-[hsl(var(--primary-from))] mr-1'>Zephyra</span>
             </div>
           </div>
 

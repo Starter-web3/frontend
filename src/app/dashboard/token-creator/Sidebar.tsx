@@ -150,15 +150,14 @@ export default function DashboardSidebar() {
   };
 
   return (
-    <aside className="w-64 h-auto min-h-[calc(100vh-64px)] transition-transform duration-300 ease-in-out">
-      <div className="h-full bg-[#201726] flex flex-col">
+    <aside className="w-64 h-screen transition-transform duration-300 ease-in-out">
+      <div className="h-full bg-black/90 flex flex-col">
         <div className="p-4 flex flex-col h-full">
           <div className="flex items-center mb-8">
             <div className="text-xl font-bold flex items-center">
               <span className="text-[hsl(var(--primary-from))] mr-1">
-                Strata
+                Zephyra
               </span>
-              <span className="text-[hsl(var(--foreground))]">Forge</span>
             </div>
           </div>
           <div className="flex items-center gap-2 mb-8 px-4">

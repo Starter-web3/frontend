@@ -543,7 +543,7 @@ export default function ClaimPage() {
 
   return (
     <DashBoardLayout>
-      <div className="bg-[#201726] text-purple-100 min-h-screen">
+      <div className="bg-black/90 text-purple-100 min-h-screen">
         <header className="border-b border-purple-500/20 p-4">
           <div className="container flex items-center justify-between">
             <div className="flex items-center gap-2">

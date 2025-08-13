@@ -613,7 +613,7 @@ const CreateTokensPage = () => {
 
   // Loading Spinner
   const LoadingSpinner = () => (
-    <div className="flex items-center justify-center min-h-screen bg-[#1A0D23] relative">
+    <div className="flex items-center justify-center min-h-screen bg-black/90 relative">
       <BackgroundShapes />
       <div className="text-center relative z-10">
         <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
@@ -627,7 +627,7 @@ const CreateTokensPage = () => {
 
   // Wallet Connection
   const WalletConnection = () => (
-    <div className="min-h-screen bg-[#1A0D23] flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-black/90 flex items-center justify-center p-4 relative">
       <BackgroundShapes />
       <div className="bg-[#1E1425]/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-purple-500/20 p-8 text-center relative z-10">
         <h2 className="text-2xl font-bold text-white mb-2">
@@ -658,7 +658,7 @@ const CreateTokensPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
+      <div className="min-h-screen bg-black/90 p-4 md:p-8 relative">
         <BackgroundShapes />
         <div
           className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
@@ -671,7 +671,7 @@ const CreateTokensPage = () => {
             Create Tokens <span className="text-purple-400">🚀</span>
           </h1>
           <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
-            Deploy your own tokens with StrataForge
+            Deploy your own tokens with Zephyra
           </p>
         </div>
 
