@@ -93,7 +93,7 @@ const Header: React.FC<HeaderProps> = () => {
               <Link href="/" className="flex-shrink-0">
                 <Image
                   src="/strataforge-logo.png"
-                  alt="StrataForge Logo"
+                  alt="Zephyra Logo"
                   width={120}
                   height={40}
                   className="object-contain"

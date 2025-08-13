@@ -13,14 +13,14 @@ export default function Footer() {
             <div className="flex items-center mb-4">
               <Image
                 src="/strataforge-logo.png"
-                alt="StrataForge Logo"
+                alt="Zephyra Logo"
                 width={120}
                 height={40}
                 className="object-contain"
               />
             </div>
             <p className="text-gray-400 text-sm mb-8">
-              StrataForge is a no-code token deployment platform that empowers creators, businesses, and communities
+              Zephyra is a no-code token deployment platform that empowers creators, businesses, and communities
               to launch tokens without requiring blockchain development expertise. All transactions involve risk and
               possible loss of funds. Past results dont guarantee future outcomes.
             </p>
@@ -142,7 +142,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="mt-16 pt-8 text-center md:text-left">
-          <p className="text-gray-400 text-sm">StrataForge © {new Date().getFullYear()}</p>
+          <p className="text-gray-400 text-sm">Zephyra © {new Date().getFullYear()}</p>
         </div>
       </div>
     </footer>

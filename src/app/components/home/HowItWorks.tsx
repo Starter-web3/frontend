@@ -74,7 +74,7 @@ const HowItWorks: React.FC<HowItWorksProps> = () => {
             How It Works
           </motion.h2>
           <motion.p variants={itemVariants} className="text-gray-400 max-w-2xl mx-auto">
-            Experience a seamless token deployment journey powered by StrataForge
+            Experience a seamless token deployment journey powered by Zephyra
           </motion.p>
         </motion.div>
 
