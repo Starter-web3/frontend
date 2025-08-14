@@ -77,7 +77,7 @@ Zephyra simplifies blockchain interactions, making token deployment accessible t
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Starter-web3/frontend/frontend.git
+   git clone https://github.com/Starter-web3/frontend.git
    cd frontend
    ```
 
