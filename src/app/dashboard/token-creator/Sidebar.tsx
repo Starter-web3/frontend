@@ -140,13 +140,7 @@ export default function DashboardSidebar() {
       alert("Please connect your wallet to access airdrop features.");
       return;
     }
-    // if (subscription?.plan !== "Premium") {
-    //   alert(
-    //     "This feature is only available for Premium subscribers. Please upgrade your plan."
-    //   );
-    //   return;
-    // }
-    // Navigation handled by Link
+   
   };
 
   return (
