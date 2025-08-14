@@ -3,6 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useWallet } from '../../../contexts/WalletContext';
+import { motion } from 'framer-motion';
 
 interface SidebarLinkProps {
   href: string;
@@ -52,13 +53,44 @@ const TraderSidebar = () => {
   };
 
   return (
-    <aside className='w-64 h-auto min-h-2/5 transition-transform duration-300 ease-in-out'>
-      <div className='h-full inset-shadow-[0px_0px_10px_0px_hsl(var(--foreground)/0.25)] backdrop-blur-[30px] bg-[#201726] flex flex-col'>
-        <div className='p-4 flex flex-col h-full'>
+    <aside className='w-64 h-auto min-h-2/5 transition-transform duration-300 ease-in-out relative'>  
+      <div className='h-full inset-shadow-[0px_0px_10px_0px_hsl(var(--foreground)/0.25)] backdrop-blur-[30px] bg-black flex flex-col relative overflow-hidden'>
+        {/* Starfield Background - matching Hero.tsx */}
+        <div className='absolute inset-0 bg-black'>
+          {/* Starfield background */}
+          <div className='absolute inset-0 opacity-60'>
+            {[...Array(50)].map((_, i) => (
+              <motion.div
+                key={i}
+                className='absolute w-1 h-1 bg-white rounded-full'
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                }}
+                animate={{
+                  opacity: [0.3, 1, 0.3],
+                  scale: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: Math.random() * 3 + 2,
+                  repeat: Infinity,
+                  repeatType: 'reverse',
+                  delay: Math.random() * 2,
+                }}
+              />
+            ))}
+          </div>
+          
+          {/* Gradient overlays for depth */}
+          <div className='absolute inset-0 bg-gradient-to-b from-black via-purple-900/10 to-black'></div>
+          <div className='absolute inset-0 bg-gradient-to-r from-black via-transparent to-black'></div>
+        </div>
+
+        <div className='p-4 flex flex-col h-full relative z-10'>
           <div className='flex items-center mb-8'>
             <div className='text-xl font-bold flex items-center'>
-              <span className='text-[hsl(var(--primary-from))] mr-1'>Strata</span>
-              <span className='text-[hsl(var(--foreground))]'>Forge</span>
+              <span className='text-[hsl(var(--primary-from))] mr-1'>Zephyra</span>
+              <span className='text-[hsl(var(--foreground))]'></span>
             </div>
           </div>
 
@@ -74,7 +106,7 @@ const TraderSidebar = () => {
               </svg>
             </div>
             <div className='flex flex-col'>
-              <span className='font-inter text-sm font-medium'>Trader</span>
+              <span className='font-inter text-sm font-medium text-white'>Trader</span>
               {isConnected ? (
                 <div className='flex items-center gap-1'>
                   <div className='w-1.5 h-1.5 bg-green-400 rounded-full'></div>
@@ -95,7 +127,7 @@ const TraderSidebar = () => {
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
+                  className='h-5 w-5 text-white'
                   viewBox='0 0 20 20'
                   fill='currentColor'
                 >
@@ -114,7 +146,7 @@ const TraderSidebar = () => {
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
+                  className='h-5 w-5 text-white'
                   viewBox='0 0 20 20'
                   fill='currentColor'
                 >
@@ -129,7 +161,7 @@ const TraderSidebar = () => {
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
+                  className='h-5 w-5 text-white'
                   viewBox='0 0 20 20'
                   fill='currentColor'
                 >
@@ -148,7 +180,7 @@ const TraderSidebar = () => {
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
+                  className='h-5 w-5 text-white'
                   viewBox='0 0 20 20'
                   fill='currentColor'
                 >
@@ -170,7 +202,7 @@ const TraderSidebar = () => {
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
+                  className='h-5 w-5 text-white'
                   viewBox='0 0 20 20'
                   fill='currentColor'
                 >
@@ -189,7 +221,7 @@ const TraderSidebar = () => {
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
+                  className='h-5 w-5 text-white'
                   viewBox='0 0 20 20'
                   fill='currentColor'
                 >
@@ -204,7 +236,7 @@ const TraderSidebar = () => {
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
+                  className='h-5 w-5 text-white'
                   viewBox='0 0 20 20'
                   fill='currentColor'
                 >
@@ -226,7 +258,7 @@ const TraderSidebar = () => {
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
+                  className='h-5 w-5 text-white'
                   viewBox='0 0 20 20'
                   fill='currentColor'
                 >
@@ -245,7 +277,7 @@ const TraderSidebar = () => {
               icon={
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
-                  className='h-5 w-5'
+                  className='h-5 w-5 text-white'
                   viewBox='0 0 20 20'
                   fill='currentColor'
                 >

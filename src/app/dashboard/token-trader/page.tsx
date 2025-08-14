@@ -565,17 +565,16 @@ const WalletConnection = () => (
       <div className="min-h-screen bg-gradient-to-br from-[#1A0D23] to-[#2A1F36] p-4 md:p-8 relative">
         <BackgroundShapes />
         <div
-          className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
+          className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10 bg-black/90 bg-black/40"
           style={{
-            background:
-              'radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)',
+            background: undefined,
           }}
         >
           <h1 className="font-poppins font-semibold text-3xl md:text-4xl leading-[170%] mb-2">
             Welcome back, {userName} <span className="text-yellow-400">👋</span>
           </h1>
           <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
-            Discover tokens, claim airdrops, and trade on the StrataForge marketplace
+            Discover tokens, claim airdrops, and trade on the Zephyra marketplace
           </p>
         </div>
 
@@ -613,7 +612,7 @@ const WalletConnection = () => (
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 bg-white/[0.02] rounded-xl border border-white/10">
+            <div className="text-center py-16 bg-black/90 rounded-xl border border-white/10">
               <div className="mb-4">
                 <TokenPlaceholderIcon />
               </div>
@@ -633,7 +632,7 @@ const WalletConnection = () => (
             <h2 className="text-2xl font-bold text-white">Airdrops</h2>
             <Link
               href="/dashboard/airdrops"
-              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 font-medium text-sm"
+              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200 font-medium text-sm"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5m0 0 l-5 5m5-5H6" />
@@ -648,14 +647,14 @@ const WalletConnection = () => (
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 bg-white/[0.02] rounded-xl border border-white/10">
+            <div className="text-center py-16 bg-black/90 rounded-xl border border-white/10">
               <div className="mb-4">
                 <AirdropPlaceholderIcon />
               </div>
               <p className="text-gray-400 text-lg mb-6">No airdrops available yet. Check back soon!</p>
               <Link
                 href="/dashboard/airdrops"
-                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 font-medium"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200 font-medium"
               >
                 View All Airdrops
               </Link>

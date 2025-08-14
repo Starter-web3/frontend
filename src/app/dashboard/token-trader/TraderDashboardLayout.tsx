@@ -15,7 +15,7 @@ const TraderDashboardLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <>
-      <div className='flex flex-col md:flex-row min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] font-inter'>
+      <div className='flex flex-col md:flex-row min-h-screen bg-black text-white font-inter'>
         {/* Mobile sidebar backdrop */}
         {sidebarOpen && (
           <div
@@ -47,7 +47,7 @@ const TraderDashboardLayout = ({ children }: { children: ReactNode }) => {
                   <h3 className="text-lg font-medium text-white mb-2">Wallet Required</h3>
                   <p className="text-gray-400 mb-6">Please connect your wallet to access the trading dashboard</p>
                   <button 
-                    className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-base rounded-full px-10 py-4 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20"
                     onClick={() => document.querySelector('appkit-button')?.click()}
                   >
                     Connect Wallet
