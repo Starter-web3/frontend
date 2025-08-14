@@ -1,5 +1,3 @@
-import PropertyCard from '../propertyListing/PropertyCard';
-// import Image from "next/image"
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 
@@ -108,13 +106,13 @@ export default function BrowseMore() {
         </Link>
       </div>
 
-      <div className='max-w-7xl mx-auto px-4 py-6'>
+      {/* <div className='max-w-7xl mx-auto px-4 py-6'>
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6'>
           {properties.map((property) => (
             <PropertyCard key={property.id} {...property} />
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
