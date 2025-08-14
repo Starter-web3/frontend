@@ -44,6 +44,7 @@ export default function Footer() {
             </div>
           </div>
 
+
           {/* Navigation Links */}
           <div className="md:col-span-2">
             <h3 className="text-white text-lg font-medium mb-4">Company</h3>
