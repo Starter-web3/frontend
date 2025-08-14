@@ -88,7 +88,7 @@ const PlatformFeatures: React.FC<PlatformFeaturesProps> = () => {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Strataforge Platform Features
+            Zephyra Platform Features
           </motion.h2>
           <motion.p 
             variants={itemVariants}

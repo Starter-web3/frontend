@@ -6,6 +6,7 @@ import { WalletProvider } from '../contexts/WalletContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
 
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headersObj = await headers();
   const cookies = headersObj.get('cookie');

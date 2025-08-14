@@ -82,7 +82,7 @@ export default function StratforgeUserRegistration() {
 
         {/* Header */}
         <div className='text-center mb-6'>
-          <h1 className='text-xl font-semibold text-white mb-1'>Welcome to StrataForge!</h1>
+          <h1 className='text-xl font-semibold text-white mb-1'>Welcome to Zephyra!</h1>
           <p className='text-sm text-gray-400'>Credentials are only used to authenticate you</p>
           {userRole && <p className='text-sm text-blue-400 mt-1'>Registering as: {userRole}</p>}
           {connectedWalletAddress && (

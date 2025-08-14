@@ -1,89 +1,94 @@
-'use client';
-import React, { useState, useEffect } from 'react';
-import { useWallet } from '../../../contexts/WalletContext';
-import { useReadContract, useReadContracts } from 'wagmi';
-import { Abi } from 'viem';
-import StrataForgeAdminABI from '../../../app/components/ABIs/StrataForgeAdminABI.json';
-import StrataForgeFactoryABI from '../../../app/components/ABIs/StrataForgeFactoryABI.json';
-import DashBoardLayout from './DashboardLayout';
-import Link from 'next/link';
-import ProtectedRoute from '../../../components/auth/ProtectedRoute';
+"use client";
+import React, { useState, useEffect } from "react";
+import { useWallet } from "../../../contexts/WalletContext";
+import { useReadContract, useReadContracts } from "wagmi";
+import { Abi } from "viem";
+import StrataForgeAdminABI from "../../../app/components/ABIs/StrataForgeAdminABI.json";
+import StrataForgeFactoryABI from "../../../app/components/ABIs/StrataForgeFactoryABI.json";
+import StrataForgeAirdropFactoryABI from "../../../app/components/ABIs/StrataForgeAirdropFactoryABI.json";
+import DashBoardLayout from "./DashboardLayout";
+import Link from "next/link";
+import { useUsdEthPrice } from "../../../hooks/useUsdEthPrice"; // Added Moralis hook
 
-// SVG Icons (unchanged)
 const Erc20Icon = () => (
-  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg
+    className="w-6 h-6 text-purple-400"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
     <circle cx="12" cy="12" r="10" strokeWidth="2" />
     <path d="M12 6v12M6 12h12" strokeWidth="2" />
   </svg>
 );
 
 const Erc721Icon = () => (
-  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg
+    className="w-6 h-6 text-purple-400"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
     <rect x="4" y="4" width="16" height="16" rx="2" strokeWidth="2" />
     <path d="M12 8v8M8 12h8" strokeWidth="2" />
   </svg>
 );
 
 const Erc1155Icon = () => (
-  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg
+    className="w-6 h-6 text-purple-400"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
     <rect x="4" y="4" width="16" height="6" strokeWidth="2" />
     <rect x="4" y="12" width="16" height="6" strokeWidth="2" />
   </svg>
 );
 
 const MemeIcon = () => (
-  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg
+    className="w-6 h-6 text-purple-400"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
     <circle cx="12" cy="12" r="10" strokeWidth="2" />
     <path d="M8 8h8M8 16h8" strokeWidth="2" />
   </svg>
 );
 
 const StableIcon = () => (
-  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg
+    className="w-6 h-6 text-purple-400"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
     <path d="M12 4v16M8 8h8M8 16h8" strokeWidth="2" />
     <circle cx="12" cy="12" r="10" strokeWidth="2" />
   </svg>
 );
 
-const FreeIcon = () => (
-  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" strokeWidth="2" />
-  </svg>
-);
-
-const ClassicIcon = () => (
-  <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path
-      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-      strokeWidth="2"
-    />
-  </svg>
-);
-
-const ProIcon = () => (
-  <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path d="M4 12l8-8 8 8-8 8-8-8z" strokeWidth="2" />
-  </svg>
-);
-
-const PremiumIcon = () => (
-  <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path
-      d="M12 4c-4.42 0-8 1.79-8 4s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4zm-8 8v4h4v-4H4zm8 0v4h4v-4h-4zm8 0v4h4v-4h-4z"
-      strokeWidth="2"
-    />
-  </svg>
-);
-
 const TokenPlaceholderIcon = () => (
-  <svg className="w-16 h-16 text-purple-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg
+    className="w-16 h-16 text-purple-400 mx-auto"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
     <circle cx="12" cy="12" r="10" strokeWidth="2" />
     <path d="M12 6v12M6 12h12" strokeWidth="2" />
   </svg>
 );
 
 const AirdropPlaceholderIcon = () => (
-  <svg className="w-16 h-16 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg
+    className="w-16 h-16 text-green-400 mx-auto"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
     <path
       d="M12 2v6m0 4v10m-6-6h12M4 10l2 2m14-2l-2 2"
       strokeWidth="2"
@@ -93,52 +98,80 @@ const AirdropPlaceholderIcon = () => (
   </svg>
 );
 
-const FACTORY_CONTRACT_ADDRESS = '0x59F42c3eEcf829b34d8Ca846Dfc83D3cDC105C3F' as const;
-const ADMIN_CONTRACT_ADDRESS = '0xADC01DF1dA777a7fE0A93eC58BfC6b69d3354599' as const;
+const ADMIN_CONTRACT_ADDRESS =
+  "0x4eB7bba93734533350455B50056c33e93DD86493" as const;
+const FACTORY_CONTRACT_ADDRESS =
+  "0x0b5870D52E5b0b2dDD75a66BC124DF350643C682" as const;
+const AIRDROP_CONTRACT_ADDRESS =
+  "0xFe9fDE126C4aE4Be8A6D4F1Da284611935726920" as const;
+
 const factoryABI = StrataForgeFactoryABI as Abi;
 const adminABI = StrataForgeAdminABI as Abi;
+const airdropFactoryABI = StrataForgeAirdropFactoryABI as Abi;
 
 const Dashboard = () => {
-  const { address, isConnected, isConnecting, connect, connectError } = useWallet();
+  const { address, isConnected, isConnecting, connect, connectError } =
+    useWallet();
   const [tokens, setTokens] = useState<
-    { id: number; name: string; symbol: string; address: string; type: string }[]
+    {
+      id: number;
+      name: string;
+      symbol: string;
+      address: string;
+      type: string;
+    }[]
   >([]);
   const [airdrops, setAirdrops] = useState<
     { id: number; name: string; tokenAddress: string; status: string }[]
   >([]);
-  const [subscription, setSubscription] = useState<{
-    plan: string;
-    tokensRemaining: number;
-    expiry: number;
-  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string[]>([]);
-  const [userName, setUserName] = useState('Token Creator');
+  const [userName, setUserName] = useState("Token Creator");
 
-  // Fetch subscription status
-  const { data: subData, error: subError } = useReadContract({
+  // Fetch ETH/USD price from Moralis
+  const {
+    usdPrice: ethPrice,
+    loading: ethPriceLoading,
+    error: ethPriceError,
+  } = useUsdEthPrice();
+
+  // Fetch feature fee
+  const { data: featureFee, error: featureFeeError } = useReadContract({
     address: ADMIN_CONTRACT_ADDRESS,
     abi: adminABI,
-    functionName: 'getSubscription',
-    args: [address],
-    query: { enabled: isConnected && !!address, retry: true, retryDelay: 1000 },
+    functionName: "featureFeeUSD",
+    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
+  });
+
+  // Fetch airdrop fee tiers
+  const airdropTierCalls = React.useMemo(() => {
+    return Array.from({ length: 5 }, (_, i) => ({
+      address: ADMIN_CONTRACT_ADDRESS,
+      abi: adminABI,
+      functionName: "airdropFees",
+      args: [i],
+    }));
+  }, []);
+
+  const { data: airdropFeeTiers, error: airdropFeesError } = useReadContracts({
+    contracts: airdropTierCalls,
+    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
   });
 
   // Fetch total token count
   const { data: totalTokens, error: totalTokensError } = useReadContract({
     address: FACTORY_CONTRACT_ADDRESS,
     abi: factoryABI,
-    functionName: 'getTotalTokenCount',
+    functionName: "getTotalTokenCount",
     query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
   });
 
-  // Fetch airdrops
-  const { data: airdropData, error: airdropError } = useReadContract({
-    address: FACTORY_CONTRACT_ADDRESS,
-    abi: factoryABI,
-    functionName: 'getCreatorAirdrops',
-    args: [address],
-    query: { enabled: isConnected && !!address, retry: 3, retryDelay: 1000 },
+  // Fetch total airdrop count
+  const { data: totalAirdrops, error: totalAirdropsError } = useReadContract({
+    address: AIRDROP_CONTRACT_ADDRESS,
+    abi: airdropFactoryABI,
+    functionName: "getAirdropCount",
+    query: { enabled: isConnected, retry: 3, retryDelay: 1000 },
   });
 
   // Create array of token read calls
@@ -148,10 +181,22 @@ const Dashboard = () => {
     return Array.from({ length: count }, (_, i) => ({
       address: FACTORY_CONTRACT_ADDRESS,
       abi: factoryABI,
-      functionName: 'getTokenById',
+      functionName: "getTokenById",
       args: [i + 1],
     }));
   }, [totalTokens, isConnected]);
+
+  // Create array of airdrop read calls
+  const airdropCalls = React.useMemo(() => {
+    if (!totalAirdrops || !isConnected) return [];
+    const count = Number(totalAirdrops);
+    return Array.from({ length: count }, (_, i) => ({
+      address: AIRDROP_CONTRACT_ADDRESS,
+      abi: airdropFactoryABI,
+      functionName: "getAirdropById",
+      args: [i + 1],
+    }));
+  }, [totalAirdrops, isConnected]);
 
   // Fetch all tokens
   const { data: tokenData, error: tokenDataError } = useReadContracts({
@@ -159,10 +204,16 @@ const Dashboard = () => {
     query: { enabled: tokenCalls.length > 0, retry: 3, retryDelay: 1000 },
   });
 
-  // Process subscription, tokens, and airdrops
+  // Fetch all airdrops
+  const { data: airdropData, error: airdropDataError } = useReadContracts({
+    contracts: airdropCalls,
+    query: { enabled: airdropCalls.length > 0, retry: 3, retryDelay: 1000 },
+  });
+
+  // Process token and airdrop data
   useEffect(() => {
     if (!isConnected || !address) {
-      setUserName('Token Creator');
+      setUserName("Token Creator");
       setLoading(false);
       return;
     }
@@ -170,39 +221,17 @@ const Dashboard = () => {
     const timer = setTimeout(() => {
       setUserName(`${address.slice(0, 6)}...${address.slice(-4)}`);
 
-      // Process subscription
-      if (subData) {
-        try {
-          const planNames = ['Free', 'Classic', 'Pro', 'Premium'];
-          const [tierIndex, expiry, tokensThisMonth] = subData as [bigint, bigint, bigint];
-          const planName = planNames[Number(tierIndex)] || 'Free';
-          const tokenLimits: { [key: string]: number } = {
-            Free: 2,
-            Classic: 5,
-            Pro: 10,
-            Premium: Infinity,
-          };
-          const maxTokens = tokenLimits[planName];
-          const remainingTokens = Math.max(0, maxTokens - Number(tokensThisMonth));
-
-          setSubscription({
-            plan: planName,
-            tokensRemaining: remainingTokens,
-            expiry: Number(expiry) * 1000,
-          });
-        } catch (subErr) {
-          console.warn(`Failed to process subscription for ${address}:`, subErr);
-          setSubscription({ plan: 'Free', tokensRemaining: 2, expiry: 0 });
-          setError((prev) => [...prev, 'Could not load subscription data']);
-        }
-      }
-
       // Process tokens
       if (tokenData && tokenData.length > 0) {
         const userTokens = tokenData
           .map((result, index) => {
-            if (result.status === 'success' && result.result) {
-              const token = result.result as { name: string; symbol: string; tokenAddress: string; creator: string; tokenType: bigint };
+            if (result.status === "success" && result.result) {
+              const token = result.result as {
+                name: string;
+                symbol: string;
+                tokenAddress: string;
+                creator: string;
+              };
               if (
                 token.name &&
                 token.symbol &&
@@ -210,14 +239,20 @@ const Dashboard = () => {
                 token.creator &&
                 token.creator.toLowerCase() === address.toLowerCase()
               ) {
-                const typeMap: { [key: number]: string } = {
-                  0: 'erc20',
-                  1: 'erc721',
-                  2: 'erc1155',
-                  3: 'meme',
-                  4: 'stable',
-                };
-                const type = typeMap[Number(token.tokenType)] || 'erc20';
+                let type = "erc20";
+                if (token.name.toLowerCase().includes("nft")) type = "erc721";
+                else if (
+                  token.name.toLowerCase().includes("meme") ||
+                  token.name.toLowerCase().includes("doge")
+                )
+                  type = "meme";
+                else if (
+                  token.name.toLowerCase().includes("usd") ||
+                  token.name.toLowerCase().includes("stable")
+                )
+                  type = "stable";
+                else if (token.name.toLowerCase().includes("multi"))
+                  type = "erc1155";
                 return {
                   id: index + 1,
                   name: token.name,
@@ -232,82 +267,134 @@ const Dashboard = () => {
             console.error(`Failed to fetch token ${index + 1}:`, result);
             return null;
           })
-          .filter((token): token is NonNullable<typeof token> => token !== null);
+          .filter(
+            (token): token is NonNullable<typeof token> => token !== null
+          );
 
         setTokens(userTokens);
       }
 
       // Process airdrops
-      if (airdropData) {
-        try {
-          // Type the airdrop data properly
-          const airdropResult = airdropData as { 
-            status: string; 
-            result?: Array<{ tokenAddress: string; startTime: bigint | number }> 
-          };
-          
-          if (airdropResult.status === 'success' && airdropResult.result) {
-            const userAirdrops = airdropResult.result.map((airdrop, index) => ({
-              id: index + 1,
-              name: `Airdrop #${index + 1}`, // Placeholder
-              tokenAddress: airdrop.tokenAddress,
-              status: Number(airdrop.startTime) * 1000 > Date.now() ? 'Scheduled' : 'Active',
-            }));
-            setAirdrops(userAirdrops);
-          }
-        } catch (airdropErr) {
-          console.warn('Failed to process airdrop data:', airdropErr);
-          setError((prev) => [...prev, 'Could not load airdrop data']);
-        }
+      if (airdropData && airdropData.length > 0) {
+        const userAirdrops = airdropData
+          .map((result, index) => {
+            if (result.status === "success" && result.result) {
+              const airdrop = result.result as {
+                name: string;
+                tokenAddress: string;
+                creator: string;
+                isActive: boolean;
+              };
+              if (
+                airdrop.name &&
+                airdrop.tokenAddress &&
+                airdrop.creator &&
+                airdrop.creator.toLowerCase() === address.toLowerCase() &&
+                airdrop.isActive
+              ) {
+                return {
+                  id: index + 1,
+                  name: airdrop.name,
+                  tokenAddress: airdrop.tokenAddress,
+                  status: airdrop.isActive ? "Active" : "Inactive",
+                };
+              }
+              console.warn(
+                `Invalid or inactive airdrop data for ID ${index + 1}:`,
+                airdrop
+              );
+              return null;
+            }
+            console.error(`Failed to fetch airdrop ${index + 1}:`, result);
+            return null;
+          })
+          .filter(
+            (airdrop): airdrop is NonNullable<typeof airdrop> =>
+              airdrop !== null
+          );
+
+        setAirdrops(userAirdrops);
+      } else {
+        setAirdrops([]);
       }
 
       setLoading(false);
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [isConnected, address, subData, tokenData, airdropData]);
+  }, [isConnected, address, tokenData, airdropData]);
 
   // Handle errors
   useEffect(() => {
     const errors: string[] = [];
-    if (subError) {
-      console.error('Subscription error:', subError);
-      errors.push('Failed to load subscription data');
-    }
-    if (totalTokensError) {
-      console.error('Total tokens error:', totalTokensError);
-      errors.push('Failed to load token count');
-    }
-    if (tokenDataError) {
-      console.error('Token data error:', tokenDataError);
-      errors.push('Failed to load token details');
-    }
-    if (airdropError) {
-      console.error('Airdrop error:', airdropError);
-      errors.push('Failed to load airdrop data');
-    }
-    if (connectError) {
-      console.error('Wallet connection error:', connectError);
+    if (ethPriceError) errors.push("Failed to load ETH/USD price"); // Updated for Moralis
+    if (featureFeeError) errors.push("Failed to load feature fee");
+    if (airdropFeesError) errors.push("Failed to load airdrop fees");
+    if (totalTokensError) errors.push("Failed to load token count");
+    if (tokenDataError) errors.push("Failed to load token details");
+    if (totalAirdropsError) errors.push("Failed to load airdrop count");
+    if (airdropDataError) errors.push("Failed to load airdrop details");
+    if (connectError)
       errors.push(`Wallet connection failed: ${connectError.message}`);
-    }
     setError(errors);
-    setLoading(false);
-  }, [subError, totalTokensError, tokenDataError, airdropError, connectError]);
+    if (
+      !ethPriceLoading && // Added Moralis loading
+      !loading // Keep existing logic
+    ) {
+      setLoading(false);
+    }
+  }, [
+    ethPriceError,
+    featureFeeError,
+    airdropFeesError,
+    totalTokensError,
+    tokenDataError,
+    totalAirdropsError,
+    airdropDataError,
+    connectError,
+    ethPriceLoading,
+    loading,
+  ]);
 
   // Handler for airdrop button clicks
   const handleAirdropClick = (e: React.MouseEvent) => {
     if (!isConnected) {
       e.preventDefault();
-      alert('Please connect your wallet to access airdrop features.');
-      return;
-    }
-    if (subscription?.plan !== 'Premium') {
-      e.preventDefault();
-      alert('This feature is only available for Premium subscribers. Please upgrade your plan.');
+      alert("Please connect your wallet to access airdrop features.");
     }
   };
 
-  // Background Shapes Component (unchanged)
+  // Format feature fee
+  const formatFeatureFee = (feeUSD: bigint | undefined) => {
+    if (!feeUSD) return { usd: "0", eth: "0" };
+    try {
+      const usd = (Number(feeUSD) / 1e8).toFixed(2);
+      const eth = ethPrice
+        ? (Number(feeUSD) / 1e8 / ethPrice).toFixed(6)
+        : "N/A";
+      return { usd, eth };
+    } catch (error) {
+      console.error("Error formatting feature fee:", error);
+      return { usd: "0", eth: "0" };
+    }
+  };
+
+  // Format airdrop fee
+  const formatAirdropFee = (feeUSD: bigint | undefined) => {
+    if (!feeUSD) return { usd: "0", eth: "0" };
+    try {
+      const usd = (Number(feeUSD) / 1e8).toFixed(2);
+      const eth = ethPrice
+        ? (Number(feeUSD) / 1e8 / ethPrice).toFixed(6)
+        : "N/A";
+      return { usd, eth };
+    } catch (error) {
+      console.error("Error formatting airdrop fee:", error);
+      return { usd: "0", eth: "0" };
+    }
+  };
+
+  // Background Shapes Component
   const BackgroundShapes = () => (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
       <div className="absolute top-20 left-10 w-32 h-32 border border-purple-500/10 rounded-full"></div>
@@ -318,7 +405,10 @@ const Dashboard = () => {
       <div className="absolute top-1/4 right-1/4">
         <div className="grid grid-cols-4 gap-3">
           {[...Array(16)].map((_, i) => (
-            <div key={i} className="w-1 h-1 bg-purple-500/10 rounded-full"></div>
+            <div
+              key={i}
+              className="w-1 h-1 bg-purple-500/10 rounded-full"
+            ></div>
           ))}
         </div>
       </div>
@@ -329,7 +419,10 @@ const Dashboard = () => {
           ))}
         </div>
       </div>
-      <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 1200 800">
+      <svg
+        className="absolute top-0 left-0 w-full h-full"
+        viewBox="0 0 1200 800"
+      >
         <path
           d="M200,100 Q400,50 600,100 T1000,100"
           stroke="rgba(147, 51, 234, 0.06)"
@@ -372,11 +465,46 @@ const Dashboard = () => {
           <circle cx="100" cy="25" r="2" fill="rgba(147, 51, 234, 0.1)" />
           <circle cx="40" cy="50" r="2" fill="rgba(59, 130, 246, 0.1)" />
           <circle cx="80" cy="55" r="2" fill="rgba(147, 51, 234, 0.1)" />
-          <line x1="20" y1="20" x2="60" y2="15" stroke="rgba(147, 51, 234, 0.06)" strokeWidth="1" />
-          <line x1="60" y1="15" x2="100" y2="25" stroke="rgba(59, 130, 246, 0.06)" strokeWidth="1" />
-          <line x1="20" y1="20" x2="40" y2="50" stroke="rgba(147, 51, 234, 0.06)" strokeWidth="1" />
-          <line x1="60" y1="15" x2="80" y2="55" stroke="rgba(59, 130, 246, 0.06)" strokeWidth="1" />
-          <line x1="40" y1="50" x2="80" y2="55" stroke="rgba(147, 51, 234, 0.06)" strokeWidth="1" />
+          <line
+            x1="20"
+            y1="20"
+            x2="60"
+            y2="15"
+            stroke="rgba(147, 51, 234, 0.06)"
+            strokeWidth="1"
+          />
+          <line
+            x1="60"
+            y1="15"
+            x2="100"
+            y2="25"
+            stroke="rgba(59, 130, 246, 0.06)"
+            strokeWidth="1"
+          />
+          <line
+            x1="20"
+            y1="20"
+            x2="40"
+            y2="50"
+            stroke="rgba(147, 51, 234, 0.06)"
+            strokeWidth="1"
+          />
+          <line
+            x1="60"
+            y1="15"
+            x2="80"
+            y2="55"
+            stroke="rgba(59, 130, 246, 0.06)"
+            strokeWidth="1"
+          />
+          <line
+            x1="40"
+            y1="50"
+            x2="80"
+            y2="55"
+            stroke="rgba(147, 51, 234, 0.06)"
+            strokeWidth="1"
+          />
         </svg>
       </div>
       <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-500/3 to-transparent rounded-full blur-3xl"></div>
@@ -385,8 +513,18 @@ const Dashboard = () => {
     </div>
   );
 
-  // Token Card Component (unchanged)
-  const TokenCard = ({ token }: { token: { id: number; name: string; symbol: string; address: string; type: string } | null }) => {
+  // Token Card Component
+  const TokenCard = ({
+    token,
+  }: {
+    token: {
+      id: number;
+      name: string;
+      symbol: string;
+      address: string;
+      type: string;
+    } | null;
+  }) => {
     if (!token) {
       return (
         <div className="bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-500/10">
@@ -403,29 +541,47 @@ const Dashboard = () => {
       stable: <StableIcon />,
     };
     const typeLabels: { [key: string]: string } = {
-      erc20: 'ERC-20',
-      erc721: 'ERC-721',
-      erc1155: 'ERC-1155',
-      meme: 'Meme Coin',
-      stable: 'Stable Coin',
+      erc20: "ERC-20",
+      erc721: "ERC-721",
+      erc1155: "ERC-1155",
+      meme: "Meme Coin",
+      stable: "Stable Coin",
     };
     const icon = typeIcons[token.type] || <Erc20Icon />;
-    const label = typeLabels[token.type] || 'ERC-20';
+    const label = typeLabels[token.type] || "ERC-20";
 
     return (
-      <div className="bg-black/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-purple-500/10 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
+      <div className="bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-purple-500/10 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
         <div className="absolute top-0 right-0 w-20 h-20 opacity-5">
           <svg viewBox="0 0 40 40" className="w-full h-full">
-            <circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth="1" fill="none" />
-            <circle cx="20" cy="20" r="8" stroke="currentColor" strokeWidth="1" fill="none" />
+            <circle
+              cx="20"
+              cy="20"
+              r="15"
+              stroke="currentColor"
+              strokeWidth="1"
+              fill="none"
+            />
+            <circle
+              cx="20"
+              cy="20"
+              r="8"
+              stroke="currentColor"
+              strokeWidth="1"
+              fill="none"
+            />
           </svg>
         </div>
         <div className="flex items-center space-x-3 mb-4">
           <span className="relative z-10">{icon}</span>
-          <h3 className="text-lg font-semibold text-white relative z-10">{token.name}</h3>
+          <h3 className="text-lg font-semibold text-white relative z-10">
+            {token.name}
+          </h3>
         </div>
         <p className="text-gray-400 relative z-10">Symbol: {token.symbol}</p>
-        <p className="text-gray-400 truncate relative z-10">Address: {token.address}</p>
+        <p className="text-gray-400 truncate relative z-10">
+          Address: {token.address}
+        </p>
         <div className="mt-4 flex justify-between items-center relative z-10">
           <span className="text-green-500 font-bold">{label}</span>
           <Link
@@ -439,20 +595,43 @@ const Dashboard = () => {
     );
   };
 
-  // Airdrop Card Component (unchanged)
-  const AirdropCard = ({ airdrop }: { airdrop: { id: number; name: string; tokenAddress: string; status: string } }) => (
+  // Airdrop Card Component
+  const AirdropCard = ({
+    airdrop,
+  }: {
+    airdrop: { id: number; name: string; tokenAddress: string; status: string };
+  }) => (
     <div className="bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-green-500/10 relative overflow-hidden group hover:border-green-500/30 transition-all duration-300">
       <div className="absolute top-0 right-0 w-20 h-20 opacity-5">
         <svg viewBox="0 0 40 40" className="w-full h-full">
-          <circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth="1" fill="none" />
-          <circle cx="20" cy="20" r="8" stroke="currentColor" strokeWidth="1" fill="none" />
+          <circle
+            cx="20"
+            cy="20"
+            r="15"
+            stroke="currentColor"
+            strokeWidth="1"
+            fill="none"
+          />
+          <circle
+            cx="20"
+            cy="20"
+            r="8"
+            stroke="currentColor"
+            strokeWidth="1"
+            fill="none"
+          />
         </svg>
       </div>
       <div className="flex items-center space-x-3 mb-4">
         <span className="text-2xl">🪂</span>
-        <h3 className="text-lg font-semibold text-white relative z-10">{airdrop.name}</h3>
+        <h3 className="text-lg font-semibold text-white relative z-10">
+          {airdrop.name}
+        </h3>
       </div>
-      <p className="text-gray-400 relative z-10">Token: {airdrop.tokenAddress.slice(0, 6)}...{airdrop.tokenAddress.slice(-4)}</p>
+      <p className="text-gray-400 relative z-10">
+        Token: {airdrop.tokenAddress.slice(0, 6)}...
+        {airdrop.tokenAddress.slice(-4)}
+      </p>
       <p className="text-gray-400 relative z-10">Status: {airdrop.status}</p>
       <Link
         href={`/dashboard/airdrop/${airdrop.id}`}
@@ -463,105 +642,130 @@ const Dashboard = () => {
     </div>
   );
 
-  // Subscription Card Component (updated)
-  const SubscriptionCard = () => {
-    const getPlanIcon = (plan: string) => {
-      const icons: { [key: string]: React.ReactNode } = {
-        Free: <FreeIcon />,
-        Classic: <ClassicIcon />,
-        Pro: <ProIcon />,
-        Premium: <PremiumIcon />,
-      };
-      return icons[plan] || <FreeIcon />;
-    };
-
-    const maxTokens: { [key: string]: number } = {
-      Free: 2,
-      Classic: 5,
-      Pro: 10,
-      Premium: Infinity,
-    };
-
-    return (
-      <div className="bg-gradient-to-br from-purple-600/20 to-blue-600/20 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-purple-500/20 relative overflow-hidden group hover:shadow-2xl transition-all duration-300">
-        <div className="absolute top-0 right-0 w-24 h-24 opacity-10">
-          <svg viewBox="0 0 40 40" className="w-full h-full">
-            <circle cx="20" cy="20" r="15" stroke="currentColor" strokeWidth="1" fill="none" />
-            <circle cx="20" cy="20" r="8" stroke="currentColor" strokeWidth="1" fill="none" />
-          </svg>
-        </div>
-        {subscription ? (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-gray-300 text-sm">Plan</p>
-                <div className="flex items-center space-x-2">
-                  {getPlanIcon(subscription.plan)}
-                  <p className="text-white font-medium">{subscription.plan}</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-gray-300 text-sm">Tokens Remaining</p>
-                <p className="text-white font-medium">
-                  {subscription.plan === 'Premium'
-                    ? 'Unlimited'
-                    : `${subscription.tokensRemaining} / ${maxTokens[subscription.plan] || 2}`}
-                </p>
-                {subscription.plan !== 'Premium' && (
-                  <div className="w-full bg-gray-700/50 rounded-full h-2.5 mt-2">
-                    <div
-                      className="bg-gradient-to-r from-purple-500 to-blue-600 h-2.5 rounded-full"
-                      style={{
-                        width: `${Math.min(100, (subscription.tokensRemaining / (maxTokens[subscription.plan] || 2)) * 100)}%`,
-                      }}
-                    ></div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="mb-4">
-              <p className="text-gray-300 text-sm">Expiry</p>
-              <p className="text-white font-medium">
-                {subscription.expiry && subscription.expiry > 0
-                  ? new Date(subscription.expiry).toLocaleDateString()
-                  : subscription.plan === 'Free'
-                  ? 'No Expiry'
-                  : 'N/A'}
-              </p>
-            </div>
-            <Link
-              href="/dashboard/token-creator/manage-subscription"
-              className="inline-flex px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 relative z-10"
+  // Feature & Airdrop Fees Component
+  const FeeCard = () => (
+    <div className="relative overflow-hidden bg-[#1E1425]/80 backdrop-blur-sm rounded-2xl shadow-lg border border-purple-500/10">
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-600 opacity-5"></div>
+      <div className="relative p-6">
+        <div className="flex items-center mb-6">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 shadow-lg">
+            <svg
+              className="w-6 h-6 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              {subscription.plan === 'Free' ? 'Upgrade Plan' : 'Manage Subscription'}
-            </Link>
-          </>
-        ) : (
-          <p className="text-gray-400 relative z-10">Loading subscription data...</p>
-        )}
-      </div>
-    );
-  };
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-white ml-4">
+            Feature & Airdrop Fees
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="p-4">
+            <h4 className="text-lg font-medium text-white mb-1">Feature Fee</h4>
+            <p className="text-sm text-gray-400 mb-2">Per token creation</p>
+            <p className="text-2xl font-bold text-green-400">
+              ${formatFeatureFee(featureFee as bigint).usd}
+            </p>
+            <p className="text-xs text-gray-500">
+              {formatFeatureFee(featureFee as bigint).eth} ETH
+            </p>
+          </div>
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-lg font-medium text-white">
+                Airdrop Fee Tiers
+              </h4>
+              <p className="text-sm text-gray-400">Recipient → Fee</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {airdropFeeTiers &&
+                airdropFeeTiers.map((tier, index) => {
+                  if (tier?.status === "success" && tier.result) {
+                    const [minRecipients, maxRecipients, feeUSD] =
+                      tier.result as [bigint, bigint, bigint];
+                    const { usd, eth } = formatAirdropFee(feeUSD);
+                    const min = Number(minRecipients).toLocaleString();
+                    const max =
+                      maxRecipients ===
+                      BigInt(
+                        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                      )
+                        ? "10,001+"
+                        : Number(maxRecipients).toLocaleString();
 
-  // Loading Component (unchanged)
+                    return (
+                      <div
+                        key={index}
+                        className="inline-flex items-center px-3 py-1.5 bg-black/20 backdrop-blur-sm rounded-lg"
+                      >
+                        <svg
+                          className="w-3 h-3 text-gray-300 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7a2 2 0 11-4 0 2 2 0 014 0zM5 7a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                        <span className="text-xs font-medium text-gray-300 mr-2">
+                          {min} - {max} :
+                        </span>
+                        <span className="text-xs font-bold text-orange-400">
+                          ${usd} ({eth} ETH)
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Loading Component
   const LoadingSpinner = () => (
-    <div className="flex items-center justify-center min-h-screen bg-[#1A0D23] relative">
+    <div className="flex items-center justify-center min-h-screen bg-black/90 relative">
       <BackgroundShapes />
       <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin relative z-10"></div>
     </div>
   );
 
-  // Wallet Connection Component (unchanged)
+  // Wallet Connection Component
   const WalletConnection = () => (
-    <div className="min-h-screen bg-[#1A0D23] flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-black/90 flex items-center justify-center p-4 relative">
       <BackgroundShapes />
       <div className="bg-[#1E1425]/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-purple-500/20 p-8 text-center relative z-10">
-        <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
-        <p className="text-gray-300 mb-6">Connect your wallet to access the StrataForge dashboard</p>
+        <h2 className="text-2xl font-bold text-white mb-2">
+          Connect Your Wallet
+        </h2>
+        <p className="text-gray-300 mb-6">
+          Connect your wallet to access the Zephyra dashboard
+        </p>
         {connectError && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300 text-sm">
-            {connectError.message.includes('storage')
-              ? 'Storage access is restricted. Please disable incognito mode or allow storage access.'
+            {connectError.message.includes("storage")
+              ? "Storage access is restricted. Please disable incognito mode or allow storage access."
               : `Connection failed: ${connectError.message}`}
           </div>
         )}
@@ -569,10 +773,10 @@ const Dashboard = () => {
           onClick={connect}
           disabled={isConnecting}
           className={`px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition ${
-            isConnecting ? 'opacity-50 cursor-not-allowed' : ''
+            isConnecting ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
-          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+          {isConnecting ? "Connecting..." : "Connect Wallet"}
         </button>
       </div>
     </div>
@@ -582,31 +786,37 @@ const Dashboard = () => {
     return <WalletConnection />;
   }
 
-  if (loading) {
+  if (loading || ethPriceLoading) {
     return <LoadingSpinner />;
   }
 
   return (
     <DashBoardLayout>
-      <div className="min-h-screen bg-[#1A0D23] p-4 md:p-8 relative">
+        <div className="min-h-full bg-black/90 p-4 md:p-8 relative">
         <BackgroundShapes />
         <div
           className="welcome-section text-center mb-8 rounded-lg p-6 relative z-10"
           style={{
             background:
-              'radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)',
+              "radial-gradient(50% 206.8% at 50% 50%, rgba(10, 88, 116, 0.7) 0%, rgba(32, 23, 38, 0.7) 56.91%)",
           }}
         >
           <h1 className="font-poppins font-semibold text-3xl md:text-4xl leading-[170%] mb-2">
             Welcome back, {userName} <span className="text-yellow-400">👋</span>
           </h1>
           <p className="font-vietnam font-normal text-base leading-[170%] tracking-[1%] text-[hsl(var(--foreground)/0.7)]">
-            Create and manage your tokens and airdrops with StrataForge – secure and seamless!
+            Create and manage your tokens and airdrops with Zephyra – secure
+            and seamless!
           </p>
         </div>
         {error.length > 0 && (
           <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3 relative z-10">
-            <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-5 h-5 text-red-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -614,16 +824,20 @@ const Dashboard = () => {
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p className="text-red-500 font-medium">{error.join(', ')}</p>
+            <p className="text-red-500 font-medium">{error.join(", ")}</p>
           </div>
         )}
         <div className="mb-10 relative z-10">
-          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6">Your Subscription</h2>
-          <SubscriptionCard />
+          <h2 className="font-poppins font-semibold text-xl md:text-2xl mb-6">
+            Feature & Airdrop Fees
+          </h2>
+          <FeeCard />
         </div>
         <div className="mb-10 relative z-10">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Tokens</h2>
+            <h2 className="font-poppins font-semibold text-xl md:text-2xl">
+              Your Tokens
+            </h2>
             <Link
               href="/dashboard/token-creator/create-tokens"
               className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
@@ -642,9 +856,11 @@ const Dashboard = () => {
               <div className="mb-4">
                 <TokenPlaceholderIcon />
               </div>
-              <p className="text-gray-400 text-lg mb-4">You haven’t created any tokens yet.</p>
+              <p className="text-gray-400 text-lg mb-4">
+                You haven’t created any tokens yet.
+              </p>
               <Link
-                href="/dashboard/token-creator/create-token"
+                href="/dashboard/token-creator/create-tokens"
                 className="inline-flex px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:opacity-90 transition"
               >
                 Create Your First Token
@@ -654,14 +870,12 @@ const Dashboard = () => {
         </div>
         <div className="mb-10 relative z-10">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="font-poppins font-semibold text-xl md:text-2xl">Your Airdrops</h2>
+            <h2 className="font-poppins font-semibold text-xl md:text-2xl">
+              Your Airdrops
+            </h2>
             <Link
               href="/dashboard/token-creator/airdrop-listing"
-              className={`px-4 py-2 rounded-xl text-white transition ${
-                subscription?.plan === 'Premium'
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
-                  : 'bg-gray-600 cursor-not-allowed'
-              }`}
+              className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition"
               onClick={handleAirdropClick}
             >
               Create Airdrop
@@ -678,14 +892,13 @@ const Dashboard = () => {
               <div className="mb-4">
                 <AirdropPlaceholderIcon />
               </div>
-              <p className="text-gray-400 text-lg mb-4">No airdrops created yet. Start an airdrop to distribute your tokens!</p>
+              <p className="text-gray-400 text-lg mb-4">
+                No airdrops created yet. Start an airdrop to distribute your
+                tokens!
+              </p>
               <Link
                 href="/dashboard/token-creator/airdrop-listing"
-                className={`inline-flex px-6 py-3 rounded-xl text-white transition ${
-                  subscription?.plan === 'Premium'
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90'
-                    : 'bg-gray-600 cursor-not-allowed'
-                }`}
+                className="inline-flex px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition"
                 onClick={handleAirdropClick}
               >
                 Create Your First Airdrop

@@ -10,17 +10,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Logo and Description Section */}
           <div className="md:col-span-4">
-            <div className="flex items-center mb-4">
-              <Image
-                src="/strataforge-logo.png"
-                alt="StrataForge Logo"
-                width={120}
-                height={40}
-                className="object-contain"
-              />
+            <div className="text-3xl font-bold flex items-center mb-4">
+              <span className="text-[hsl(var(--primary-from))] mr-1">
+                Zephyra
+              </span>
             </div>
             <p className="text-gray-400 text-sm mb-8">
-              StrataForge is a no-code token deployment platform that empowers creators, businesses, and communities
+              Zephyra is a no-code token deployment platform that empowers creators, businesses, and communities
               to launch tokens without requiring blockchain development expertise. All transactions involve risk and
               possible loss of funds. Past results dont guarantee future outcomes.
             </p>
@@ -47,6 +43,7 @@ export default function Footer() {
               </Link>
             </div>
           </div>
+
 
           {/* Navigation Links */}
           <div className="md:col-span-2">
@@ -142,7 +139,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="mt-16 pt-8 text-center md:text-left">
-          <p className="text-gray-400 text-sm">StrataForge © {new Date().getFullYear()}</p>
+          <p className="text-gray-400 text-sm">Zephyra © {new Date().getFullYear()}</p>
         </div>
       </div>
     </footer>

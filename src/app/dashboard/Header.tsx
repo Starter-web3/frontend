@@ -15,7 +15,7 @@ const DashboardHeader: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const displayAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
 
   return (
-    <header className='flex justify-between items-center p-4 md:px-8 md:py-4 bg-[--header-background] border-b border-[hsl(var(--border))]'>
+    <header className='flex justify-between items-center p-4 md:px-8 md:py-4 bg-black/40 border-b border-[hsl(var(--border))]'>
       <div className='flex items-center'>
         <button
           className='md:hidden mr-3 text-[hsl(var(--foreground))]'

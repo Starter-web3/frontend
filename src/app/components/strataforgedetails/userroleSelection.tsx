@@ -22,8 +22,12 @@ export default function TokenPlatformRoleSelection() {
       localStorage.setItem('userRole', backendRole);
       console.log(`Selected role: ${backendRole}`);
 
-      // Redirect to registration
-      router.push('/user-registration');
+      // Direct routing to dashboard based on role (bypass traditional auth)
+      if (backendRole === 'owner') {
+        router.push('/dashboard/token-creator');
+      } else if (backendRole === 'user') {
+        router.push('/dashboard/token-trader');
+      }
     }
   };
 
@@ -55,7 +59,7 @@ export default function TokenPlatformRoleSelection() {
       <div className='w-full max-w-5xl border border-white/10 rounded-xl p-8 bg-black/40 backdrop-blur-xl shadow-2xl'>
         <div className='text-center mb-12'>
           <h1 className='text-3xl font-bold text-white mb-3'>
-            Welcome to <span className='bg-gradient-to-r from-blue-400 to-purple-800 bg-clip-text text-transparent'>StrataForge</span>
+            Welcome to <span className='bg-gradient-to-r from-blue-400 to-purple-800 bg-clip-text text-transparent'>Zephyra</span>
           </h1>
           <p className='text-gray-400 text-lg'>Choose your role to get started</p>
         </div>

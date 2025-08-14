@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useRef } from 'react';
-import Link from 'next/link';
-import { Button } from '../../../../../../components/ui/button';
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "../../../../../../components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,7 +10,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../../../../../../components/ui/card';
+} from "../../../../../../components/ui/card";
 import {
   Table,
   TableBody,
@@ -18,15 +18,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../../../../../components/ui/table';
-import { Upload, FileText, Trash2, Plus, Coins } from 'lucide-react';
-import { Badge } from '../../../../../../components/ui/badge';
-import { ScrollArea } from '../../../../../../components/ui/scroll-area';
-import { Alert, AlertDescription } from '../../../../../../components/ui/alert';
-import DashBoardLayout from '../../DashboardLayout';
-import { parseCSV, createMerkleTree, Recipient } from '../../../../../lib/merkle';
+} from "../../../../../../components/ui/table";
+import { Upload, FileText, Trash2, Plus, Coins } from "lucide-react";
+import { Badge } from "../../../../../../components/ui/badge";
+import { ScrollArea } from "../../../../../../components/ui/scroll-area";
+import { Alert, AlertDescription } from "../../../../../../components/ui/alert";
+import DashBoardLayout from "../../DashboardLayout";
+import {
+  parseCSV,
+  createMerkleTree,
+  Recipient,
+} from "../../../../../lib/merkle";
 
-// Background Shapes Component (copied from airdrop-listing/page.tsx)
+// Background Shapes Component (unchanged)
 const BackgroundShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
     <div className="absolute top-20 left-10 w-32 h-32 border-2 border-purple-500/20 rounded-full animate-pulse"></div>
@@ -35,7 +39,7 @@ const BackgroundShapes = () => (
     <div className="absolute top-1/3 left-1/4 w-16 h-16 border-2 border-cyan-500/20 rotate-45 animate-pulse delay-600"></div>
     <div className="absolute bottom-1/4 right-1/3 w-28 h-28 border-2 border-purple-300/15 rounded-full animate-pulse delay-800"></div>
     <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-500/15 to-transparent rounded-full blur-xl animate-pulse delay-1000"></div>
-    <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/15 to-transparent rounded-full blur-xl animate-pulse delay-1200"></div>
+    <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-xl animate-pulse delay-1200"></div>
     <div className="absolute top-1/2 right-10 w-48 h-48 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-full blur-xl animate-pulse delay-1400"></div>
   </div>
 );
@@ -49,19 +53,46 @@ type RecipientFile = {
   merkleRoot: string;
   recipients: Recipient[];
   proofs: { [address: string]: string[] };
+  distributionMethod: "equal" | "custom"; // Added to track distribution method
 };
 
 export default function UploadPage() {
   const [files, setFiles] = useState<RecipientFile[]>([]);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load files from sessionStorage on component mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedFiles = sessionStorage.getItem("recipientFiles");
+      if (storedFiles) {
+        try {
+          const parsed = JSON.parse(storedFiles);
+          if (Array.isArray(parsed)) {
+            setFiles(parsed);
+          }
+        } catch (error) {
+          console.error("Invalid recipientFiles in sessionStorage:", error);
+        }
+      }
+    }
+  }, []);
+
+  // Save files to sessionStorage whenever files state changes
+  const updateFiles = (newFiles: RecipientFile[]) => {
+    setFiles(newFiles);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("recipientFiles", JSON.stringify(newFiles));
+    }
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    } else if (e.type === "dragleave") {
       setDragActive(false);
     }
   };
@@ -84,50 +115,73 @@ export default function UploadPage() {
   };
 
   const handleFiles = async (fileList: FileList) => {
+    setUploadError("");
     const newFiles: RecipientFile[] = [];
+
     for (const file of Array.from(fileList)) {
-      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+      if (file.type === "text/csv" || file.name.endsWith(".csv")) {
         try {
           const recipients = await parseCSV(file);
           if (recipients.length === 0) {
-            alert('No valid addresses found in CSV.');
+            setUploadError("No valid addresses found in CSV file.");
             continue;
           }
-          const { merkleRoot, proofs } = createMerkleTree(recipients);
+
+          // Determine distribution method based on whether any recipient has an amount
+          const hasAmounts = recipients.some((recipient) => !!recipient.amount);
+          const distributionMethod = hasAmounts ? "custom" : "equal";
+
+          const { merkleRoot, proofs } = createMerkleTree(
+            recipients,
+            distributionMethod === "custom",
+            "100" // Default amount for equal distribution
+          );
+
           const newFile: RecipientFile = {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: file.name,
             size: `${(file.size / 1024).toFixed(1)} KB`,
             count: recipients.length,
-            date: new Date().toISOString().split('T')[0],
+            date: new Date().toISOString().split("T")[0],
             merkleRoot,
             recipients,
             proofs,
+            distributionMethod,
           };
+
           newFiles.push(newFile);
         } catch (error) {
-          console.error('Error processing CSV:', error);
-          alert("Failed to process CSV file. Ensure it has a valid 'address' column.");
+          console.error("Error processing CSV:", error);
+          setUploadError(
+            `Failed to process CSV file "${file.name}". Ensure it has a valid 'address' column and optional 'amount' column for custom distributions.`
+          );
         }
+      } else {
+        setUploadError("Please upload only CSV files.");
       }
     }
-    setFiles((prev) => {
-      const updatedFiles = [...prev, ...newFiles];
-      localStorage.setItem('recipientFiles', JSON.stringify(updatedFiles));
-      return updatedFiles;
-    });
+
+    if (newFiles.length > 0) {
+      updateFiles([...files, ...newFiles]);
+      setUploadError("");
+    }
   };
 
   const removeFile = (id: string) => {
-    setFiles((prev) => {
-      const updatedFiles = prev.filter((file) => file.id !== id);
-      localStorage.setItem('recipientFiles', JSON.stringify(updatedFiles));
-      return updatedFiles;
-    });
+    const updatedFiles = files.filter((file) => file.id !== id);
+    updateFiles(updatedFiles);
+  };
+
+  const clearAllFiles = () => {
+    updateFiles([]);
   };
 
   const onButtonClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const getTotalRecipients = () => {
+    return files.reduce((total, file) => total + file.count, 0);
   };
 
   return (
@@ -144,39 +198,71 @@ export default function UploadPage() {
           </div>
         </header>
 
-        <main className="py-12">
+        <main className="py-12 relative z-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center mb-8">
-              <Link href="/dashboard/token-creator/airdrop-listing">
-                <Button
-                  variant="ghost"
-                  className="text-white hover:bg-purple-500/10 hover:text-purple-200 mr-4"
-                >
-                  <svg
-                    className="mr-2 h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center">
+                <Link href="/dashboard/token-creator/airdrop-listing">
+                  <Button
+                    variant="ghost"
+                    className="text-white hover:bg-purple-500/10 hover:text-purple-200 mr-4"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                    />
-                  </svg>
-                  Back to Airdrop Management
-                </Button>
-              </Link>
-              <h1 className="text-3xl font-bold text-white">Upload Recipients</h1>
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                      />
+                    </svg>
+                    Back to Airdrop Management
+                  </Button>
+                </Link>
+                <h1 className="text-3xl font-bold text-white">
+                  Upload Recipients
+                </h1>
+              </div>
+
+              {files.length > 0 && (
+                <div className="flex items-center space-x-4">
+                  <Badge
+                    variant="outline"
+                    className="border-purple-500 text-purple-100"
+                  >
+                    {files.length} file{files.length !== 1 ? "s" : ""} •{" "}
+                    {getTotalRecipients()} total recipients
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearAllFiles}
+                    className="border-red-500 text-red-400 hover:bg-red-500/10"
+                  >
+                    Clear All
+                  </Button>
+                </div>
+              )}
             </div>
+
+            {uploadError && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertDescription>{uploadError}</AlertDescription>
+              </Alert>
+            )}
 
             <div className="grid gap-8 md:grid-cols-3">
               <div className="md:col-span-2">
                 <Card className="bg-[#2A1F36]/80 border-purple-500/20 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle className="text-white">Recipient Lists</CardTitle>
+                    <CardTitle className="text-white">
+                      Recipient Lists
+                    </CardTitle>
                     <CardDescription className="text-gray-300">
                       Manage your CSV files containing recipient addresses
                     </CardDescription>
@@ -187,20 +273,41 @@ export default function UploadPage() {
                         <Table>
                           <TableHeader>
                             <TableRow className="border-purple-500/20">
-                              <TableHead className="text-gray-300">File Name</TableHead>
-                              <TableHead className="text-gray-300">Recipients</TableHead>
-                              <TableHead className="text-gray-300">Size</TableHead>
-                              <TableHead className="text-gray-300">Date Added</TableHead>
-                              <TableHead className="text-right text-gray-300">Actions</TableHead>
+                              <TableHead className="text-gray-300">
+                                File Name
+                              </TableHead>
+                              <TableHead className="text-gray-300">
+                                Recipients
+                              </TableHead>
+                              <TableHead className="text-gray-300">
+                                Distribution
+                              </TableHead>
+                              <TableHead className="text-gray-300">
+                                Size
+                              </TableHead>
+                              <TableHead className="text-gray-300">
+                                Date Added
+                              </TableHead>
+                              <TableHead className="text-right text-gray-300">
+                                Actions
+                              </TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {files.map((file) => (
-                              <TableRow key={file.id} className="border-purple-500/20">
+                              <TableRow
+                                key={file.id}
+                                className="border-purple-500/20"
+                              >
                                 <TableCell className="font-medium text-white">
                                   <div className="flex items-center">
                                     <FileText className="mr-2 h-4 w-4 text-purple-400" />
-                                    {file.name}
+                                    <span
+                                      className="truncate max-w-[200px]"
+                                      title={file.name}
+                                    >
+                                      {file.name}
+                                    </span>
                                   </div>
                                 </TableCell>
                                 <TableCell>
@@ -211,8 +318,26 @@ export default function UploadPage() {
                                     {file.count} addresses
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-white">{file.size}</TableCell>
-                                <TableCell className="text-white">{file.date}</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className={`border-purple-500 text-purple-100 ${
+                                      file.distributionMethod === "custom"
+                                        ? "bg-blue-500/10"
+                                        : "bg-green-500/10"
+                                    }`}
+                                  >
+                                    {file.distributionMethod === "equal"
+                                      ? "Equal Split"
+                                      : "Custom Amounts"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-white">
+                                  {file.size}
+                                </TableCell>
+                                <TableCell className="text-white">
+                                  {file.date}
+                                </TableCell>
                                 <TableCell className="text-right">
                                   <Button
                                     variant="ghost"
@@ -231,8 +356,12 @@ export default function UploadPage() {
                     ) : (
                       <div className="flex h-[400px] flex-col items-center justify-center text-center">
                         <FileText className="mb-4 h-12 w-12 text-purple-400/50" />
-                        <p className="mb-2 text-lg font-medium text-white">No files uploaded</p>
-                        <p className="text-sm text-gray-300">Upload a CSV file to get started</p>
+                        <p className="mb-2 text-lg font-medium text-white">
+                          No files uploaded
+                        </p>
+                        <p className="text-sm text-gray-300">
+                          Upload a CSV file to get started
+                        </p>
                       </div>
                     )}
                   </CardContent>
@@ -246,8 +375,16 @@ export default function UploadPage() {
                       Add File
                     </Button>
                     <Link href="/dashboard/token-creator/airdrop-listing/distribute">
-                      <Button className="bg-purple-500 hover:bg-purple-600 text-black">
+                      <Button
+                        className="bg-purple-500 hover:bg-purple-600 text-white"
+                        disabled={files.length === 0}
+                      >
                         Continue to Distribution
+                        {files.length > 0 && (
+                          <Badge className="ml-2 bg-purple-700 text-white">
+                            {getTotalRecipients()}
+                          </Badge>
+                        )}
                       </Button>
                     </Link>
                   </CardFooter>
@@ -257,25 +394,32 @@ export default function UploadPage() {
               <div>
                 <Card className="bg-[#2A1F36]/80 border-purple-500/20 backdrop-blur-sm">
                   <CardHeader>
-                    <CardTitle className="text-white">Upload New File</CardTitle>
+                    <CardTitle className="text-white">
+                      Upload New File
+                    </CardTitle>
                     <CardDescription className="text-gray-300">
-                      Upload a CSV file with wallet addresses
+                      Upload a CSV file with wallet addresses and optional
+                      amounts
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <form onDragEnter={handleDrag} className="flex flex-col items-center">
+                    <form
+                      onDragEnter={handleDrag}
+                      className="flex flex-col items-center"
+                    >
                       <input
                         ref={fileInputRef}
                         type="file"
                         accept=".csv"
+                        multiple
                         onChange={handleChange}
                         className="hidden"
                       />
                       <div
                         className={`flex h-[200px] w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
                           dragActive
-                            ? 'border-purple-500 bg-purple-500/10'
-                            : 'border-purple-500/20 hover:border-purple-500/50 hover:bg-purple-500/5'
+                            ? "border-purple-500 bg-purple-500/10"
+                            : "border-purple-500/20 hover:border-purple-500/50 hover:bg-purple-500/5"
                         }`}
                         onClick={onButtonClick}
                         onDragEnter={handleDrag}
@@ -287,17 +431,40 @@ export default function UploadPage() {
                         <p className="mb-2 text-center font-medium text-white">
                           Drag and drop your file here
                         </p>
-                        <p className="text-center text-sm text-gray-300">or click to browse</p>
+                        <p className="text-center text-sm text-gray-300">
+                          or click to browse • Multiple files supported
+                        </p>
                       </div>
                     </form>
 
                     <Alert className="mt-4 bg-purple-500/10 border-purple-500/20">
                       <AlertDescription className="text-sm text-gray-300">
-                        Your CSV file should have a column for wallet addresses.
+                        <strong>CSV Format Requirements:</strong>
+                        <br />• Must have an{" "}
+                        <code className="bg-purple-500/20 px-1 rounded">
+                          address
+                        </code>{" "}
+                        column with valid Ethereum addresses
+                        <br />• Optional:{" "}
+                        <code className="bg-purple-500/20 px-1 rounded">
+                          amount
+                        </code>{" "}
+                        column for custom distribution
                         <br />
-                        Example format: <code>address</code>
                         <br />
-                        Optional: Include an <code>amount</code> column if custom amounts are needed.
+                        <strong>Example:</strong>
+                        <br />
+                        <code className="bg-purple-500/20 px-1 rounded text-xs">
+                          address,amount
+                          <br />
+                          0x123...,100.5
+                          <br />
+                          0x456...,200.75
+                        </code>
+                        <br />
+                        <br />
+                        <strong>Note:</strong> Airdrop creation requires a fee
+                        based on the number of recipients.
                       </AlertDescription>
                     </Alert>
                   </CardContent>
