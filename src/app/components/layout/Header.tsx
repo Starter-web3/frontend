@@ -91,13 +91,11 @@ const Header: React.FC<HeaderProps> = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <Link href="/" className="flex-shrink-0">
-                <Image
-                  src="/strataforge-logo.png"
-                  alt="Zephyra Logo"
-                  width={120}
-                  height={40}
-                  className="object-contain"
-                />
+                <div className="text-3xl font-bold flex items-center">
+                  <span className="text-[hsl(var(--primary-from))] mr-1">
+                    Zephyra
+                  </span>
+                </div>
               </Link>
             </div>
 
