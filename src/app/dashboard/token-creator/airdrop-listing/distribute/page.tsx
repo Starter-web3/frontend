@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useWallet } from "../../../../../contexts/WalletContext";
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { Abi } from "viem";
-import { ethers, Log, LogDescription } from "ethers";
-console.log(Log, LogDescription )
+import { ethers } from "ethers";
 import { Button } from "../../../../../../components/ui/button";
 import {
   Card,
@@ -37,7 +36,6 @@ import {
   TooltipTrigger,
 } from "../../../../../../components/ui/tooltip";
 import DashBoardLayout from "../../DashboardLayout";
-import StrataForgeAirdropFactoryABI from "../../../../../app/components/ABIs/StrataForgeAirdropFactoryABI.json";
 import StrataForgeERC20ImplementationABI from "../../../../components/ABIs/StrataForgeERC20ImplementationABI.json";
 import StrataForgeAdminABI from "../../../../../app/components/ABIs/StrataForgeAdminABI.json";
 import { createMerkleTree, Recipient } from "../../../../../lib/merkle";
@@ -45,10 +43,6 @@ import {
   useUsdEthPrice,
   useAirdropPriceData,
 } from "../../../../../hooks/useUsdEthPrice";
-// Store the transaction hash for displaying in the UI
-const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
-
-
 
 const BackgroundShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -58,7 +52,7 @@ const BackgroundShapes = () => (
     <div className="absolute top-1/3 left-1/4 w-16 h-16 border-2 border-cyan-500/20 rotate-45 animate-pulse delay-600"></div>
     <div className="absolute bottom-1/4 right-1/3 w-28 h-28 border-2 border-purple-300/15 rounded-full animate-pulse delay-800"></div>
     <div className="absolute top-10 right-1/3 w-64 h-64 bg-gradient-to-br from-purple-500/15 to-transparent rounded-full blur-xl animate-pulse delay-1000"></div>
-    <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-xl animate-pulse delay-1200"></div>
+    <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-tr from-blue-500/15 to-transparent rounded-full blur-xl animate-pulse delay-1200"></div>
     <div className="absolute top-1/2 right-10 w-48 h-48 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-full blur-xl animate-pulse delay-1400"></div>
   </div>
 );
@@ -66,9 +60,105 @@ const BackgroundShapes = () => (
 const FACTORY_CONTRACT_ADDRESS = "0xFe9fDE126C4aE4Be8A6D4F1Da284611935726920" as const;
 const ADMIN_CONTRACT_ADDRESS = "0x4eB7bba93734533350455B50056c33e93DD86493" as const;
 
+// Use the exact ABI structure from your provided ABI
+const airdropFactoryABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_adminContract",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "creator",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "distributor",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "tokenType",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "totalRecipients",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "airdropIndex",
+        "type": "uint32"
+      }
+    ],
+    "name": "AirdropCreated",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "merkleRoot",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "dropAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "totalRecipients",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "startTime",
+        "type": "uint32"
+      }
+    ],
+    "name": "createERC20Airdrop",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+] as const;
+
 // Convert ABIs to proper types
 const adminABI = StrataForgeAdminABI as Abi;
-const airdropFactoryABI = StrataForgeAirdropFactoryABI as Abi;
 const erc20ABI = StrataForgeERC20ImplementationABI as Abi;
 
 type RecipientFile = {
@@ -344,73 +434,6 @@ export default function DistributePage() {
       setDistributorAddress("");
       setNetworkStatus("Preparing airdrop creation...");
 
-      const allRecipients = files.flatMap((file) => file.recipients);
-      const totalRecipients = allRecipients.length;
-
-      const isCustomDistribution = distributionMethod === "custom";
-      const { merkleRoot } = createMerkleTree(
-        allRecipients,
-        isCustomDistribution,
-        tokenAmount || "100"
-      );
-
-      let dropAmount: bigint;
-
-      if (isCustomDistribution) {
-        dropAmount = ethers.parseUnits("1", 18); // dummy value for custom mode
-      } else {
-        dropAmount = ethers.parseUnits(tokenAmount || "100", 18);
-      }
-
-      const startTime = scheduleDate
-        ? Math.floor(new Date(scheduleDate).getTime() / 1000)
-        : Math.floor(Date.now() / 1000);
-
-      // Get the required ETH fee with better error handling
-      if (!airdropFeeETHRaw) {
-        const errorMsg = airdropFeeETH 
-          ? `ETH fee parsing failed for value: ${airdropFeeETH}` 
-          : `Could not calculate ETH fee. USD fee: ${airdropFeeUSD}, ETH price: ${enhancedEthPrice}`;
-        console.error("Airdrop fee error:", errorMsg);
-        throw new Error(`Could not determine airdrop fee: ${errorMsg}`);
-      }
-
-      console.log("Airdrop fee details:", {
-        usdFee: airdropFeeUSD,
-        ethFee: airdropFeeETH,
-        ethFeeRaw: airdropFeeETHRaw.toString(),
-        ethPrice: enhancedEthPrice
-      });
-
-      setNetworkStatus("Creating airdrop...");
-
-      // Create the airdrop
-  const handleDistribute = async () => {
-    if (!isConnected) {
-      setError("Please connect your wallet!");
-      return;
-    }
-    if (files.length === 0) {
-      setError("No recipient files uploaded.");
-      return;
-    }
-    if (
-      distributionMethod === "custom" &&
-      files.some((file) => file.recipients.some((r) => !r.amount))
-    ) {
-      setError("Custom distribution requires amounts for all recipients in the CSV.");
-      return;
-    }
-    if (!ethers.isAddress(contractAddress)) {
-      setError("Invalid token contract address");
-      return;
-    }
-
-    try {
-      setError("");
-      setDistributorAddress("");
-      setNetworkStatus("Preparing airdrop creation...");
-
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
@@ -457,22 +480,21 @@ export default function DistributePage() {
       // Use the factory contract to create airdrop
       const factoryContract = new ethers.Contract(
         FACTORY_CONTRACT_ADDRESS,
-        JSON.parse(JSON.stringify(StrataForgeAirdropFactoryABI)),
+        airdropFactoryABI,
         signer
       );
 
       const result = await factoryContract.createERC20Airdrop(
-        contractAddress as `0x${string}`,
-        merkleRoot as `0x${string}`,
+        contractAddress,
+        merkleRoot,
         dropAmount,
         totalRecipients,
         startTime,
         {
-          value: airdropFeeETHRaw as bigint,
+          value: airdropFeeETHRaw,
         }
       );
 
-      setTxHash(result.hash as `0x${string}`);
       setNetworkStatus("Transaction submitted, waiting for confirmation...");
 
       // Wait for transaction receipt
@@ -481,6 +503,8 @@ export default function DistributePage() {
 
       // Parse the AirdropCreated event to get distributor address
       try {
+        console.log("Transaction receipt logs:", receipt.logs);
+        
         const event = receipt.logs
           .map((log: any) => {
             try {
@@ -491,34 +515,20 @@ export default function DistributePage() {
           })
           .find((e: any) => e && e.name === 'AirdropCreated');
 
+        console.log("Found AirdropCreated event:", event);
+
         if (event && event.args) {
-          const newDistributorAddress = event.args.distributorAddress || event.args[0];
-          console.log("Found distributor address from event:", newDistributorAddress);
+          // Based on your ABI: AirdropCreated(creator, distributor, token, tokenType, totalRecipients, airdropIndex)
+          // event.args[0] = creator
+          // event.args[1] = distributor  ← This is what we need!
+          // event.args[2] = token
+          const newDistributorAddress = event.args[1];
+          console.log("Extracted distributor address from event:", newDistributorAddress);
           setDistributorAddress(newDistributorAddress);
           setNetworkStatus("✅ Airdrop created successfully!");
         } else {
-          console.log("No AirdropCreated event found, trying ERC20AirdropCreated...");
-          
-          // Try alternative event name
-          const altEvent = receipt.logs
-            .map((log: any) => {
-              try {
-                return factoryContract.interface.parseLog(log);
-              } catch {
-                return null;
-              }
-            })
-            .find((e: any) => e && (e.name === 'ERC20AirdropCreated' || e.name.includes('Created')));
-
-          if (altEvent && altEvent.args) {
-            const newDistributorAddress = altEvent.args.distributorAddress || altEvent.args.airdrop || altEvent.args[0];
-            console.log("Found distributor address from alt event:", newDistributorAddress);
-            setDistributorAddress(newDistributorAddress);
-            setNetworkStatus("✅ Airdrop created successfully!");
-          } else {
-            console.log("Could not find distributor address in events");
-            setNetworkStatus("⚠️ Airdrop created! Please check transaction for distributor address.");
-          }
+          console.log("No AirdropCreated event found in transaction logs");
+          setNetworkStatus("⚠️ Airdrop created! Please check transaction for distributor address.");
         }
       } catch (eventError) {
         console.error("Error parsing events:", eventError);
@@ -526,28 +536,6 @@ export default function DistributePage() {
       }
 
       setError("");
-      setTxHash(undefined);
-      
-    } catch (err) {
-      console.error("Distribution error:", err);
-      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
-
-      if (errorMessage.includes("Insufficient ETH for airdrop fee")) {
-        setError("Insufficient ETH sent for airdrop fee.");
-      } else if (errorMessage.includes("InvalidRecipientCount")) {
-        setError("Invalid number of recipients for the selected fee tier.");
-      } else if (errorMessage.includes("PriceFeedNotSet")) {
-        setError("Price feed not set in the admin contract.");
-      } else if (errorMessage.includes("StalePriceFeed")) {
-        setError("Price feed data is stale.");
-      } else if (errorMessage.includes("InvalidPriceFeed")) {
-        setError("Invalid price feed data.");
-      } else {
-        setError(`Error: ${errorMessage}`);
-      }
-      setNetworkStatus("Error occurred");
-    }
-  };
       
     } catch (err) {
       console.error("Distribution error:", err);
@@ -931,51 +919,21 @@ export default function DistributePage() {
                     <p className="text-gray-400 text-sm">
                       {distributorAddress ? 
                         "This is the address where tokens should be minted and where users will claim from." :
-                        "Check your transaction details to find the new airdrop contract address."
+                        "The distributor address will appear here after creating an airdrop."
                       }
                     </p>
                   </div>
-                  
-                  {txHash && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-white">Transaction Hash</Label>
-                        <div className="flex items-center space-x-2">
-                          <code className="bg-[#3A2F46]/50 p-2 rounded text-white text-sm break-all">
-                            {txHash}
-                          </code>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(`https://scan.coredao.org/tx/${txHash}`, '_blank')}
-                            className="text-white border-purple-500 hover:bg-purple-500/20"
-                          >
-                            View on CoreScan
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-white">Manual Address Verification</Label>
-                        <div className="bg-[#3A2F46]/30 p-3 rounded text-sm text-gray-300">
-                          <p className="mb-2"><strong>To find the correct distributor address:</strong></p>
-                          <ol className="list-decimal list-inside space-y-1">
-                            <li>Click "View on CoreScan" above</li>
-                            <li>Look for "Internal Transactions" or "Events" tab</li>
-                            <li>Find a new contract creation (will have a "Contract Creation" label)</li>
-                            <li>The new contract address is your distributor address</li>
-                          </ol>
-                          <div className="mt-3 space-y-1">
-                            <p><strong>Known addresses (NOT the distributor):</strong></p>
-                            <p className="font-mono text-xs">• Your wallet: {address}</p>
-                            <p className="font-mono text-xs">• Token contract: {contractAddress}</p>
-                            <p className="font-mono text-xs">• Factory: {FACTORY_CONTRACT_ADDRESS}</p>
-                            <p className="font-mono text-xs">• Admin: {ADMIN_CONTRACT_ADDRESS}</p>
-                          </div>
-                        </div>
-                      </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-white">Instructions</Label>
+                    <div className="bg-[#3A2F46]/30 p-3 rounded text-sm text-gray-300">
+                      <ol className="list-decimal list-inside space-y-1">
+                        <li>Create the airdrop first to get the distributor address</li>
+                        <li>Mint tokens to the distributor address</li>
+                        <li>Share the distributor address with recipients for claiming</li>
+                      </ol>
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
