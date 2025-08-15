@@ -41,7 +41,15 @@ Zephyra simplifies blockchain interactions, making token deployment accessible t
 ## Campaign Management Flow
 1. Create and manage airdrops and marketing campaigns.  
 2. Integrate with token deployments for distribution.  
-3. Track engagement and distribution metrics.  
+3. Track engagement and distribution metrics.
+
+## Airdrop Disribution Flow
+1. Upload CSV file with whirelisyed addresses in airdrop distribution page
+2. Distribute Airdrop 
+3. After airdrop distribution, the page will automatically create a new *Airdrop* address from factory contract.
+4. Mint some tokens to that new contract address (so users will be able to claim)
+5. Share your distributor address (Newly created Airdrop address to users)
+6. Go to claim page (for users dashboard) and input distributor address after connecting wallet to claim airdrop (still under fix currently)
 
 ## Authentication Flow
 - Web3 auth via MetaMask or other wallets for seamless blockchain access.  
