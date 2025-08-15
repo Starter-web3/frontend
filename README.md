@@ -44,7 +44,7 @@ Zephyra simplifies blockchain interactions, making token deployment accessible t
 3. Track engagement and distribution metrics.
 
 ## Airdrop Disribution Flow
-1. Upload CSV file with whirelisyed addresses in airdrop distribution page
+1. Upload CSV file with whitelisted addresses in airdrop distribution page
 2. Distribute Airdrop 
 3. After airdrop distribution, the page will automatically create a new *Airdrop* address from factory contract.
 4. Mint some tokens to that new contract address (so users will be able to claim)
