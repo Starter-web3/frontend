@@ -341,9 +341,13 @@ export default function DistributePage() {
             // For many factory patterns, the first topic after the event signature contains the new contract address
             if (airdropCreatedLog.topics && airdropCreatedLog.topics.length > 1) {
               // Extract address from topics (remove leading zeros and add 0x prefix)
-              const addressFromTopic = "0x" + airdropCreatedLog.topics[1].slice(-40);
-              setDistributorAddress(addressFromTopic);
-              console.log("Extracted distributor address:", addressFromTopic);
+              if (airdropCreatedLog.topics[1]) {
+                const addressFromTopic = "0x" + airdropCreatedLog.topics[1].slice(-40);
+                setDistributorAddress(addressFromTopic);
+                console.log("Extracted distributor address:", addressFromTopic);
+              } else {
+                console.warn("No address found in airdropCreatedLog topics[1]");
+              }
             }
           }
           
