@@ -186,40 +186,33 @@ export default function DistributePage() {
     },
   });
 
-  // Use wagmi to get airdrop fee ETH
-  const {
-    data: airdropFeeETHRaw,
-    error: airdropFeeETHError,
-    isLoading: airdropFeeETHLoading,
-  } = useReadContract({
-    address: ADMIN_CONTRACT_ADDRESS,
-    abi: adminABI,
-    functionName: "getAirdropFeeETH",
-    args: [totalRecipients],
-    query: {
-      enabled: isConnected && totalRecipients > 0,
-      retry: 3,
-      retryDelay: 1000,
-    },
-  });
-
-  // Format fees for display
+  // Format USD fee for display
   const airdropFeeUSD = useMemo(() => {
     if (!airdropFeeUSDRaw) return null;
     return ethers.formatUnits(airdropFeeUSDRaw as bigint, 8);
   }, [airdropFeeUSDRaw]);
 
+  // Calculate ETH fee from USD fee using current ETH price
   const airdropFeeETH = useMemo(() => {
-    if (!airdropFeeETHRaw) return null;
-    return ethers.formatEther(airdropFeeETHRaw as bigint);
-  }, [airdropFeeETHRaw]);
+    if (!airdropFeeUSD || !enhancedEthPrice) return null;
+    const usdFee = parseFloat(airdropFeeUSD);
+    const ethFee = usdFee / enhancedEthPrice;
+    return ethFee.toString();
+  }, [airdropFeeUSD, enhancedEthPrice]);
 
-  const ethFeeInUSD = useMemo(() => {
-    if (!airdropFeeETH || !ethPrice) return null;
-    return (parseFloat(airdropFeeETH) * ethPrice).toFixed(2);
-  }, [airdropFeeETH, ethPrice]);
+  // Convert ETH fee to Wei for contract calls
+  const airdropFeeETHRaw = useMemo(() => {
+    if (!airdropFeeETH) return null;
+    try {
+      return ethers.parseEther(airdropFeeETH);
+    } catch (error) {
+      console.error("Error parsing ETH fee:", error);
+      return null;
+    }
+  }, [airdropFeeETH]);
 
-  const feeLoading = airdropFeeUSDLoading || airdropFeeETHLoading;
+  // Fee loading state
+  const feeLoading = airdropFeeUSDLoading;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -241,18 +234,14 @@ export default function DistributePage() {
   useEffect(() => {
     if (feeLoading) {
       setNetworkStatus(`Fetching fees for ${totalRecipients} recipients...`);
-    } else if (airdropFeeUSDError || airdropFeeETHError) {
+    } else if (airdropFeeUSDError) {
       setNetworkStatus("Error fetching fees");
-      setError(
-        `Failed to fetch airdrop fees: ${
-          airdropFeeUSDError?.message || airdropFeeETHError?.message
-        }`
-      );
-    } else if (airdropFeeUSD || airdropFeeETH) {
+      setError(`Failed to fetch airdrop fees: ${airdropFeeUSDError?.message}`);
+    } else if (airdropFeeUSD) {
       setNetworkStatus("Fees fetched successfully");
       setError("");
     }
-  }, [feeLoading, airdropFeeUSDError, airdropFeeETHError, airdropFeeUSD, airdropFeeETH, totalRecipients]);
+  }, [feeLoading, airdropFeeUSDError, airdropFeeUSD, totalRecipients]);
 
   const handleMaxAmount = () => {
     setTokenAmount("1000");
@@ -602,17 +591,21 @@ export default function DistributePage() {
                   ) : (
                     <div className="space-y-2">
                       {airdropFeeUSD && (
-                        <div className="text-white">USD: ${airdropFeeUSD}</div>
+                        <div className="text-white">
+                          USD: ${parseFloat(airdropFeeUSD).toFixed(2)}
+                        </div>
                       )}
                       {airdropFeeETH && (
                         <div className="flex items-center space-x-2">
-                          <span className="text-white">ETH: {airdropFeeETH}</span>
-                          {ethFeeInUSD && (
-                            <span className="text-gray-400">(${ethFeeInUSD})</span>
-                          )}
+                          <span className="text-white">
+                            ETH: {parseFloat(airdropFeeETH).toFixed(6)}
+                          </span>
+                          <span className="text-gray-400">
+                            (${parseFloat(airdropFeeUSD || "0").toFixed(2)})
+                          </span>
                         </div>
                       )}
-                      {(airdropFeeUSDError || airdropFeeETHError) && (
+                      {airdropFeeUSDError && (
                         <div className="text-red-400 text-sm">
                           Error loading fees. Please check your connection.
                         </div>
