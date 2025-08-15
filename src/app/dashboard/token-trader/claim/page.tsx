@@ -306,12 +306,12 @@ export default function ClaimPage() {
         if (stored) {
           const files: RecipientFile[] = JSON.parse(stored);
           const matchingFile = files.find(
-            (f) => f.distributorAddress?.toLowerCase() === contractAddress.toLowerCase()
+            (f: RecipientFile) => f.distributorAddress?.toLowerCase() === contractAddress.toLowerCase()
           );
           if (matchingFile) {
             isCustomDistribution =
               matchingFile.isCustomDistribution ||
-              matchingFile.recipients.some((r) => !!r.amount && r.amount !== "0");
+              matchingFile.recipients.some((r: { address: string; amount?: string; proof?: string[] }) => !!r.amount && r.amount !== "0");
           }
         }
       } catch (err) {
@@ -388,14 +388,46 @@ export default function ClaimPage() {
       const files: RecipientFile[] = JSON.parse(stored);
       const lowerAddr = address.toLowerCase();
 
-      // Find matching file by distributor address
-      const matchingFile = files.find(
-        (f) => f.distributorAddress?.toLowerCase() === distributorAddress.toLowerCase()
+      // Debug: Show what files are available
+      console.log("Available recipient files:", files.map((f: RecipientFile) => ({
+        name: f.name,
+        id: f.id,
+        merkleRoot: f.merkleRoot,
+        distributorAddress: f.distributorAddress,
+        recipientCount: f.count
+      })));
+
+      console.log("Looking for distributor address:", distributorAddress);
+      console.log("Contract merkle root:", airdropInfo?.merkleRoot);
+
+      // Find matching file - try multiple approaches
+      let matchingFile = files.find(
+        (f: RecipientFile) => f.distributorAddress?.toLowerCase() === distributorAddress.toLowerCase()
       );
+
+      // If not found by distributor address, try by merkle root
+      if (!matchingFile && airdropInfo?.merkleRoot) {
+        matchingFile = files.find(
+          (f: RecipientFile) => f.merkleRoot.toLowerCase() === airdropInfo.merkleRoot.toLowerCase()
+        );
+      }
+
+      // If still not found, try the first file (fallback)
+      if (!matchingFile && files.length > 0) {
+        console.warn("Could not match file by distributor address or merkle root, using first file");
+        matchingFile = files[0];
+      }
       
       if (!matchingFile) {
-        throw new Error("No recipient file found for this distributor address.");
+        throw new Error("No recipient file found. Please upload the recipient files used for this airdrop.");
       }
+
+      console.log("Using recipient file:", {
+        fileName: matchingFile.name,
+        recipientCount: matchingFile.count,
+        merkleRoot: matchingFile.merkleRoot,
+        distributorAddress: matchingFile.distributorAddress
+      });
 
       // Get user proof and amount
       let userProof: string[] | null = null;
@@ -404,13 +436,22 @@ export default function ClaimPage() {
       if (matchingFile.proofs[lowerAddr]) {
         userProof = matchingFile.proofs[lowerAddr];
         const rec = matchingFile.recipients.find(
-          (r) => r.address.toLowerCase() === lowerAddr
+          (r: { address: string; amount?: string; proof?: string[] }) => r.address.toLowerCase() === lowerAddr
         );
         userAmount = rec?.amount;
       }
 
       if (!userProof) {
-        throw new Error("Address not whitelisted for this airdrop");
+        // Try to find the user in recipients list even if proof is missing
+        const userInList = matchingFile.recipients.find(
+          (r: { address: string; amount?: string; proof?: string[] }) => r.address.toLowerCase() === lowerAddr
+        );
+        
+        if (!userInList) {
+          throw new Error("Your address is not in the whitelist for this airdrop");
+        } else {
+          throw new Error("Proof not found for your address. Please check the recipient file.");
+        }
       }
 
       console.log("User claim data:", {
@@ -418,38 +459,66 @@ export default function ClaimPage() {
         amount: userAmount,
         hasProof: !!userProof,
         proofLength: userProof.length,
-        isCustomDistribution: airdropInfo?.isCustomDistribution
+        isCustomDistribution: airdropInfo?.isCustomDistribution,
+        fileUsed: matchingFile.name
       });
+
+      // Create recipients array with proofs for verification
+      const recipientsWithProof = matchingFile.recipients.map((r: { address: string; amount?: string; proof?: string[] }) => ({
+        address: r.address,
+        amount: r.amount,
+        proof: matchingFile.proofs[r.address.toLowerCase()] || []
+      }));
 
       // Verify proof locally
       setStatusMessage("Verifying Merkle proof...");
+      const isCustomDistribution = airdropInfo?.isCustomDistribution || false;
+      const defaultAmount = airdropInfo?.dropAmount || "0";
+
+      console.log("Verification parameters:", {
+        address,
+        merkleRoot: airdropInfo?.merkleRoot,
+        isCustomDistribution,
+        defaultAmount,
+        recipientCount: recipientsWithProof.length
+      });
+
       const { eligible, proof } = verifyAddressEligibility(
         address,
-        matchingFile.recipients.map((r) => ({
-          address: r.address,
-          amount: r.amount,
-          proof: r.proof || [],
-        })),
-        matchingFile.merkleRoot,
-        airdropInfo?.isCustomDistribution || false
+        recipientsWithProof,
+        airdropInfo?.merkleRoot || matchingFile.merkleRoot,
+        isCustomDistribution,
+        defaultAmount
       );
 
-      if (!eligible || !proof) {
-        throw new Error("Invalid Merkle proof. Your address may not be whitelisted.");
+      if (!eligible) {
+        throw new Error("Merkle proof verification failed. Your address may not be eligible for this airdrop.");
       }
 
-      // Use the verified proof
-      userProof = proof;
+      // Use the verified proof if available, otherwise use the stored proof
+      const finalProof = proof || userProof;
+      
+      if (!finalProof || finalProof.length === 0) {
+        throw new Error("No valid proof found for your address.");
+      }
+
+      console.log("Final proof to submit:", {
+        proofLength: finalProof.length,
+        proof: finalProof
+      });
 
       // Estimate gas
       setStatusMessage("Estimating gas...");
-      const gasLimit = await contract.claim.estimateGas(userProof)
+      const gasLimit = await contract.claim.estimateGas(finalProof)
         .then((g: bigint) => (g * 12n) / 10n)
-        .catch(() => BigInt(500000)); // Fallback gas limit
+        .catch((gasError: any) => {
+          console.warn("Gas estimation failed:", gasError);
+          return BigInt(500000); // Fallback gas limit
+        });
 
       // Submit claim transaction
       setStatusMessage("Submitting transaction...");
-      const tx = await contract.claim(userProof, { gasLimit });
+      const tx = await contract.claim(finalProof, { gasLimit });
 
       setStatusMessage("Waiting for confirmation...");
       await tx.wait();
