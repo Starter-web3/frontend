@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAccount } from "wagmi";
 import { ethers } from "ethers";
-// import { keccak256, solidityPacked } from 'ethers';
 
 import { Button } from "../../../../../components/ui/button";
 import {
@@ -19,7 +18,7 @@ import { Label } from "../../../../../components/ui/label";
 import { Alert, AlertDescription } from "../../../../../components/ui/alert";
 import { ArrowLeft, Coins } from "lucide-react";
 import DashBoardLayout from "../../token-creator/DashboardLayout";
-import { verifyAddressEligibility } from "../../../../lib/merkle"; // Import from merkle.ts
+import { verifyAddressEligibility } from "../../../../lib/merkle";
 
 type RecipientFile = {
   id: string;
@@ -29,18 +28,19 @@ type RecipientFile = {
   distributorAddress?: string;
   recipients: { address: string; amount?: string; proof?: string[] }[];
   proofs: { [address: string]: string[] };
-  isCustomDistribution?: boolean; // Add flag to indicate distribution type
+  isCustomDistribution?: boolean;
 };
 
-
+// Use the correct ABI for StrataForgeMerkleDistributor
 const DISTRIBUTOR_ABI = [
-  // Add the actual StrataForge ERC20 Airdrop Implementation ABI here
-  // This should match what's in your StrataForgeERC20ImplementationABI.json file
   {
     "inputs": [
       { "internalType": "address", "name": "token_", "type": "address" },
       { "internalType": "bytes32", "name": "merkleRoot_", "type": "bytes32" },
+      { "internalType": "uint8", "name": "tokenType_", "type": "uint8" },
       { "internalType": "uint256", "name": "dropAmount_", "type": "uint256" },
+      { "internalType": "uint256[]", "name": "tokenIds_", "type": "uint256[]" },
+      { "internalType": "uint256", "name": "tokenId_", "type": "uint256" },
       { "internalType": "uint32", "name": "totalRecipients_", "type": "uint32" },
       { "internalType": "uint32", "name": "startTime_", "type": "uint32" }
     ],
@@ -81,16 +81,19 @@ const DISTRIBUTOR_ABI = [
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
       }
     ],
     "name": "Claimed",
     "type": "event"
   },
   {
-    "inputs": [
-      { "internalType": "bytes32[]", "name": "proof", "type": "bytes32[]" },
-      { "internalType": "uint256", "name": "amount", "type": "uint256" }
-    ],
+    "inputs": [{ "internalType": "bytes32[]", "name": "proof", "type": "bytes32[]" }],
     "name": "claim",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -107,6 +110,20 @@ const DISTRIBUTOR_ABI = [
     "inputs": [],
     "name": "dropAmount",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRemainingTokens",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTokenIds",
+    "outputs": [{ "internalType": "uint256[]", "name": "", "type": "uint256[]" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -140,6 +157,20 @@ const DISTRIBUTOR_ABI = [
   },
   {
     "inputs": [],
+    "name": "tokenId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "tokenType",
+    "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "totalRecipients",
     "outputs": [{ "internalType": "uint32", "name": "", "type": "uint32" }],
     "stateMutability": "view",
@@ -161,17 +192,7 @@ const TOKEN_ABI = [
     outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
     stateMutability: "view",
     type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "account", type: "address" },
-      { internalType: "uint256", name: "id", type: "uint256" },
-    ],
-    name: "balanceOf",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
+  }
 ] as const;
 
 export default function ClaimPage() {
@@ -192,6 +213,8 @@ export default function ClaimPage() {
     tokenId?: string;
     decimals?: number;
     isCustomDistribution?: boolean;
+    totalRecipients: number;
+    claimedCount: number;
   } | null>(null);
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,52 +224,74 @@ export default function ClaimPage() {
     setAirdropInfo(null);
   };
 
-  const fetchAirdropInfo = async (address: string) => {
+  const fetchAirdropInfo = async (contractAddress: string) => {
     try {
-      if (!ethers.isAddress(address)) {
+      if (!ethers.isAddress(contractAddress)) {
         setError("Invalid contract address");
         return;
       }
 
       setStatusMessage("Fetching airdrop details...");
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(address, DISTRIBUTOR_ABI, provider);
+      const contract = new ethers.Contract(contractAddress, DISTRIBUTOR_ABI, provider);
 
+      // Fetch basic contract info
       const [
         tokenAddress,
         dropAmount,
         merkleRoot,
         tokenType,
-        tokenId,
         startTime,
+        totalRecipients,
+        claimedCount
       ] = await Promise.all([
         contract.token(),
         contract.dropAmount(),
         contract.merkleRoot(),
         contract.tokenType(),
-        contract.tokenId(),
         contract.startTime(),
+        contract.totalRecipients(),
+        contract.claimedCount()
       ]);
 
-      const tokenContract = new ethers.Contract(
+      console.log("Contract data fetched:", {
         tokenAddress,
-        TOKEN_ABI,
-        provider
-      );
+        dropAmount: dropAmount.toString(),
+        merkleRoot,
+        tokenType: Number(tokenType),
+        startTime: Number(startTime),
+        totalRecipients: Number(totalRecipients),
+        claimedCount: Number(claimedCount)
+      });
 
+      // Get token info
+      const tokenContract = new ethers.Contract(tokenAddress, TOKEN_ABI, provider);
       let decimals = 18;
       let formattedDropAmount = dropAmount.toString();
 
       if (Number(tokenType) === 0) {
-        decimals = await tokenContract.decimals();
-        formattedDropAmount = ethers.formatUnits(dropAmount, decimals);
+        try {
+          decimals = await tokenContract.decimals();
+          formattedDropAmount = ethers.formatUnits(dropAmount, decimals);
+        } catch (err) {
+          console.warn("Could not fetch token decimals, using 18:", err);
+          formattedDropAmount = ethers.formatUnits(dropAmount, 18);
+        }
       }
 
+      // Get token IDs for NFTs
       let tokenIds: string[] | undefined;
+      let tokenId: string | undefined;
+      
       if (Number(tokenType) !== 0) {
         try {
-          const ids = await contract.getTokenIds();
-          tokenIds = ids.map((id: bigint) => id.toString());
+          if (Number(tokenType) === 1) { // ERC721
+            const ids = await contract.getTokenIds();
+            tokenIds = ids.map((id: bigint) => id.toString());
+          } else if (Number(tokenType) === 2) { // ERC1155
+            const id = await contract.tokenId();
+            tokenId = id.toString();
+          }
         } catch (err) {
           console.warn("Could not fetch token IDs:", err);
         }
@@ -254,19 +299,23 @@ export default function ClaimPage() {
 
       const startTimeDate = new Date(Number(startTime) * 1000);
 
-      // Determine if it's a custom distribution by checking recipient file
+      // Check if it's custom distribution
       let isCustomDistribution = false;
-      const stored = localStorage.getItem("recipientFiles");
-      if (stored) {
-        const files: RecipientFile[] = JSON.parse(stored);
-        const matchingFile = files.find(
-          (f) => f.distributorAddress?.toLowerCase() === address.toLowerCase()
-        );
-        if (matchingFile) {
-          isCustomDistribution =
-            matchingFile.isCustomDistribution ||
-            matchingFile.recipients.some((r) => !!r.amount && r.amount !== "0");
+      try {
+        const stored = sessionStorage.getItem("recipientFiles");
+        if (stored) {
+          const files: RecipientFile[] = JSON.parse(stored);
+          const matchingFile = files.find(
+            (f) => f.distributorAddress?.toLowerCase() === contractAddress.toLowerCase()
+          );
+          if (matchingFile) {
+            isCustomDistribution =
+              matchingFile.isCustomDistribution ||
+              matchingFile.recipients.some((r) => !!r.amount && r.amount !== "0");
+          }
         }
+      } catch (err) {
+        console.warn("Could not check distribution type:", err);
       }
 
       setAirdropInfo({
@@ -276,9 +325,11 @@ export default function ClaimPage() {
         merkleRoot,
         tokenType: Number(tokenType),
         tokenIds,
-        tokenId: tokenId.toString(),
+        tokenId,
         decimals,
         isCustomDistribution,
+        totalRecipients: Number(totalRecipients),
+        claimedCount: Number(claimedCount)
       });
 
       setStatusMessage("");
@@ -304,10 +355,8 @@ export default function ClaimPage() {
   const handleClaim = async () => {
     try {
       if (!window.ethereum) throw new Error("Please install MetaMask!");
-      if (!isConnected || !address)
-        throw new Error("Please connect your wallet!");
-      if (!ethers.isAddress(distributorAddress))
-        throw new Error("Invalid distributor address!");
+      if (!isConnected || !address) throw new Error("Please connect your wallet!");
+      if (!ethers.isAddress(distributorAddress)) throw new Error("Invalid distributor address!");
 
       setLoading(true);
       setError("");
@@ -316,11 +365,7 @@ export default function ClaimPage() {
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(
-        distributorAddress,
-        DISTRIBUTOR_ABI,
-        signer
-      );
+      const contract = new ethers.Contract(distributorAddress, DISTRIBUTOR_ABI, signer);
 
       // Check if user has already claimed
       const hasClaimed = await contract.hasClaimed(address);
@@ -332,29 +377,29 @@ export default function ClaimPage() {
       const startTime = await contract.startTime();
       if (Math.floor(Date.now() / 1000) < Number(startTime)) {
         throw new Error(
-          `Airdrop not started. Starts at ${new Date(
-            Number(startTime) * 1000
-          ).toLocaleString()}`
+          `Airdrop not started. Starts at ${new Date(Number(startTime) * 1000).toLocaleString()}`
         );
       }
 
       // Get recipient file and find user data
-      const stored = localStorage.getItem("recipientFiles");
-      if (!stored) throw new Error("Missing recipient file.");
+      const stored = sessionStorage.getItem("recipientFiles");
+      if (!stored) throw new Error("Missing recipient file. Please upload recipient files first.");
+      
       const files: RecipientFile[] = JSON.parse(stored);
-
-      let userProof: string[] | null = null;
-      let userAmount: string | undefined;
-      const isCustomDistribution = airdropInfo?.isCustomDistribution ?? false;
       const lowerAddr = address.toLowerCase();
 
+      // Find matching file by distributor address
       const matchingFile = files.find(
-        (f) => f.id.toLowerCase() === distributorAddress.toLowerCase()
+        (f) => f.distributorAddress?.toLowerCase() === distributorAddress.toLowerCase()
       );
-      if (!matchingFile)
-        throw new Error(
-          "No recipient file found for this distributor address."
-        );
+      
+      if (!matchingFile) {
+        throw new Error("No recipient file found for this distributor address.");
+      }
+
+      // Get user proof and amount
+      let userProof: string[] | null = null;
+      let userAmount: string | undefined;
 
       if (matchingFile.proofs[lowerAddr]) {
         userProof = matchingFile.proofs[lowerAddr];
@@ -368,63 +413,15 @@ export default function ClaimPage() {
         throw new Error("Address not whitelisted for this airdrop");
       }
 
-      console.log("User data:", {
+      console.log("User claim data:", {
         address: lowerAddr,
         amount: userAmount,
         hasProof: !!userProof,
-        isCustomDistribution,
+        proofLength: userProof.length,
+        isCustomDistribution: airdropInfo?.isCustomDistribution
       });
 
-      const tokenAddress = await contract.token();
-      const tokenType = await contract.tokenType();
-      const tokenId = await contract.tokenId();
-      const dropAmount = await contract.dropAmount();
-      const merkleRoot = await contract.merkleRoot();
-
-      const tokenContract = new ethers.Contract(
-        tokenAddress,
-        TOKEN_ABI,
-        provider
-      );
-
-      let decimals = 18;
-      if (Number(tokenType) === 0) {
-        decimals = await tokenContract.decimals();
-      }
-
-      // Check contract balance
-      const contractBalance =
-        Number(tokenType) === 0
-          ? await tokenContract.balanceOf(distributorAddress)
-          : await tokenContract.balanceOf(distributorAddress, tokenId);
-
-      // Determine amount to use
-      let userAmountWei = dropAmount; // Default to contract's dropAmount
-      if (
-        Number(tokenType) === 0 &&
-        isCustomDistribution &&
-        userAmount &&
-        userAmount !== "0"
-      ) {
-        try {
-          userAmountWei = ethers.parseUnits(userAmount, decimals);
-        } catch (err) {
-          console.error("parseUnits error:", err);
-          throw new Error(`Invalid amount in recipient file: "${userAmount}"`);
-        }
-      } else if (Number(tokenType) !== 0) {
-        // For NFTs, use quantity (default to 1 if not specified)
-        userAmountWei =
-          userAmount && userAmount !== "0"
-            ? ethers.parseUnits(userAmount, 0)
-            : BigInt(1);
-      }
-
-      if (contractBalance < userAmountWei) {
-        throw new Error("Contract has insufficient balance.");
-      }
-
-      // Verify proof locally using merkle.ts
+      // Verify proof locally
       setStatusMessage("Verifying Merkle proof...");
       const { eligible, proof } = verifyAddressEligibility(
         address,
@@ -433,39 +430,22 @@ export default function ClaimPage() {
           amount: r.amount,
           proof: r.proof || [],
         })),
-        merkleRoot,
-        isCustomDistribution
+        matchingFile.merkleRoot,
+        airdropInfo?.isCustomDistribution || false
       );
 
       if (!eligible || !proof) {
-        throw new Error(
-          "Invalid Merkle proof. Your address may not be whitelisted."
-        );
+        throw new Error("Invalid Merkle proof. Your address may not be whitelisted.");
       }
 
-      // Ensure proof matches
-      if (JSON.stringify(proof) !== JSON.stringify(userProof)) {
-        console.warn("Proof mismatch:", { expected: proof, actual: userProof });
-        userProof = proof; // Use the verified proof
-      }
-
-      // Debug contract and proof details
-      console.log("Contract Info:", {
-        tokenAddress,
-        tokenType: Number(tokenType),
-        tokenId: tokenId.toString(),
-        dropAmount: dropAmount.toString(),
-        userAmount: userAmountWei.toString(),
-        merkleRoot,
-        userAddress: address,
-        userProof,
-      });
+      // Use the verified proof
+      userProof = proof;
 
       // Estimate gas
       setStatusMessage("Estimating gas...");
-      const gasLimit = await contract.claim
-        .estimateGas(userProof)
-        .then((g: bigint) => (g * 12n) / 10n);
+      const gasLimit = await contract.claim.estimateGas(userProof)
+        .then((g: bigint) => (g * 12n) / 10n)
+        .catch(() => BigInt(500000)); // Fallback gas limit
 
       // Submit claim transaction
       setStatusMessage("Submitting transaction...");
@@ -477,38 +457,27 @@ export default function ClaimPage() {
       setSuccess(`Claim successful! TX: ${tx.hash}`);
     } catch (err: unknown) {
       console.error("Claim error:", err);
-      if (
-        typeof err === "object" &&
-        err !== null &&
-        "code" in err &&
-        (err as { code?: string }).code === "CALL_EXCEPTION"
-      ) {
-        const errorObj = err as { data?: string; message?: string };
-        if (errorObj.data === "0x09bde339") {
-          setError(
-            "Invalid Merkle proof. Your address may not be whitelisted or the proof is incorrect."
-          );
-        } else if (errorObj.data === "0x646cf558") {
-          setError("You have already claimed your tokens.");
-        } else if (errorObj.data === "0x0963bd8a") {
-          setError("This airdrop has not started yet.");
-        } else if (errorObj.data === "0x90b8ec18") {
-          setError(
-            "Token transfer failed. The contract may not have sufficient tokens."
-          );
+      if (typeof err === "object" && err !== null && "code" in err) {
+        const errorObj = err as { code?: string; data?: string; message?: string };
+        
+        if (errorObj.code === "CALL_EXCEPTION") {
+          if (errorObj.data === "0x09bde339") {
+            setError("Invalid Merkle proof. Your address may not be whitelisted.");
+          } else if (errorObj.data === "0x646cf558") {
+            setError("You have already claimed your tokens.");
+          } else if (errorObj.data === "0x0963bd8a") {
+            setError("This airdrop has not started yet.");
+          } else if (errorObj.data === "0x90b8ec18") {
+            setError("Token transfer failed. The contract may not have sufficient tokens.");
+          } else {
+            setError(`Contract error: ${errorObj.data || errorObj.message || "Unknown error"}`);
+          }
+        } else if (errorObj.message) {
+          setError(errorObj.message);
         } else {
-          setError(
-            `Contract error: ${
-              errorObj.data || errorObj.message || "Unknown error"
-            }`
-          );
+          setError("Transaction failed. Please try again.");
         }
-      } else if (
-        typeof err === "object" &&
-        err !== null &&
-        "message" in err &&
-        typeof (err as { message?: string }).message === "string"
-      ) {
+      } else if (typeof err === "object" && err !== null && "message" in err) {
         setError((err as { message: string }).message);
       } else {
         setError("Unexpected error occurred");
@@ -548,7 +517,7 @@ export default function ClaimPage() {
           <div className="max-w-2xl mx-auto">
             <Card className="bg-zinc-900 border-purple-500/20">
               <CardHeader>
-                <CardTitle className="text-purple%x-100">
+                <CardTitle className="text-purple-100">
                   Claim Your Tokens
                 </CardTitle>
                 <CardDescription className="text-purple-100/70">
@@ -562,7 +531,7 @@ export default function ClaimPage() {
                   </Label>
                   <Input
                     id="distributorAddress"
-                    placeholder="0x..."
+                    placeholder="0xc8a77C17DB1E913Af73C22E24c03878300BD4D31"
                     value={distributorAddress}
                     onChange={handleAddressChange}
                     className="mt-1.5 bg-purple-800/40 border-purple-500/20 focus:border-purple-500"
@@ -583,12 +552,13 @@ export default function ClaimPage() {
                       </p>
                       <p>
                         <strong>Drop Amount:</strong> {airdropInfo.dropAmount}{" "}
-                        {airdropInfo.tokenType === 0
-                          ? "tokens"
-                          : `NFTs (ID: ${airdropInfo.tokenId})`}
+                        {airdropInfo.tokenType === 0 ? "tokens" : "NFTs"}
                       </p>
                       <p>
                         <strong>Start Time:</strong> {airdropInfo.startTime}
+                      </p>
+                      <p>
+                        <strong>Recipients:</strong> {airdropInfo.totalRecipients} total, {airdropInfo.claimedCount} claimed
                       </p>
                       <p>
                         <strong>Merkle Root:</strong>
@@ -596,12 +566,6 @@ export default function ClaimPage() {
                           {airdropInfo.merkleRoot}
                         </span>
                       </p>
-                      {airdropInfo.tokenType !== 0 && airdropInfo.tokenIds && (
-                        <p>
-                          <strong>Token IDs:</strong>{" "}
-                          {airdropInfo.tokenIds.join(", ")}
-                        </p>
-                      )}
                       <p>
                         <strong>Distribution Type:</strong>{" "}
                         {airdropInfo.isCustomDistribution ? "Custom" : "Equal"}
