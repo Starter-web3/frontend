@@ -328,95 +328,90 @@ export default function DistributePage() {
           console.log("Transaction receipt:", txReceipt);
           console.log("All logs:", txReceipt.logs);
           
-          // Look for contract creation - new contracts are typically created via CREATE or CREATE2
-          // The new contract address is usually deterministic or emitted in events
+          // Check ALL addresses in the transaction logs
+          const allAddressesInLogs = new Set<string>();
           
-          // Method 1: Look for logs from the factory contract
-          const factoryLogs = txReceipt.logs.filter((log: any) => 
-            log.address.toLowerCase() === FACTORY_CONTRACT_ADDRESS.toLowerCase()
+          txReceipt.logs.forEach((log: any, logIndex: number) => {
+            console.log(`Log ${logIndex}:`, log);
+            
+            // Add the log address itself
+            if (log.address) {
+              allAddressesInLogs.add(log.address.toLowerCase());
+            }
+            
+            // Extract addresses from topics
+            if (log.topics) {
+              log.topics.forEach((topic: string, topicIndex: number) => {
+                if (topic && topic.length >= 66) { // 0x + 64 chars
+                  const addressFromTopic = "0x" + topic.slice(-40);
+                  if (ethers.isAddress(addressFromTopic)) {
+                    allAddressesInLogs.add(addressFromTopic.toLowerCase());
+                    console.log(`Log ${logIndex}, Topic ${topicIndex}: ${addressFromTopic}`);
+                  }
+                }
+              });
+            }
+            
+            // Extract addresses from data
+            if (log.data && log.data.length > 2) {
+              // Try to extract 20-byte addresses from data
+              const dataWithoutPrefix = log.data.slice(2);
+              for (let i = 0; i <= dataWithoutPrefix.length - 40; i += 2) {
+                const potentialAddress = "0x" + dataWithoutPrefix.slice(i, i + 40);
+                if (ethers.isAddress(potentialAddress) && potentialAddress !== "0x0000000000000000000000000000000000000000") {
+                  allAddressesInLogs.add(potentialAddress.toLowerCase());
+                  console.log(`Log ${logIndex}, Data address: ${potentialAddress}`);
+                }
+              }
+            }
+          });
+          
+          console.log("All addresses found in logs:", Array.from(allAddressesInLogs));
+          
+          // Filter out known addresses
+          const knownAddresses = new Set([
+            FACTORY_CONTRACT_ADDRESS.toLowerCase(),
+            ADMIN_CONTRACT_ADDRESS.toLowerCase(),
+            address?.toLowerCase(), // user's wallet
+            contractAddress.toLowerCase(), // token contract
+            "0x0000000000000000000000000000000000000000" // zero address
+          ]);
+          
+          console.log("Known addresses to filter out:", Array.from(knownAddresses));
+          
+          const unknownAddresses = Array.from(allAddressesInLogs).filter(addr => 
+            !knownAddresses.has(addr)
           );
           
-          console.log("Factory logs:", factoryLogs);
+          console.log("Unknown addresses (potential distributors):", unknownAddresses);
           
           let newContractAddress = null;
           
-          // Method 2: Look for the first log that's NOT from the factory or admin contract
-          // This is often the new contract being created
-          const nonFactoryLogs = txReceipt.logs.filter((log: any) => 
-            log.address.toLowerCase() !== FACTORY_CONTRACT_ADDRESS.toLowerCase() &&
-            log.address.toLowerCase() !== ADMIN_CONTRACT_ADDRESS.toLowerCase()
-          );
-          
-          console.log("Non-factory logs:", nonFactoryLogs);
-          
-          if (nonFactoryLogs.length > 0) {
-            // The first non-factory log address is likely our new airdrop contract
-            newContractAddress = nonFactoryLogs[0].address;
-            console.log("Found potential distributor address from logs:", newContractAddress);
+          if (unknownAddresses.length === 1) {
+            newContractAddress = unknownAddresses[0];
+            console.log("Found single unknown address:", newContractAddress);
+          } else if (unknownAddresses.length > 1) {
+            // If multiple unknowns, prefer the one that appears later in the logs
+            // (newly created contracts often appear later)
+            newContractAddress = unknownAddresses[unknownAddresses.length - 1];
+            console.log("Multiple unknowns, using last one:", newContractAddress, "All:", unknownAddresses);
           }
           
-          // Method 3: If we have factory logs, look for specific event signatures
-          if (!newContractAddress && factoryLogs.length > 0) {
-            for (const log of factoryLogs) {
-              // Look for common event signatures for contract creation
-              if (log.topics && log.topics.length > 0) {
-                // Event signature for AirdropCreated or similar
-                console.log("Log topics:", log.topics);
-                
-                // If there's data in the log, try to decode it
-                if (log.data && log.data !== "0x" && log.data.length > 2) {
-                  try {
-                    // Try to extract address from data (addresses are 32 bytes, last 20 bytes are the address)
-                    if (log.data.length >= 66) { // 0x + 64 hex chars = 66
-                      const addressFromData = "0x" + log.data.slice(-40); // Last 20 bytes
-                      if (ethers.isAddress(addressFromData)) {
-                        newContractAddress = addressFromData;
-                        console.log("Extracted address from log data:", addressFromData);
-                        break;
-                      }
-                    }
-                  } catch (e) {
-                    console.log("Could not extract address from log data:", e);
-                  }
-                }
-                
-                // Try topics (skip first topic which is event signature)
-                for (let i = 1; i < log.topics.length; i++) {
-                  try {
-                    const addressFromTopic = "0x" + log.topics[i].slice(-40);
-                    console.log(`Topic ${i} raw:`, log.topics[i]);
-                    console.log(`Topic ${i} extracted address:`, addressFromTopic);
-                    
-                    if (ethers.isAddress(addressFromTopic) && 
-                        addressFromTopic !== "0x0000000000000000000000000000000000000000" &&
-                        addressFromTopic.toLowerCase() !== address?.toLowerCase() && // Not user's address
-                        addressFromTopic.toLowerCase() !== FACTORY_CONTRACT_ADDRESS.toLowerCase() && // Not factory
-                        addressFromTopic.toLowerCase() !== ADMIN_CONTRACT_ADDRESS.toLowerCase()) { // Not admin
-                      
-                      newContractAddress = addressFromTopic;
-                      console.log(`Found distributor address in topic ${i}:`, addressFromTopic);
-                      break;
-                    }
-                  } catch (e) {
-                    console.log(`Could not extract address from topic ${i}:`, e);
-                  }
-                }
-                
-                if (newContractAddress) break;
-              }
-            }
-          }
-          
-          // Method 4: Calculate contract address deterministically
-          // For CREATE opcode: address = keccak256(rlp([sender, nonce]))
-          // For CREATE2: address = keccak256(0xff + sender + salt + keccak256(bytecode))
-          if (!newContractAddress) {
-            console.log("Could not extract address from logs, contract address needs manual entry");
-            setNetworkStatus("⚠️ Airdrop created! Please find the contract address in the transaction details.");
-          } else {
+          if (newContractAddress) {
             setDistributorAddress(newContractAddress);
             setNetworkStatus("✅ Airdrop created successfully!");
             console.log("Final distributor address:", newContractAddress);
+          } else {
+            console.log("Could not determine distributor address automatically");
+            setNetworkStatus("⚠️ Airdrop created! Please check transaction logs for the distributor address.");
+            
+            // Show the transaction details for manual inspection
+            console.log("Manual inspection needed. Transaction details:");
+            console.log("- Your wallet:", address);
+            console.log("- Token contract:", contractAddress);
+            console.log("- Factory contract:", FACTORY_CONTRACT_ADDRESS);
+            console.log("- Transaction hash:", txHash);
+            console.log("- All addresses in transaction:", Array.from(allAddressesInLogs));
           }
           
           setError("");
@@ -905,20 +900,42 @@ export default function DistributePage() {
                   </div>
                   
                   {txHash && (
-                    <div className="space-y-2">
-                      <Label className="text-white">Transaction Hash</Label>
-                      <div className="flex items-center space-x-2">
-                        <code className="bg-[#3A2F46]/50 p-2 rounded text-white text-sm break-all">
-                          {txHash}
-                        </code>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(`https://etherscan.io/tx/${txHash}`, '_blank')}
-                          className="text-white border-purple-500 hover:bg-purple-500/20"
-                        >
-                          View on Etherscan
-                        </Button>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-white">Transaction Hash</Label>
+                        <div className="flex items-center space-x-2">
+                          <code className="bg-[#3A2F46]/50 p-2 rounded text-white text-sm break-all">
+                            {txHash}
+                          </code>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`https://scan.coredao.org/tx/${txHash}`, '_blank')}
+                            className="text-white border-purple-500 hover:bg-purple-500/20"
+                          >
+                            View on CoreScan
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-white">Manual Address Verification</Label>
+                        <div className="bg-[#3A2F46]/30 p-3 rounded text-sm text-gray-300">
+                          <p className="mb-2"><strong>To find the correct distributor address:</strong></p>
+                          <ol className="list-decimal list-inside space-y-1">
+                            <li>Click "View on CoreScan" above</li>
+                            <li>Look for "Internal Transactions" or "Events" tab</li>
+                            <li>Find a new contract creation (will have a "Contract Creation" label)</li>
+                            <li>The new contract address is your distributor address</li>
+                          </ol>
+                          <div className="mt-3 space-y-1">
+                            <p><strong>Known addresses (NOT the distributor):</strong></p>
+                            <p className="font-mono text-xs">• Your wallet: {address}</p>
+                            <p className="font-mono text-xs">• Token contract: {contractAddress}</p>
+                            <p className="font-mono text-xs">• Factory: {FACTORY_CONTRACT_ADDRESS}</p>
+                            <p className="font-mono text-xs">• Admin: {ADMIN_CONTRACT_ADDRESS}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
