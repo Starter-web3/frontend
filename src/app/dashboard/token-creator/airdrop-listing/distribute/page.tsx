@@ -384,9 +384,17 @@ export default function DistributePage() {
                 for (let i = 1; i < log.topics.length; i++) {
                   try {
                     const addressFromTopic = "0x" + log.topics[i].slice(-40);
-                    if (ethers.isAddress(addressFromTopic) && addressFromTopic !== "0x0000000000000000000000000000000000000000") {
+                    console.log(`Topic ${i} raw:`, log.topics[i]);
+                    console.log(`Topic ${i} extracted address:`, addressFromTopic);
+                    
+                    if (ethers.isAddress(addressFromTopic) && 
+                        addressFromTopic !== "0x0000000000000000000000000000000000000000" &&
+                        addressFromTopic.toLowerCase() !== address?.toLowerCase() && // Not user's address
+                        addressFromTopic.toLowerCase() !== FACTORY_CONTRACT_ADDRESS.toLowerCase() && // Not factory
+                        addressFromTopic.toLowerCase() !== ADMIN_CONTRACT_ADDRESS.toLowerCase()) { // Not admin
+                      
                       newContractAddress = addressFromTopic;
-                      console.log(`Extracted address from topic ${i}:`, addressFromTopic);
+                      console.log(`Found distributor address in topic ${i}:`, addressFromTopic);
                       break;
                     }
                   } catch (e) {
