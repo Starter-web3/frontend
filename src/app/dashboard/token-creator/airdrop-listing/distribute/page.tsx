@@ -153,7 +153,14 @@ export default function DistributePage() {
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
   
-  const { isLoading: isTxLoading, isSuccess: isTxSuccess, isError: isTxError, error: txError } = useWaitForTransactionReceipt({
+  // Get transaction receipt data
+  const { 
+    isLoading: isTxLoading, 
+    isSuccess: isTxSuccess, 
+    isError: isTxError, 
+    error: txError,
+    data: txReceipt 
+  } = useWaitForTransactionReceipt({
     hash: txHash,
   });
 
@@ -311,24 +318,46 @@ export default function DistributePage() {
 
   // Handle transaction success for both mint and distribution
   useEffect(() => {
-    if (isTxSuccess && txHash) {
+    if (isTxSuccess && txHash && txReceipt) {
       if (mintAmount && distributorAddress) {
         // This was a mint transaction
         setMintStatus(`Successfully minted ${mintAmount} tokens to ${distributorAddress}`);
       } else {
-        // This was a distribution transaction
-        setNetworkStatus("Airdrop created successfully! Processing transaction receipt...");
-        
-        // TODO: Parse transaction logs to get the distributor address
-        // For now, show success message
-        setTimeout(() => {
+        // This was a distribution transaction - extract distributor address from logs
+        try {
+          console.log("Transaction receipt:", txReceipt);
+          
+          // Look for the ERC20AirdropCreated event in the logs
+          const airdropCreatedLog = txReceipt.logs.find((log: any) => {
+            // The factory contract should emit an event with the new airdrop contract address
+            // Check if this log is from our factory contract
+            return log.address.toLowerCase() === FACTORY_CONTRACT_ADDRESS.toLowerCase();
+          });
+          
+          if (airdropCreatedLog) {
+            console.log("Found airdrop creation log:", airdropCreatedLog);
+            
+            // The contract address is typically in the topics or data
+            // For many factory patterns, the first topic after the event signature contains the new contract address
+            if (airdropCreatedLog.topics && airdropCreatedLog.topics.length > 1) {
+              // Extract address from topics (remove leading zeros and add 0x prefix)
+              const addressFromTopic = "0x" + airdropCreatedLog.topics[1].slice(-40);
+              setDistributorAddress(addressFromTopic);
+              console.log("Extracted distributor address:", addressFromTopic);
+            }
+          }
+          
           setNetworkStatus("✅ Airdrop created successfully!");
           setError("");
-        }, 2000);
+        } catch (logError) {
+          console.error("Error parsing transaction logs:", logError);
+          setNetworkStatus("✅ Airdrop created successfully! (Check transaction for distributor address)");
+          setError("");
+        }
       }
       setTxHash(undefined);
     }
-  }, [isTxSuccess, txHash, mintAmount, distributorAddress]);
+  }, [isTxSuccess, txHash, txReceipt, mintAmount, distributorAddress]);
 
   const handleDistribute = async () => {
     if (!isConnected) {
