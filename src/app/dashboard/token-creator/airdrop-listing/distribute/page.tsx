@@ -153,7 +153,7 @@ export default function DistributePage() {
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
   
-  const { isLoading: isTxLoading, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
+  const { isLoading: isTxLoading, isSuccess: isTxSuccess, isError: isTxError, error: txError } = useWaitForTransactionReceipt({
     hash: txHash,
   });
 
@@ -298,10 +298,34 @@ export default function DistributePage() {
     }
   };
 
-  // Handle mint transaction success
+  // Handle transaction failure
+  useEffect(() => {
+    if (isTxError && txHash) {
+      console.error("Transaction failed:", txError);
+      setError(`Transaction failed: ${txError?.message || "Unknown error"}`);
+      setNetworkStatus("❌ Transaction failed");
+      setMintStatus("");
+      setTxHash(undefined);
+    }
+  }, [isTxError, txError, txHash]);
+
+  // Handle transaction success for both mint and distribution
   useEffect(() => {
     if (isTxSuccess && txHash) {
-      setMintStatus(`Successfully minted ${mintAmount} tokens to ${distributorAddress}`);
+      if (mintAmount && distributorAddress) {
+        // This was a mint transaction
+        setMintStatus(`Successfully minted ${mintAmount} tokens to ${distributorAddress}`);
+      } else {
+        // This was a distribution transaction
+        setNetworkStatus("Airdrop created successfully! Processing transaction receipt...");
+        
+        // TODO: Parse transaction logs to get the distributor address
+        // For now, show success message
+        setTimeout(() => {
+          setNetworkStatus("✅ Airdrop created successfully!");
+          setError("");
+        }, 2000);
+      }
       setTxHash(undefined);
     }
   }, [isTxSuccess, txHash, mintAmount, distributorAddress]);
@@ -455,8 +479,17 @@ export default function DistributePage() {
                   </Alert>
                 )}
 
+                {/* Success Status Indicator */}
+                {(networkStatus.includes("✅") || mintStatus.includes("Successfully")) && (
+                  <Alert>
+                    <AlertDescription className="text-green-400">
+                      {networkStatus.includes("✅") ? networkStatus : mintStatus}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 {/* Network Status Indicator */}
-                {(feeLoading || networkStatus) && (
+                {(feeLoading || (networkStatus && !networkStatus.includes("✅"))) && (
                   <Alert>
                     <AlertDescription className="text-blue-400">
                       {feeLoading && (
@@ -465,7 +498,14 @@ export default function DistributePage() {
                           <span>{networkStatus || "Processing..."}</span>
                         </div>
                       )}
-                      {!feeLoading && networkStatus && <span>{networkStatus}</span>}
+                      {!feeLoading && networkStatus && !networkStatus.includes("✅") && (
+                        <div className="flex items-center space-x-2">
+                          {(networkStatus.includes("Transaction submitted") || networkStatus.includes("Creating")) && (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                          )}
+                          <span>{networkStatus}</span>
+                        </div>
+                      )}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -649,10 +689,22 @@ export default function DistributePage() {
               <CardFooter>
                 <Button
                   onClick={handleDistribute}
-                  disabled={loading || !isConnected}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                  disabled={loading || !isConnected || files.length === 0}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
                 >
-                  {loading ? "Creating Airdrop..." : "Create Airdrop"}
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>
+                        {networkStatus.includes("Transaction submitted") 
+                          ? "Confirming Transaction..." 
+                          : "Creating Airdrop..."
+                        }
+                      </span>
+                    </div>
+                  ) : (
+                    "Create Airdrop"
+                  )}
                 </Button>
               </CardFooter>
             </Card>
@@ -704,10 +756,22 @@ export default function DistributePage() {
               <CardFooter>
                 <Button
                   onClick={handleMint}
-                  disabled={mintLoading || !isConnected}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                  disabled={mintLoading || !isConnected || !distributorAddress || !mintAmount}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
                 >
-                  {mintLoading ? "Minting Tokens..." : "Mint Tokens"}
+                  {mintLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>
+                        {mintStatus.includes("submitted") 
+                          ? "Confirming Transaction..." 
+                          : "Minting Tokens..."
+                        }
+                      </span>
+                    </div>
+                  ) : (
+                    "Mint Tokens"
+                  )}
                 </Button>
               </CardFooter>
             </Card>
