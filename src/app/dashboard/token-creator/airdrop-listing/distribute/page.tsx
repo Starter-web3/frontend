@@ -45,6 +45,10 @@ import {
   useUsdEthPrice,
   useAirdropPriceData,
 } from "../../../../../hooks/useUsdEthPrice";
+// Store the transaction hash for displaying in the UI
+const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
+
+
 
 const BackgroundShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -149,19 +153,12 @@ export default function DistributePage() {
   const [mintStatus, setMintStatus] = useState("");
   const [networkStatus, setNetworkStatus] = useState<string>("");
 
-  // Wagmi hooks for contract interactions
+  // Wagmi hooks for mint transactions only
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
-  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
+  const [mintTxHash, setMintTxHash] = useState<`0x${string}` | undefined>();
   
-  // Get transaction receipt data
-  const { 
-    isLoading: isTxLoading, 
-    isSuccess: isTxSuccess, 
-    isError: isTxError, 
-    error: txError,
-    data: txReceipt 
-  } = useWaitForTransactionReceipt({
-    hash: txHash,
+  const { isLoading: isMintTxLoading, isSuccess: isMintTxSuccess, isError: isMintTxError, error: mintTxError } = useWaitForTransactionReceipt({
+    hash: mintTxHash,
   });
 
   const {
@@ -287,16 +284,14 @@ export default function DistributePage() {
       setError("");
       setMintStatus("Preparing mint transaction...");
 
-      const amountToMint = ethers.parseUnits(mintAmount, 18);
-
       const result = await writeContractAsync({
         address: contractAddress as `0x${string}`,
         abi: erc20ABI,
         functionName: "mint",
-        args: [distributorAddress as `0x${string}`, amountToMint],
+        args: [distributorAddress as `0x${string}`, ethers.parseUnits(mintAmount, 18)],
       });
 
-      setTxHash(result);
+      setMintTxHash(result);
       setMintStatus("Transaction submitted, waiting for confirmation...");
     } catch (mintErr) {
       console.error("Minting error:", mintErr);
@@ -305,125 +300,23 @@ export default function DistributePage() {
     }
   };
 
-  // Handle transaction failure
+  // Handle mint transactions only
   useEffect(() => {
-    if (isTxError && txHash) {
-      console.error("Transaction failed:", txError);
-      setError(`Transaction failed: ${txError?.message || "Unknown error"}`);
-      setNetworkStatus("❌ Transaction failed");
-      setMintStatus("");
-      setTxHash(undefined);
+    if (isMintTxSuccess && mintTxHash) {
+      setMintStatus(`Successfully minted ${mintAmount} tokens to ${distributorAddress}`);
+      setMintTxHash(undefined);
     }
-  }, [isTxError, txError, txHash]);
+  }, [isMintTxSuccess, mintTxHash, mintAmount, distributorAddress]);
 
-  // Handle transaction success for both mint and distribution
+  // Handle mint transaction failures
   useEffect(() => {
-    if (isTxSuccess && txHash && txReceipt) {
-      if (mintAmount && distributorAddress) {
-        // This was a mint transaction
-        setMintStatus(`Successfully minted ${mintAmount} tokens to ${distributorAddress}`);
-      } else {
-        // This was a distribution transaction - extract distributor address from logs
-        try {
-          console.log("Transaction receipt:", txReceipt);
-          console.log("All logs:", txReceipt.logs);
-          
-          // Check ALL addresses in the transaction logs
-          const allAddressesInLogs = new Set<string>();
-          
-          txReceipt.logs.forEach((log: any, logIndex: number) => {
-            console.log(`Log ${logIndex}:`, log);
-            
-            // Add the log address itself
-            if (log.address) {
-              allAddressesInLogs.add(log.address.toLowerCase());
-            }
-            
-            // Extract addresses from topics
-            if (log.topics) {
-              log.topics.forEach((topic: string, topicIndex: number) => {
-                if (topic && topic.length >= 66) { // 0x + 64 chars
-                  const addressFromTopic = "0x" + topic.slice(-40);
-                  if (ethers.isAddress(addressFromTopic)) {
-                    allAddressesInLogs.add(addressFromTopic.toLowerCase());
-                    console.log(`Log ${logIndex}, Topic ${topicIndex}: ${addressFromTopic}`);
-                  }
-                }
-              });
-            }
-            
-            // Extract addresses from data
-            if (log.data && log.data.length > 2) {
-              // Try to extract 20-byte addresses from data
-              const dataWithoutPrefix = log.data.slice(2);
-              for (let i = 0; i <= dataWithoutPrefix.length - 40; i += 2) {
-                const potentialAddress = "0x" + dataWithoutPrefix.slice(i, i + 40);
-                if (ethers.isAddress(potentialAddress) && potentialAddress !== "0x0000000000000000000000000000000000000000") {
-                  allAddressesInLogs.add(potentialAddress.toLowerCase());
-                  console.log(`Log ${logIndex}, Data address: ${potentialAddress}`);
-                }
-              }
-            }
-          });
-          
-          console.log("All addresses found in logs:", Array.from(allAddressesInLogs));
-          
-          // Filter out known addresses
-          const knownAddresses = new Set([
-            FACTORY_CONTRACT_ADDRESS.toLowerCase(),
-            ADMIN_CONTRACT_ADDRESS.toLowerCase(),
-            address?.toLowerCase(), // user's wallet
-            contractAddress.toLowerCase(), // token contract
-            "0x0000000000000000000000000000000000000000" // zero address
-          ]);
-          
-          console.log("Known addresses to filter out:", Array.from(knownAddresses));
-          
-          const unknownAddresses = Array.from(allAddressesInLogs).filter(addr => 
-            !knownAddresses.has(addr)
-          );
-          
-          console.log("Unknown addresses (potential distributors):", unknownAddresses);
-          
-          let newContractAddress = null;
-          
-          if (unknownAddresses.length === 1) {
-            newContractAddress = unknownAddresses[0];
-            console.log("Found single unknown address:", newContractAddress);
-          } else if (unknownAddresses.length > 1) {
-            // If multiple unknowns, prefer the one that appears later in the logs
-            // (newly created contracts often appear later)
-            newContractAddress = unknownAddresses[unknownAddresses.length - 1];
-            console.log("Multiple unknowns, using last one:", newContractAddress, "All:", unknownAddresses);
-          }
-          
-          if (newContractAddress) {
-            setDistributorAddress(newContractAddress);
-            setNetworkStatus("✅ Airdrop created successfully!");
-            console.log("Final distributor address:", newContractAddress);
-          } else {
-            console.log("Could not determine distributor address automatically");
-            setNetworkStatus("⚠️ Airdrop created! Please check transaction logs for the distributor address.");
-            
-            // Show the transaction details for manual inspection
-            console.log("Manual inspection needed. Transaction details:");
-            console.log("- Your wallet:", address);
-            console.log("- Token contract:", contractAddress);
-            console.log("- Factory contract:", FACTORY_CONTRACT_ADDRESS);
-            console.log("- Transaction hash:", txHash);
-            console.log("- All addresses in transaction:", Array.from(allAddressesInLogs));
-          }
-          
-          setError("");
-        } catch (logError) {
-          console.error("Error parsing transaction logs:", logError);
-          setNetworkStatus("✅ Airdrop created successfully! (Check transaction for distributor address)");
-          setError("");
-        }
-      }
-      setTxHash(undefined);
+    if (isMintTxError && mintTxHash) {
+      console.error("Mint transaction failed:", mintTxError);
+      setError(`Mint transaction failed: ${mintTxError?.message || "Unknown error"}`);
+      setMintStatus("");
+      setMintTxHash(undefined);
     }
-  }, [isTxSuccess, txHash, txReceipt, mintAmount, distributorAddress]);
+  }, [isMintTxError, mintTxError, mintTxHash]);
 
   const handleDistribute = async () => {
     if (!isConnected) {
@@ -492,25 +385,169 @@ export default function DistributePage() {
       setNetworkStatus("Creating airdrop...");
 
       // Create the airdrop
-      const result = await writeContractAsync({
-        address: FACTORY_CONTRACT_ADDRESS,
-        abi: airdropFactoryABI,
-        functionName: "createERC20Airdrop",
-        args: [
-          contractAddress as `0x${string}`,
-          merkleRoot as `0x${string}`,
-          dropAmount,
-          totalRecipients,
-          startTime,
-        ],
-        value: airdropFeeETHRaw as bigint,
+  const handleDistribute = async () => {
+    if (!isConnected) {
+      setError("Please connect your wallet!");
+      return;
+    }
+    if (files.length === 0) {
+      setError("No recipient files uploaded.");
+      return;
+    }
+    if (
+      distributionMethod === "custom" &&
+      files.some((file) => file.recipients.some((r) => !r.amount))
+    ) {
+      setError("Custom distribution requires amounts for all recipients in the CSV.");
+      return;
+    }
+    if (!ethers.isAddress(contractAddress)) {
+      setError("Invalid token contract address");
+      return;
+    }
+
+    try {
+      setError("");
+      setDistributorAddress("");
+      setNetworkStatus("Preparing airdrop creation...");
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const allRecipients = files.flatMap((file) => file.recipients);
+      const totalRecipients = allRecipients.length;
+
+      const isCustomDistribution = distributionMethod === "custom";
+      const { merkleRoot } = createMerkleTree(
+        allRecipients,
+        isCustomDistribution,
+        tokenAmount || "100"
+      );
+
+      let dropAmount: bigint;
+
+      if (isCustomDistribution) {
+        dropAmount = ethers.parseUnits("1", 18); // dummy value for custom mode
+      } else {
+        dropAmount = ethers.parseUnits(tokenAmount || "100", 18);
+      }
+
+      const startTime = scheduleDate
+        ? Math.floor(new Date(scheduleDate).getTime() / 1000)
+        : Math.floor(Date.now() / 1000);
+
+      // Get the required ETH fee with better error handling
+      if (!airdropFeeETHRaw) {
+        const errorMsg = airdropFeeETH 
+          ? `ETH fee parsing failed for value: ${airdropFeeETH}` 
+          : `Could not calculate ETH fee. USD fee: ${airdropFeeUSD}, ETH price: ${enhancedEthPrice}`;
+        console.error("Airdrop fee error:", errorMsg);
+        throw new Error(`Could not determine airdrop fee: ${errorMsg}`);
+      }
+
+      console.log("Airdrop fee details:", {
+        usdFee: airdropFeeUSD,
+        ethFee: airdropFeeETH,
+        ethFeeRaw: airdropFeeETHRaw.toString(),
+        ethPrice: enhancedEthPrice
       });
 
-      setTxHash(result);
+      setNetworkStatus("Creating airdrop...");
+
+      // Use the factory contract to create airdrop
+      const factoryContract = new ethers.Contract(
+        FACTORY_CONTRACT_ADDRESS,
+        JSON.parse(JSON.stringify(StrataForgeAirdropFactoryABI)),
+        signer
+      );
+
+      const result = await factoryContract.createERC20Airdrop(
+        contractAddress as `0x${string}`,
+        merkleRoot as `0x${string}`,
+        dropAmount,
+        totalRecipients,
+        startTime,
+        {
+          value: airdropFeeETHRaw as bigint,
+        }
+      );
+
+      setTxHash(result.hash as `0x${string}`);
       setNetworkStatus("Transaction submitted, waiting for confirmation...");
 
-      // Note: You'll need to parse the transaction receipt to get the distributor address
-      // This requires additional logic to decode the event logs
+      // Wait for transaction receipt
+      const receipt = await result.wait();
+      console.log("Transaction receipt:", receipt);
+
+      // Parse the AirdropCreated event to get distributor address
+      try {
+        const event = receipt.logs
+          .map((log: any) => {
+            try {
+              return factoryContract.interface.parseLog(log);
+            } catch {
+              return null;
+            }
+          })
+          .find((e: any) => e && e.name === 'AirdropCreated');
+
+        if (event && event.args) {
+          const newDistributorAddress = event.args.distributorAddress || event.args[0];
+          console.log("Found distributor address from event:", newDistributorAddress);
+          setDistributorAddress(newDistributorAddress);
+          setNetworkStatus("✅ Airdrop created successfully!");
+        } else {
+          console.log("No AirdropCreated event found, trying ERC20AirdropCreated...");
+          
+          // Try alternative event name
+          const altEvent = receipt.logs
+            .map((log: any) => {
+              try {
+                return factoryContract.interface.parseLog(log);
+              } catch {
+                return null;
+              }
+            })
+            .find((e: any) => e && (e.name === 'ERC20AirdropCreated' || e.name.includes('Created')));
+
+          if (altEvent && altEvent.args) {
+            const newDistributorAddress = altEvent.args.distributorAddress || altEvent.args.airdrop || altEvent.args[0];
+            console.log("Found distributor address from alt event:", newDistributorAddress);
+            setDistributorAddress(newDistributorAddress);
+            setNetworkStatus("✅ Airdrop created successfully!");
+          } else {
+            console.log("Could not find distributor address in events");
+            setNetworkStatus("⚠️ Airdrop created! Please check transaction for distributor address.");
+          }
+        }
+      } catch (eventError) {
+        console.error("Error parsing events:", eventError);
+        setNetworkStatus("⚠️ Airdrop created! Please check transaction for distributor address.");
+      }
+
+      setError("");
+      setTxHash(undefined);
+      
+    } catch (err) {
+      console.error("Distribution error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+
+      if (errorMessage.includes("Insufficient ETH for airdrop fee")) {
+        setError("Insufficient ETH sent for airdrop fee.");
+      } else if (errorMessage.includes("InvalidRecipientCount")) {
+        setError("Invalid number of recipients for the selected fee tier.");
+      } else if (errorMessage.includes("PriceFeedNotSet")) {
+        setError("Price feed not set in the admin contract.");
+      } else if (errorMessage.includes("StalePriceFeed")) {
+        setError("Price feed data is stale.");
+      } else if (errorMessage.includes("InvalidPriceFeed")) {
+        setError("Invalid price feed data.");
+      } else {
+        setError(`Error: ${errorMessage}`);
+      }
+      setNetworkStatus("Error occurred");
+    }
+  };
       
     } catch (err) {
       console.error("Distribution error:", err);
@@ -533,8 +570,8 @@ export default function DistributePage() {
     }
   };
 
-  const loading = isWritePending || isTxLoading;
-  const mintLoading = isWritePending || isTxLoading;
+  const loading = false; // Distribution uses ethers directly
+  const mintLoading = isWritePending || isMintTxLoading;
 
   return (
     <DashBoardLayout>
