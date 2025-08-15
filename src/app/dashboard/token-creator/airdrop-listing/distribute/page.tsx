@@ -197,17 +197,28 @@ export default function DistributePage() {
     if (!airdropFeeUSD || !enhancedEthPrice) return null;
     const usdFee = parseFloat(airdropFeeUSD);
     const ethFee = usdFee / enhancedEthPrice;
-    return ethFee.toString();
+    // Round to 8 decimal places to prevent precision issues
+    return parseFloat(ethFee.toFixed(8)).toString();
   }, [airdropFeeUSD, enhancedEthPrice]);
 
   // Convert ETH fee to Wei for contract calls
   const airdropFeeETHRaw = useMemo(() => {
     if (!airdropFeeETH) return null;
     try {
-      return ethers.parseEther(airdropFeeETH);
+      // Use parseUnits with 18 decimals for more precise control
+      const ethFeeNumber = parseFloat(airdropFeeETH);
+      // Convert to string with fixed precision to avoid scientific notation
+      const ethFeeString = ethFeeNumber.toFixed(8);
+      return ethers.parseUnits(ethFeeString, 18);
     } catch (error) {
-      console.error("Error parsing ETH fee:", error);
-      return null;
+      console.error("Error parsing ETH fee:", error, "Value:", airdropFeeETH);
+      // Fallback: try with a minimum fee if the calculation fails
+      try {
+        return ethers.parseUnits("0.0001", 18); // 0.0001 ETH minimum
+      } catch (fallbackError) {
+        console.error("Fallback ETH fee parsing also failed:", fallbackError);
+        return null;
+      }
     }
   }, [airdropFeeETH]);
 
@@ -343,10 +354,21 @@ export default function DistributePage() {
         ? Math.floor(new Date(scheduleDate).getTime() / 1000)
         : Math.floor(Date.now() / 1000);
 
-      // Get the required ETH fee
+      // Get the required ETH fee with better error handling
       if (!airdropFeeETHRaw) {
-        throw new Error("Could not determine airdrop fee. Please try again.");
+        const errorMsg = airdropFeeETH 
+          ? `ETH fee parsing failed for value: ${airdropFeeETH}` 
+          : `Could not calculate ETH fee. USD fee: ${airdropFeeUSD}, ETH price: ${enhancedEthPrice}`;
+        console.error("Airdrop fee error:", errorMsg);
+        throw new Error(`Could not determine airdrop fee: ${errorMsg}`);
       }
+
+      console.log("Airdrop fee details:", {
+        usdFee: airdropFeeUSD,
+        ethFee: airdropFeeETH,
+        ethFeeRaw: airdropFeeETHRaw.toString(),
+        ethPrice: enhancedEthPrice
+      });
 
       setNetworkStatus("Creating airdrop...");
 
@@ -598,7 +620,7 @@ export default function DistributePage() {
                       {airdropFeeETH && (
                         <div className="flex items-center space-x-2">
                           <span className="text-white">
-                            ETH: {parseFloat(airdropFeeETH).toFixed(6)}
+                            ETH: {parseFloat(airdropFeeETH).toFixed(8)}
                           </span>
                           <span className="text-gray-400">
                             (${parseFloat(airdropFeeUSD || "0").toFixed(2)})
