@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useWallet } from "../../../contexts/WalletContext";
+import { useWallet } from "../../../../../contexts/WalletContext";
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { Abi } from "viem";
 import { ethers, Log, LogDescription } from "ethers";
+console.log(Log, LogDescription )
 import { Button } from "../../../../../../components/ui/button";
 import {
   Card,
@@ -149,7 +150,7 @@ export default function DistributePage() {
   const [networkStatus, setNetworkStatus] = useState<string>("");
 
   // Wagmi hooks for contract interactions
-  const { writeContract: writeContractAsync, isPending: isWritePending } = useWriteContract();
+  const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
   
   const { isLoading: isTxLoading, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
@@ -281,14 +282,14 @@ export default function DistributePage() {
 
       const amountToMint = ethers.parseUnits(mintAmount, 18);
 
-      const hash = await writeContractAsync({
+      const result = await writeContractAsync({
         address: contractAddress as `0x${string}`,
         abi: erc20ABI,
         functionName: "mint",
         args: [distributorAddress as `0x${string}`, amountToMint],
       });
 
-      setTxHash(hash);
+      setTxHash(result);
       setMintStatus("Transaction submitted, waiting for confirmation...");
     } catch (mintErr) {
       console.error("Minting error:", mintErr);
@@ -361,7 +362,7 @@ export default function DistributePage() {
       setNetworkStatus("Creating airdrop...");
 
       // Create the airdrop
-      const hash = await writeContractAsync({
+      const result = await writeContractAsync({
         address: FACTORY_CONTRACT_ADDRESS,
         abi: airdropFactoryABI,
         functionName: "createERC20Airdrop",
@@ -375,7 +376,7 @@ export default function DistributePage() {
         value: airdropFeeETHRaw as bigint,
       });
 
-      setTxHash(hash);
+      setTxHash(result);
       setNetworkStatus("Transaction submitted, waiting for confirmation...");
 
       // Note: You'll need to parse the transaction receipt to get the distributor address
