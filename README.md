@@ -166,17 +166,6 @@ We welcome contributions to StrataForge! Please read our [CONTRIBUTING.md](./CON
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📞 Contact
-
-For questions or support, please reach out to:
-
-- Email: support@StrataForge.io
-- Twitter: [@StrataForge](https://twitter.com/StrataForge_)
-- Discord: [StrataForge Community](https://discord.gg/StrataForge)
 
 ## 🙏 Acknowledgments
 
