@@ -61,7 +61,7 @@ interface TokenInfo {
 
 const FACTORY_CONTRACT_ADDRESS =
   "0x0b5870D52E5b0b2dDD75a66BC124DF350643C682" as const;
-const CORE_TESTNET2_CHAIN_ID = 1114;
+const BASE_MAINNET_CHAIN_ID = 8453;
 
 const ManageToken = () => {
   const { id: tokenId } = useParams<{ id: string }>();
@@ -1424,8 +1424,8 @@ const ManageToken = () => {
     //   setError("Please connect to Base Sepolia network");
     //   return;
     // }
-    if (chainId !== CORE_TESTNET2_CHAIN_ID) {
-      setError("Please connect to Core Testnet 2 network");
+    if (chainId !== BASE_MAINNET_CHAIN_ID) {
+      setError("Please connect to Base Mainnet network");
       return;
     }
 
