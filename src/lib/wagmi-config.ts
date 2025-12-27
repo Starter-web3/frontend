@@ -2,36 +2,36 @@
 import { createConfig, http } from "wagmi";
 import { metaMask, coinbaseWallet } from "@wagmi/connectors";
 
-export const coreTestnet2 = {
-  id: 1114, // Core Testnet 2 chain ID
-  name: "Core Testnet 2",
-  network: "core-testnet2",
+export const baseMainnet = {
+  id: 8453, // Base Mainnet chain ID
+  name: "Base",
+  network: "base",
   nativeCurrency: {
-    name: "Core",
-    symbol: "CORE", // Currency symbol as specified
+    name: "Ether",
+    symbol: "ETH",
     decimals: 18,
   },
   rpcUrls: {
     default: {
-      http: ["https://rpc.test2.btcs.network"],
+      http: ["https://mainnet.base.org"],
     },
     public: {
-      http: ["https://rpc.test2.btcs.network"],
+      http: ["https://mainnet.base.org"],
     },
   },
   blockExplorers: {
     default: {
-      name: "Core Testnet 2 Explorer",
-      url: "https://scan.test2.btcs.network",
+      name: "BaseScan",
+      url: "https://basescan.org",
     },
   },
-  testnet: true,
+  testnet: false,
 };
 
 export const config = createConfig({
-  chains: [coreTestnet2],
-  connectors: [metaMask(), coinbaseWallet({ appName: "ProptyChain" })],
+  chains: [baseMainnet],
+  connectors: [metaMask(), coinbaseWallet({ appName: "Zephyra" })],
   transports: {
-    [coreTestnet2.id]: http("https://rpc.test2.btcs.network"),
+    [baseMainnet.id]: http("https://mainnet.base.org"),
   },
 });
