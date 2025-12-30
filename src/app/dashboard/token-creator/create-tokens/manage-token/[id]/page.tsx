@@ -3,12 +3,10 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
   useReadContract,
-  // --- UPDATE: useReadContracts is no longer needed for fetching features
   useWriteContract,
   useAccount,
   useChainId,
 } from "wagmi";
-// --- UPDATE: keccak256 and toBytes are no longer needed on the frontend
 import { Abi, isAddress, keccak256, toBytes } from "viem";
 import DashboardLayout from "../../../DashboardLayout";
 import StrataForgeERC20ImplementationABI from "../../../../../components/ABIs/StrataForgeERC20ImplementationABI.json";
@@ -1420,10 +1418,7 @@ const ManageToken = () => {
       return;
     }
 
-    // if (chainId !== BASE_SEPOLIA_CHAIN_ID) {
-    //   setError("Please connect to Base Sepolia network");
-    //   return;
-    // }
+
     if (chainId !== BASE_MAINNET_CHAIN_ID) {
       setError("Please connect to Base Mainnet network");
       return;
