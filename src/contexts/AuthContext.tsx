@@ -98,24 +98,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await axios.post<LoginResponse>(`${API_URL}/auth/login`, credentials);
       const loginResponse = response.data;
-      console.log('Full login response:', response);
-      console.log('Login response data:', loginResponse);
-      console.log('Login response structure:', {
-        success: loginResponse.success,
-        message: loginResponse.message,
-        hasData: loginResponse.data !== undefined,
-        fullStructure: JSON.stringify(loginResponse, null, 2)
-      });
 
       if (!loginResponse.success || !loginResponse.data) {
-        console.error('Invalid response format:', loginResponse);
         throw new Error('Invalid response format: missing success or data');
       }
 
       const { token, user: userData } = loginResponse.data;
 
       if (!token || !userData) {
-        console.error('Invalid response format:', loginResponse);
         throw new Error('Invalid response format: missing token or user data');
       }
 
@@ -133,8 +123,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return loginResponse;
     } catch (error: unknown) {
       const err = error as AuthError;
-      console.error('Login error:', err);
-      console.error('Login error response:', err.response);
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
