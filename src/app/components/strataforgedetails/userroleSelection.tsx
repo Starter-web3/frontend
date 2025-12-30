@@ -20,7 +20,7 @@ export default function TokenPlatformRoleSelection() {
 
       // Store the role in localStorage
       localStorage.setItem('userRole', backendRole);
-      console.log(`Selected role: ${backendRole}`);
+
 
       // Direct routing to dashboard based on role (bypass traditional auth)
       if (backendRole === 'owner') {
